@@ -36,6 +36,70 @@ void xml1_movie_watch_arm(uint32_t va) {
 }
 void xml1_movie_watch_report(void);
 static unsigned delay_ms;
+static uintptr_t profile_stack_start;
+static size_t profile_stack_size;
+static unsigned char profile_stack[65536];
+static BOOL CALLBACK profile_read(HANDLE process,DWORD64 address,PVOID buffer,DWORD size,LPDWORD read) {
+    if(address>=profile_stack_start && address-profile_stack_start<=profile_stack_size &&
+       size<=profile_stack_size-(size_t)(address-profile_stack_start)) {
+        memcpy(buffer,profile_stack+(size_t)(address-profile_stack_start),size);*read=size;return TRUE;
+    }
+    /* Never read the live version of a stack page after resuming its owner. */
+    if(address>=profile_stack_start && address-profile_stack_start<16u*1024*1024) {*read=0;return FALSE;}
+    SIZE_T done=0;BOOL ok=ReadProcessMemory(process,(void *)(uintptr_t)address,buffer,size,&done);
+    *read=(DWORD)done;return ok;
+}
+static DWORD WINAPI profile(LPVOID unused) {
+    (void)unused;
+    uint64_t addresses[200][16]={0};
+    Sleep(5000);
+    for(unsigned n=0;n<200;++n) {
+        CONTEXT context={0}; context.ContextFlags=CONTEXT_FULL;
+        profile_stack_size=0;
+        if(SuspendThread(guest_thread)==(DWORD)-1) break;
+        if(GetThreadContext(guest_thread,&context)) {
+            addresses[n][0]=context.Rip;
+            profile_stack_start=context.Rsp;
+            MEMORY_BASIC_INFORMATION region;
+            if(VirtualQuery((void *)context.Rsp,&region,sizeof(region))&&region.State==MEM_COMMIT&&!(region.Protect&(PAGE_NOACCESS|PAGE_GUARD))) {
+                profile_stack_size=(uintptr_t)region.BaseAddress+region.RegionSize-context.Rsp;
+                if(profile_stack_size>sizeof(profile_stack)) profile_stack_size=sizeof(profile_stack);
+                memcpy(profile_stack,(const void *)context.Rsp,profile_stack_size);
+            }
+        }
+        /* No allocation, symbol lookup or logging while the guest is suspended. */
+        ResumeThread(guest_thread);
+        if(addresses[n][0]&&profile_stack_size) {
+            STACKFRAME64 frame={0};
+            frame.AddrPC.Offset=context.Rip;frame.AddrPC.Mode=AddrModeFlat;
+            frame.AddrStack.Offset=context.Rsp;frame.AddrStack.Mode=AddrModeFlat;
+            frame.AddrFrame.Offset=context.Rbp;frame.AddrFrame.Mode=AddrModeFlat;
+            for(unsigned depth=1;depth<16;++depth) {
+                if(!StackWalk64(IMAGE_FILE_MACHINE_AMD64,GetCurrentProcess(),guest_thread,&frame,&context,
+                    profile_read,SymFunctionTableAccess64,SymGetModuleBase64,NULL)||!frame.AddrPC.Offset) break;
+                addresses[n][depth]=frame.AddrPC.Offset;
+            }
+        }
+        Sleep(50);
+    }
+    CloseHandle(guest_thread);
+    FILE *out=fopen("build/native-profile.csv","wb");
+    if(!out) return 0;
+    fputs("sample,depth,address,symbol,displacement\n",out);
+    for(unsigned n=0;n<200;++n) for(unsigned depth=0;depth<16;++depth) {
+        uint64_t address=addresses[n][depth];
+        if(!address) continue;
+        char storage[sizeof(SYMBOL_INFO)+256]={0};
+        SYMBOL_INFO *info=(SYMBOL_INFO *)storage;
+        info->SizeOfStruct=sizeof(*info);info->MaxNameLen=255;
+        DWORD64 displacement=0;
+        BOOL ok=SymFromAddr(GetCurrentProcess(),address,&displacement,info);
+        fprintf(out,"%u,%u,%016llX,%s,%llX\n",n,depth,address,ok?info->Name:"unknown",displacement);
+    }
+    fclose(out);
+    fprintf(stderr,"[NATIVE PROFILE] own main-thread captured-stack unwind samples saved\n");
+    return 0;
+}
 static void symbol(uint64_t address) {
     char storage[sizeof(SYMBOL_INFO)+256]={0};
     SYMBOL_INFO *info=(SYMBOL_INFO *)storage;
@@ -79,11 +143,12 @@ static DWORD WINAPI sample(LPVOID unused) {
     return 0;
 }
 void xml1_native_probe_start(void) {
-    if (!getenv("XML1_NATIVE_PROBE")) return;
+    int profiling=getenv("XML1_NATIVE_PROFILE")!=NULL;
+    if (!getenv("XML1_NATIVE_PROBE")&&!profiling) return;
     unsigned seconds=(unsigned)atoi(getenv("RECOMP_WATCHDOG_SECS")?getenv("RECOMP_WATCHDOG_SECS"):"10");
     delay_ms=(seconds>2?seconds-2:1)*1000;
     if (!DuplicateHandle(GetCurrentProcess(),GetCurrentThread(),GetCurrentProcess(),&guest_thread,
             THREAD_SUSPEND_RESUME|THREAD_GET_CONTEXT,FALSE,0)) return;
-    HANDLE monitor=CreateThread(NULL,0,sample,NULL,0,NULL);
+    HANDLE monitor=CreateThread(NULL,0,profiling?profile:sample,NULL,0,NULL);
     if (monitor) CloseHandle(monitor); else CloseHandle(guest_thread);
 }

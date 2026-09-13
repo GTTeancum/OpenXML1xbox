@@ -3,6 +3,7 @@
 #include "guest_input.h"
 #include "fair_gate.h"
 #include "light_state.h"
+#include "shared_completion.h"
 #include "../external/xboxrecomp/src/d3d/d3d8_swizzle.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -283,21 +284,22 @@ static void flush_completed_work(void) {
     if (logged++<8) fprintf(stderr,"[DX8 FENCE] native completion=%08X sequence=%u\n",fence,sequence);
     xml1_fair_leave(&transport_lock);
 }
-void xml1_graphics_wait_vblank(void) {
+static void observe_native_vblank(void) {
     static HANDLE channel=INVALID_HANDLE_VALUE,job;
-    static xml1_fair_gate gate;
     static DWORD sequence;
-    if(!live()) fatal("Vertical blank wait requires native DX8");
     /* Adapter raster observation must not hold the draw/fence transport while
      * waiting for the next scanout. Its own DX8 device observes the same adapter. */
-    xml1_fair_enter(&gate);
     if(channel==INVALID_HANDLE_VALUE) connect_worker_channel(&channel,&job,"vblank","--vblank-stream");
     DWORD bytes=0,ack=0;
     if(!WriteFile(channel,"XMLDX8V1",8,&bytes,NULL)||bytes!=8 ||
        !ReadFile(channel,&ack,4,&bytes,NULL)||bytes!=4||ack!=sequence+1)
         fatal("native vertical blank acknowledgement failed");
     ++sequence;
-    xml1_fair_leave(&gate);
+}
+void xml1_graphics_wait_vblank(void) {
+    static xml1_shared_completion completion;
+    if(!live()) fatal("Vertical blank wait requires native DX8");
+    xml1_wait_shared_completion(&completion,observe_native_vblank);
     g_eax=0; g_esp+=4;
 }
 

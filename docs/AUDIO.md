@@ -276,3 +276,12 @@ work/boot140-voice76.f32/.csv, --begin 3776 --end 984800.
 Raw source also mismatches decoded i102 before SRC. Refill timing/source decode
 are current leads. Do not remove repetitions from runtime audio: unchanged
 samples may be legitimate, and the current evidence does not prove underrun.
+
+Shared native vblank completion fixes the large repeated-ring-read symptom in
+boot145:0 unchanged frames out of460064 for the first movie, versus538080 out
+of981024 before. Concurrent callers now wake for the same actual raster edge
+instead of each consuming a separate edge. The first movie's source duration
+is ~10.432s versus the decoded reference's ~10.400s. Raw-source waveform windows
+now align at their expected times. Final DSP energy correlation reaches0.935,
+but waveform correlation remains substantially weaker; audible fidelity and
+remaining processing differences still require verification.

@@ -940,3 +940,42 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Default/optimized builds succeed. An attempted optimized relink while boot139
   was running was blocked by Windows' executable lock; rebuilding after its
   deliberate termination succeeds. No test result from a failed build is used.
+
+## Shared native vblank completion (boot142-146)
+
+- Added opt-in XML1_NATIVE_PROFILE. It samples only the own process's main
+  guest thread, copies up to64KiB of its stack while suspended, resumes before
+  unwinding/symbol lookup/output, and writes build/native-profile.csv. Unwind
+  reads use the copied stack; they do not race a live stack. Sampling is bounded
+  to200 observations after5 seconds, with50ms between observations. This is a
+  diagnostic profile, not a frame-rate benchmark or another process controller.
+- boot142/143's initial RIP/stack-candidate experiment was too weak to identify
+  callers. An APU getenv-cache experiment did not materially reduce the waits
+  and was reverted. No proposed toolkit patch22 remains. Captured-stack unwind
+  in boot144 instead identifies136/200 samples in native vblank waiting:78
+  queued at its gate and58 waiting on the worker acknowledgement.
+- The old FIFO vblank gate made concurrent waiters consume separate native
+  refreshes. A shared-completion condition now lets already-waiting callers
+  observe the same real DX8 active-to-blank completion. The first caller sends
+  the worker request outside the synchronization lock; later callers wait on
+  its generation. Calls arriving after completion start a new observation.
+  Draw/fence transport stays separate, and no timer substitutes for scanout.
+- A native regression gates the producer and queues eight callers in each of
+  three batches. Each batch performs exactly one producer completion; none
+  returns before it, later batches wait again, and generation rollover passes.
+  Existing native renderer pixel/format/lighting/geometry/mip/vblank checks pass.
+- boot145 ends60-second bound3 at capture2280. First-movie voice76 records
+  3776..463840 contain460064 source frames (~10.432s at44100Hz), close to the
+  decoded458656-frame (~10.400s) source. Same-position unchanged ring reads fall
+  from538080/981024 in boot140 to0/460064. Source waveform windows at1/3/5/7s
+  align at1.000/3.000/5.000/7.000s, correlations0.946/0.864/0.890/0.939.
+- Final DSP output energy alignment improves to0.935, with the first movie
+  starting about6 seconds into capture. Half-second waveform correlations are
+  still only about0.42-0.46 in magnitude. Timing is substantially improved, but
+  neither this metric nor zero repeated reads certifies full audio fidelity.
+- boot146 reaches level1 and native pause/resume, movement, combat, healing and
+  powers on the new synchronization. Frame4080 shows Wolverine farther along
+  the street with enemies and depleted consumables. Successful encounter/level
+  completion and overall graphics/audio correctness remain unproven.
+- boot146 completes180-second bound3 with no fatal guard; this bounded run is
+  a regression check, not proof of successful encounter or full-level completion.

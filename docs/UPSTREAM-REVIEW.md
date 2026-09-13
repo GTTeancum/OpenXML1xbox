@@ -77,3 +77,7 @@ PR46 reviewed: D3D11 presentation gamma pass, state-preserving and not monitor-w
 Rechecked open PRs and upstream branches on2026-09-13 around12:15UTC: PRs38–47
 and branches main and work/v0.7.0-non-local remain
 available; no new submitted fix for these observed audio lock/descriptor failures.
+
+Rechecked open PRs and branches around2026-09-13 13:45UTC: same PRs38-47 and
+main/work/v0.7.0-non-local. The shared native-DX8 vblank fix belongs to this
+project's bridge; it is not an upstream XboxRecomp change.

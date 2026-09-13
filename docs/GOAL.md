@@ -96,3 +96,8 @@ boot141 validates health/power input and completes300 seconds without a fatal
 error, but the encounter still ends in defeat. boot140's pre-resampling movie
 voice capture exposes extensive unchanged ring reads and source mismatch;
 source decode/refill timing is the next audio investigation. Goal remains active.
+
+boot145 corrects concurrent vblank waits to share the same measured native edge,
+removing repeated ring reads in the tested first movie and restoring near-source
+movie-audio duration. boot146 revalidates level1 movement/combat on this change.
+Full sound/graphics fidelity and successful level traversal remain incomplete.
