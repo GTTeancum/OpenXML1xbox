@@ -70,3 +70,5 @@ Do not blindly merge branches or replace the pin during an experiment.
 
 
 PR47: guest x87 FIST/FISTP rounding control, commit55aa0ba. Isolated84 Python tests and native CTest pass. https://github.com/sp00nznet/xboxrecomp/pull/47
+
+PR46 reviewed: D3D11 presentation gamma pass, state-preserving and not monitor-wide. Not directly applicable to native DX8 or intermittent FMV blocks. https://github.com/sp00nznet/xboxrecomp/pull/46

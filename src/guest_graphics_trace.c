@@ -74,6 +74,17 @@ void xml1_graphics_observe(uint32_t va)
         }
     }
     if (va==0x3A6D39 && g_esp<xbox_GetMappedSize()-40) {
+        if(getenv("XML1_CAPTURE_MOVIE_SOURCE")) {
+            extern unsigned xml1_graphics_frame_number(void);
+            const uint32_t *a=(const uint32_t *)((uintptr_t)g_xbox_mem_offset+g_esp+4);
+            if(xml1_graphics_frame_number()==299 && a[7]==4 && a[1]==4096 && a[4]==1024 && a[5]==512)
+                dump_region("build/movie-source-frame300.bgra",a[0],4096*480);
+            static unsigned source_count;
+            if(a[7]==4 && a[1]==4096 && a[4]==1024 && a[5]==512 && ++source_count%20==0) {
+                char path[128]; snprintf(path,sizeof(path),"build/movie-source-%03u.bgra",source_count);
+                dump_region(path,a[0],4096*480);
+            }
+        }
         if(movie_source_to_watch) { xml1_movie_watch_arm(movie_source_to_watch+4096); movie_source_to_watch=0; }
         static LONG reports;
         if (InterlockedIncrement(&reports)<=12) {

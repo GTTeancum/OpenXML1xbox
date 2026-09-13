@@ -648,3 +648,24 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   worktree commit55aa0ba. Native CTest and84 Python tests pass there as well.
   Next investigate decoder block artifacts, pacing/audio resampling and return
   to level1 with the accumulated fixes.
+
+
+## Intermittent FMV artifacts, paired source/upload evidence (boot108–109)
+
+- Decoded the first180 frames of original i102.sfd with local FFmpeg as a
+  reference. Nearest-frame search for the posted boot107frame300 points to
+  reference177; visual inspection shows clean reference artwork where the
+  native capture has block artifacts. Reference conversion is diagnostic only.
+- Added opt-in converted-source and native upload captures under
+  XML1_CAPTURE_MOVIE_SOURCE. boot108 converted sources20/40/60/80 look clean.
+  boot109 paired source/upload at presentation300 compare exactly across all
+  307200 visible pixels (scripts/check-movie-upload.py); native frame300 is
+  also clean. Thus neither persistent texture unswizzling corruption nor
+  consistently broken decoding explains the observed artifacts. Timing and
+  buffer ownership remain under investigation; do not claim a fidelity fix.
+- boot109 finishes75s bound3, with active nonzero DSP input through86016 APU
+  frames and movie lifecycle activity. No heap exhaustion or fatal guard found.
+  No repeat Activision screenshot posted; no A/V synchronization claim.
+- Rechecked upstream open PRs. NewPR46 implements presentation-only gamma ramps
+  for the toolkit D3D11 backend; it does not explain localized movie blocks and
+  does not apply directly to this native system-D3D8 renderer. PR47 remains open.

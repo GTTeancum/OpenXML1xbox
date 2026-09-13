@@ -17,6 +17,7 @@ static int material_valid;
 static unsigned char *packet;
 static size_t used, capacity;
 static uint32_t draws, frames;
+unsigned xml1_graphics_frame_number(void) { return frames; }
 static uint32_t sequence;
 static int frame_geometry;
 static void flush_completed_work(void);
@@ -68,6 +69,11 @@ static void append_texture(uint32_t address,unsigned width,unsigned height,uint3
             void *linear=malloc(bytes);
             if(!linear) fatal("mip conversion allocation failed");
             xbox_unswizzle_rect(linear,pixels,width,height,format==6?4:1);
+            if(frames==299 && format==6 && level==0 && getenv("XML1_CAPTURE_MOVIE_SOURCE")) {
+                FILE *out=fopen("build/movie-upload-frame300.bgra","wb");
+                if(!out || fwrite(linear,1,bytes,out)!=bytes) fatal("movie upload capture failed");
+                fclose(out);
+            }
             append(linear,bytes); free(linear);
         }
         pixels+=bytes; width=width>1?width/2:1; height=height>1?height/2:1;
