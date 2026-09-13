@@ -170,3 +170,17 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   that workaround for audio correctness. No ACK workaround was enabled here.
 - Next: integrate actual audio processing / DSP command behavior to advance
   startup, while extending native DX8 support as new submissions are reached.
+
+## DSP interpreter adapter (2026-09-13 08:02 UTC)
+
+- Imported the pinned xemu DSP56300 C interpreter and DMA implementation under
+  external/xemu-dsp with original notices/COPYING and a reproducible import script.
+  Selected its C backend; no JIT/UI dependency and no dummy command acknowledgement.
+- Standalone MSVC build succeeds. Executed 640 arithmetic vectors through the
+  actual instruction decoder, bidirectional scratch DMA with guards, and DSP
+  bootstrap masking. Test passes; this is adapter evidence, not audio correctness.
+- Identified required integration: toolkit DSP state/API replacement, GP/EP MMIO
+  and real frame processing, physical-memory routing across the separate contiguous
+  mapping, and game-host APU initialization. See docs/AUDIO.md.
+- Recorded user clarification: post screenshots only for new visible content.
+  No new screenshot or additional gameplay milestone in this checkpoint.

@@ -12,6 +12,8 @@ splash screen, FMV, main menu, and level 1. Do not substitute asset viewers or
 handwritten screens for the game's execution. Keep captured originals in this
 project; copy user-facing captures to the conversation outputs directory when
 needed for display.
+Only post a screenshot when it shows something new; do not repost an unchanged
+splash or scene for an implementation-only milestone (user clarification).
 
 At the cutoff, stop further implementation, preserve work and report milestones,
 remaining blockers, visual/audio evidence, and measured gameplay performance.
