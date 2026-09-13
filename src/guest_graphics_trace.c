@@ -70,9 +70,30 @@ void xml1_graphics_observe(uint32_t va)
         }
         const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
         const uint32_t *stack=(const uint32_t *)(memory+g_esp);
+        static RECOMP_TLS unsigned reset_count, reset_calls;
+        static RECOMP_TLS int trace_reset;
+        if(stack[0]==0x98EAF) {
+            ++reset_count;
+            trace_reset=reset_count==2;
+            reset_calls=0;
+        }
+        if(stack[0]==0x98F09) trace_reset=0;
+        if(trace_reset && ++reset_calls<=2000) {
+            const float *camera=(const float *)(memory+0x48D128);
+            fprintf(stderr,"[CAMERA RESET TRACE] n=%u va=%08X caller=%08X ecx=%08X args=%08X/%08X/%08X p=%.9g/%.9g/%.9g angle=%.9g/%.9g\n",
+                reset_calls,va,stack[0],g_ecx,stack[1],stack[2],stack[3],
+                camera[0xF8/4],camera[0xFC/4],camera[0x100/4],camera[0x74/4],camera[0x230/4]);
+        }
         if(verb) fprintf(stderr,"[SUBWAY SCRIPT] tick=%llu verb=%s va=%08X caller=%08X context=%08X\n",
             GetTickCount64(),verb,va,stack[0],stack[1]);
         if(stack[0]==0x98F09 || stack[0]==0x9A037 || stack[0]==0x98EAF) {
+            static unsigned camera_snapshot;
+            char camera_path[160];
+            snprintf(camera_path,sizeof(camera_path),"build/subway-camera-%llu-%u.bin",
+                GetTickCount64(),++camera_snapshot);
+            /* Original camera singleton; preserve raw fields without assuming
+               that a requested position is the current rendered view. */
+            dump_region(camera_path,0x48D128,0x420);
             fprintf(stderr,"[SUBWAY CALL] tick=%llu target=%08X caller=%08X this=%08X args=%08X/%08X/%08X\n",
                 GetTickCount64(),va,stack[0],g_ecx,stack[1],stack[2],stack[3]);
             if(stack[0]==0x98F09) {

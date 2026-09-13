@@ -1402,3 +1402,13 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   no subway/level completion or audio-fidelity claim. Next: protected diagnostic
   camera comparison, then repair the responsible original runtime behavior and
   validate normal traversal after both fights.
+
+### 2026-09-13: subway reset produces invalid camera coordinates
+
+Boot172 repeated the isolated camera fixture with setallaiactive(FALSE) immediately after the unchanged exit script completes. Wolverine remains alive with unchanged health: camera reapply restores the visible street, second reset returns to black plus HUD. Native evidence: work/boot172-reset.bmp is frame2400 BEFORE the second reset (visible street); work/boot172-after-second-reset.bmp is frame3360 AFTER reset (black world, live hero). No screenshots posted. Baseline game assets unchanged. Fixture hash b836d0ef5eb076cb1780a64bfe4dc1e3cb7e8c7c9f87b55af1dd791e67abfb66. This bypasses approach and fights, so does not validate ordinary traversal.
+
+Opt-in original-camera snapshots at script calls show reset makes camera offsets F8/FC NaN immediately; subsequent updates propagate NaN to Z too. These offsets participate in reset/update calculations, unlike the stale requested-position and +304 matrix fields discussed earlier. Fade current/target remain zero; hero position is the correct subway exit. boot172 and boot173 end at diagnostic bound3.
+
+Boot173 call tracing localizes first corruption before NaN: reset -> 50880 -> 1206E0/120680 angle wrapping -> 341916 -> 348658 -> 34893F. Input 0x4096CBEC (~4.712 radians) to 1206E0 returns corrupted 0x585C0000 (~9.7e14), stored in camera angle234. Later 4B140 normalizes that corrupted angle through 1206E0 and stores NaN into angle230; camera position then becomes NaN. Generated 34893F contains unimplemented FXAM placeholders immediately before FNSTSW-based operand classification. This is a concrete missing x87 operation in the CRT path; precise instruction fix and regression validation are next. Do not claim fixed yet. Boot173 trace originally included interleaved audio calls; reset trace counters/enable are now TLS to keep subsequent traces on the script thread.
+
+Targeted optimized xml1-boot-probe build succeeds. An incidental ALL-target build exposed duplicate symbols in the existing apu-output-lock-test (recomp_apu_dsp_output, recomp_apu_irq_level, xml1_apu_trace_frame, xml1_apu_trace_voices pulled from apu_output.obj); this test-target linkage remains unresolved. Not a game build failure. Scratchy audio remains unresolved independently.

@@ -8,7 +8,10 @@ never be used as evidence that ordinary level traversal succeeds.
 from pathlib import Path
 import shutil,struct,zipfile,json,hashlib,sys
 camera_check='--camera-check' in sys.argv
-root=Path('work/subway-camera-fixture' if camera_check else 'work/subway-fixture')
+quiet_check='--quiet-check' in sys.argv
+if quiet_check and not camera_check:
+    raise ValueError('--quiet-check requires --camera-check')
+root=Path('work/subway-camera-quiet-fixture' if quiet_check else 'work/subway-camera-fixture' if camera_check else 'work/subway-fixture')
 root.mkdir(exist_ok=True)
 (root/'z').mkdir(exist_ok=True)
 source=Path('game/z/assetsfb.zip')
@@ -29,6 +32,8 @@ down='scripts/nyc/alison/subwaydowna.py'
 up='scripts/nyc/alison/subwayupa.py'
 replacement=scripts[startup]+b'\r\nwaittimed(10.0)\r\n'+scripts[down]+b'\r\nwaittimed(8.0)\r\n'+scripts[up]
 if camera_check:
+    if quiet_check:
+        replacement += b'\r\nsetallaiactive("FALSE")\r\n'
     replacement += b'\r\nwaittimed(8.0)\r\ncameraToLocationAngles(" 2280.000 2440.655 279.896 ", " 2280.000 2544.443 0.000 ", 0.000)\r\nwaittimed(8.0)\r\ncameraResetOldSchool()\r\n'
 rebuilt=bytearray()
 for name,header,payload in entries:
@@ -49,6 +54,7 @@ with zipfile.ZipFile(dest) as z:
     assert z.namelist().count(package)==1
 report={'package':package,'fb_records':len(entries),'changed_script':startup,
         'camera_reapply_check':camera_check,
+        'disable_ai_after_exit_for_camera_check':quiet_check,
         'commands_from':[down,up],'original_package_sha256':hashlib.sha256(original).hexdigest(),
         'fixture_package_sha256':hashlib.sha256(rebuilt).hexdigest(),
         'purpose':'Transition isolation only; does not validate combat or ordinary traversal.'}
