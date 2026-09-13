@@ -12,6 +12,9 @@ static uint32_t methods[0x800], method_set[0x800];
 static unsigned char *packet;
 static size_t used, capacity;
 static uint32_t draws, frames;
+static uint32_t sequence;
+static int frame_geometry;
+static void flush_completed_work(void);
 static HANDLE pipe=INVALID_HANDLE_VALUE, worker_job;
 static void fatal(const char* message) {
     fprintf(stderr,"[FATAL DX8 LIVE] %s (Win32=%lu, frame=%u, draws=%u)\n",message,GetLastError(),frames,draws);
@@ -62,6 +65,7 @@ static void connect_worker(void) {
 void xml1_graphics_live_observe(uint32_t va) {
     if (!live()||va<0x35ADA0||va>=0x36F300) return;
     const uint32_t *a=guest(g_esp+4,32);
+    if (va==0x35FC00 && frames) flush_completed_work();
     if (va==0x35FDE0) {
         static unsigned logged;
         if (logged++<8) {
@@ -83,7 +87,7 @@ void xml1_graphics_live_observe(uint32_t va) {
     else if (va==0x362430) {
         /* The initial protocol coalesces only the observed full black/depth-one
          * startup clears before geometry. Refuse a different clear sequence. */
-        if (draws||a[0]||a[1]||((a[2]&0xF0)&&a[3])||((a[2]&1)&&a[4]!=0x3F800000)||((a[2]&2)&&a[5]))
+        if (frame_geometry||a[0]||a[1]||((a[2]&0xF0)&&a[3])||((a[2]&1)&&a[4]!=0x3F800000)||((a[2]&2)&&a[5]))
             fatal("unimplemented clear sequence");
     }
     else if (va==0x367AF0) {
@@ -110,6 +114,7 @@ void xml1_graphics_live_observe(uint32_t va) {
         append(guest(0x80000000+tex[1],tex_bytes),tex_bytes);
         append(guest(0x80000000+(uint32_t)offset,(size_t)bytes),(size_t)bytes);
         ++draws;
+        frame_geometry=1;
     }
 }
 static void send_bytes(const void* data,size_t bytes) {
@@ -118,6 +123,25 @@ static void send_bytes(const void* data,size_t bytes) {
         if (!WriteFile(pipe,data,part,&written,NULL)||!written) fatal("graphics worker write failed");
         bytes-=written; data=(const unsigned char*)data+written;
     }
+}
+static void receive_ack(void) {
+    DWORD ack=0,bytes=0;
+    if (!ReadFile(pipe,&ack,4,&bytes,NULL)||bytes!=4||ack!=sequence+1)
+        fatal("graphics acknowledgement failed");
+    ++sequence;
+}
+static void flush_completed_work(void) {
+    uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
+    uint32_t *d=guest(device,0x40);
+    if (g_ecx!=device) fatal("unexpected push-buffer flush device");
+    uint32_t fence=d[0x2c/4]-2;
+    send_bytes("XMLDX8F1",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+    draws=0; used=0;
+    /* InsertFence records this counter before incrementing by two. Signal only
+     * after all preceding native submissions have completed; no Present here. */
+    *(uint32_t*)guest(d[0x30/4],4)=fence;
+    static unsigned logged;
+    if (logged++<8) fprintf(stderr,"[DX8 FENCE] native completion=%08X sequence=%u\n",fence,sequence);
 }
 void xml1_graphics_swap(void) {
     if (!live()) fatal("Swap requires XML1_LIVE_DX8=1 (trace mode stops before Swap)");
@@ -131,11 +155,10 @@ void xml1_graphics_swap(void) {
     }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
     send_bytes("XMLDX8R1",8); send_bytes(&draws,4); send_bytes(packet,used);
-    DWORD ack=0,bytes=0;
-    if (!ReadFile(pipe,&ack,4,&bytes,NULL)||bytes!=4||ack!=frames+1) fatal("graphics frame acknowledgement failed");
+    receive_ack();
     ++frames;
     if (frames==1||frames%60==0) fprintf(stderr,"[DX8 LIVE] presented frame=%u draws=%u bytes=%zu\n",frames,draws,used);
-    draws=0; used=0;
+    draws=0; used=0; frame_geometry=0;
     /* Return only after the native renderer has consumed the submitted frame. */
     g_eax=0; g_esp+=8;
 }

@@ -23,6 +23,8 @@ marking an unfinished goal complete.
 
 Current milestone: first legal splash presented from live guest execution through
 native Windows DX8. Audio initialization now starts the APU and loads sound banks,
-and voice banks with corrected stereo PCM settings, then waits in D3D resource
-synchronization (0035FDE0). Encoded audio remains unsupported. FMV,
+and voice banks with corrected stereo PCM settings. Native DX8 fence completion
+now advances beyond 180 splash frames. Regenerated vtable function0011F170 passes;
+startup reaches saved-game enumeration then unresolved target000BE01A.
+Encoded audio remains unsupported. FMV,
 menu, level 1, audio and visual correctness remain unverified; see PROGRESS.md.

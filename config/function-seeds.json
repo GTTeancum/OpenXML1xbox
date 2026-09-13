@@ -1,4 +1,5 @@
 [
+  { "start": "0x0011F170", "reason": "boot-035 vtable target 003DAD3C slot8; verified sub esp,48 prologue at aligned entry after embedded jump-table data" },
   { "start": "0x0022E280", "reason": "boot-009 callback target; decoded aligned entry after ret" },
   { "start": "0x00194890", "reason": "boot-008 vtable target; SEH prologue after int3 padding" },
   { "start": "0x001E05B0", "reason": "boot-010 vtable target; aligned .text entry after int3 padding" },

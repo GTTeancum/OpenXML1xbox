@@ -280,3 +280,23 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Do not simply skip the wait. Next implementation must tie fence signalling to
   native DX8 completion, including a flush without Present, and refuse unsupported
   pending work. Current Present acknowledgement alone does not update guest fences.
+
+## Native completion and partial-frame batches (2026-09-13)
+
+- Added XMLDX8F1 flush packets with independent acknowledgement sequence numbers.
+  Worker completes submitted rendering through a blocking lock/unlock of its
+  lockable DX8 backbuffer. Flushes do not Present or advance frame counters.
+  After acknowledgement, guest completion receives the last inserted fence.
+- Pending supported draws can be flushed as a batch. The worker preserves the
+  current frame across batches and clears only when starting a new frame. The
+  host rejects clears after any geometry in the frame, even after batch flush.
+- Native whole-frame versus two-batch test passes byte-for-byte, hash7168533f...
+  (scripts/test-dx8-batches.py, build/test-dx8-batches.log). This validates the
+  observed splash path, not general rendering or all Xbox GPU command semantics.
+- boot-035 passes the prior fence wait and presents over180 frames, then stops
+  at ICALL0011F170. Vtable003DAD3C slot8 points to this valid function; verified
+  original prologue sub esp,48 after embedded jump-table bytes. Added seed for
+  complete disassembly/regeneration. No new visual or audio-correctness milestone.
+- Regeneration and native build completed. boot-036 passes0011F170 and enumerates
+  UDATA/4156001e before stopping at the fail-fast unresolved sub_000BE01A.
+  Investigate that target's original bytes/caller before choosing a seed or alias.

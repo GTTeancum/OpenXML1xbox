@@ -78,16 +78,20 @@ int main(int argc, char** argv) {
             int fd=_open_osfhandle((intptr_t)pipe,_O_RDONLY|_O_BINARY);
             FILE* input=fd>=0?_fdopen(fd,"rb"):nullptr;
             if (!input) throw std::runtime_error("Cannot read graphics pipe");
-            for (unsigned frame=1;;++frame) {
+            unsigned frame=1;
+            for (unsigned sequence=1;;++sequence) {
                 int next=std::fgetc(input);
                 if (next==EOF) break;
                 std::ungetc(next,input);
                 char capture[128];
                 std::snprintf(capture,sizeof(capture),"build/dx8-live-frame-%06u.bmp",frame);
-                replay_stream(device,input,(frame<=8||frame%60==0)?capture:nullptr,true);
-                DWORD ack=frame,written=0;
+                bool presented=replay_stream(device,input,(frame<=8||frame%60==0)?capture:nullptr,true);
+                DWORD ack=sequence,written=0;
                 if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
-                if (frame==1||frame%60==0) std::printf("Presented live frame %u\n",frame);
+                if (presented) {
+                    if (frame==1||frame%60==0) std::printf("Presented live frame %u\n",frame);
+                    ++frame;
+                }
             }
             std::fclose(input);
         } catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
