@@ -316,3 +316,19 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Saved as the sixth ordered toolkit patch; idempotence checks pass. The isolated
   fork branch is pushed. GitHub PR creation returned server errors/HTTP502, and
   read-back checks show no PR, so creation needs a later retry. See UPSTREAM-REVIEW.
+
+## Movie worker entry and callback ABI diagnosis (2026-09-13)
+
+- Verified00345453 is a separate CRT worker entry: push0xc, push scope table,
+  call SEH prologue003432A8. Discovery had merged it after00345449. Added the
+  eighth explicit seed, regenerated and rebuilt successfully.
+- boot-039 enters workers and opens the movie, then attempts invalid callback
+  targets3 and005EF620. These are not missing code entries to seed.
+- Added a reproducible process-local callback contract check to guard-generated.py
+  at the actual cdecl dispatch call0030BBE7. boot-040 catches the first violation:
+  callback0030C0F0 returns ESP0125BF58 instead of0125BF54 and changes ESI from
+  005BF8F8 to0030FFA4. This explains later invalid callback-table reads.
+- 0030C0F0 calls0030FF50, whose final nested call at0030FF9F targets003072A0
+  (return0030FFA4). Inspect nested stack/callee-save behavior before any workaround.
+  No FMV frame or audible-output milestone. Another upstream PR retry still
+  returned a GitHub server error; the tested fork branch remains ready.

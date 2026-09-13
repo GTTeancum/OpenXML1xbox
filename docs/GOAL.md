@@ -26,6 +26,7 @@ native Windows DX8. Audio initialization now starts the APU and loads sound bank
 and voice banks with corrected stereo PCM settings. Native DX8 fence completion
 now advances beyond 180 splash frames. Regenerated vtable function0011F170 passes;
 startup passes saved-game enumeration and opens movies/ntsc/i/1/i102.sfd,
-then fails at worker-thread target00345453 before any verified FMV rendering.
+the CRT worker entry00345453 now runs. Movie startup stops on a verified callback
+ABI violation from0030C0F0 (stack +4 and ESI clobber), before verified FMV rendering.
 Encoded audio remains unsupported. FMV,
 menu, level 1, audio and visual correctness remain unverified; see PROGRESS.md.
