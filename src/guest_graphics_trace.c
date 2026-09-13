@@ -52,6 +52,35 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    /* Script bindings identified from the supplied XBE's function/name/type
+       table. Observe the original calls; do not alter script or fade state. */
+    static int script_trace=-1;
+    if(script_trace<0) script_trace=getenv("XML1_TRACE_SUBWAY")!=NULL;
+    if(script_trace && g_esp<xbox_GetMappedSize()-32) {
+        const char *verb=NULL;
+        switch(va) {
+        case 0x98EC0: verb="screenFade"; break;
+        case 0x9B8A0: verb="copyOriginAndAngles"; break;
+        case 0x99FA0: verb="cameraToLocationAngles"; break;
+        case 0x98EA0: verb="cameraResetOldSchool"; break;
+        case 0x9A040: verb="setPartyLightColor"; break;
+        case 0x99B00: verb="lockControls"; break;
+        case 0xCC9F0: verb="waittimed"; break;
+        case 0x993F0: verb="setallaiactive"; break;
+        }
+        const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
+        const uint32_t *stack=(const uint32_t *)(memory+g_esp);
+        if(verb) fprintf(stderr,"[SUBWAY SCRIPT] tick=%llu verb=%s va=%08X caller=%08X context=%08X\n",
+            GetTickCount64(),verb,va,stack[0],stack[1]);
+        if(stack[0]==0x98F09 || stack[0]==0x9A037 || stack[0]==0x98EAF) {
+            fprintf(stderr,"[SUBWAY CALL] tick=%llu target=%08X caller=%08X this=%08X args=%08X/%08X/%08X\n",
+                GetTickCount64(),va,stack[0],g_ecx,stack[1],stack[2],stack[3]);
+            if(stack[0]==0x98F09) {
+                float alpha,seconds; memcpy(&alpha,stack+1,4); memcpy(&seconds,stack+2,4);
+                fprintf(stderr,"[SUBWAY FADE] alpha=%.9g seconds=%.9g\n",alpha,seconds);
+            }
+        }
+    }
     trace_movie_timeline(va);
     if(va==0x32B8A0) movie_convert_start=GetTickCount64();
     if(va==0x35DDC0) {

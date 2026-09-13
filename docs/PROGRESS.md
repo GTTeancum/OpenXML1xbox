@@ -1304,3 +1304,40 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   work/human-build-before-frame-fix/xml1-boot-probe.exe before starting an
   optimized rebuild with the prologue and conditional-DSP corrections.
   The missing-world transition still requires a fresh reproduction test.
+
+## 2026-09-13: subway exit identified from user report and original scripts
+
+- User clarified the failure occurs AFTER defeating street enemies, descending
+  into the subway, defeating more enemies, and returning above ground. The
+  opening-movie transition is a different test and does not reproduce it.
+- boot168 diagnostic300-second test let r102 finish without skipping it and
+  rendered level1 at frame2760. Full-frame capture1681/frame3454 completed.
+  Exit3 is the time bound. The pause-map selection test was not completed.
+- Optimized rebuild with saved-frame and DSP conditional fixes succeeded;
+  before additional tracing its SHA256 was
+  C4A3EBCA51306960FC8E7D3D64677D170D87AD13320D9981CFD43158BFBF388D.
+- Original assetsfb.zip contains nyc1_1_1.fb with plain Python subwayupa.py
+  and subwayupb.py. Both fade out, wait1s, copy the hero to the up marker,
+  reposition the camera, wait0.1s, set party light black, reset the camera,
+  fade back to0 over1s, wait1s, then restore AI and controls. Assets unchanged.
+- User supplied https://marvelmods.com/forum/index.php/topic,1367.60.html .
+  Read that page and the thread's first page, which documents cameraFade,
+  cameraReset and waittimed. Original XML1 Xbox scripts use screenFade here;
+  the community XML2/MUA command descriptions are context, not ABI evidence.
+- Derived original binding addresses from the XBE function/name/type table:
+  screenFade98EC0, copyOriginAndAngles9B8A0, cameraToLocationAngles99FA0,
+  cameraResetOldSchool98EA0, setPartyLightColor9A040, lockControls99B00,
+  waittimedCC9F0, setallaiactive993F0. Table function pointer is BEFORE name,
+  not after; verified against translated function bodies.
+- Added opt-in XML1_TRACE_SUBWAY entry/call diagnostics to graphics observation
+  (already covers indirect calls). Captures original fade float arguments and
+  camera-call target/arguments without changing execution. Optimized rebuild
+  with this tracing passes. It has not yet exercised the subway exit.
+- Earlier failed human RAM snapshot has the fade object at56DD08+BA8:
+  current(+10)=0, target(+14)=0, remaining(+18)=-0.00002838, duration(+1C)=1.
+  Derived from original1586C0 ->18B6A0 setter, not guessed offsets.
+  Camera singleton48D128 targets (2280,2502.04,45.1), matching subway_upA
+  marker (2280,2502.04,0) plus view height. Camera location method504E0,
+  reset method50570 identified from its vtable. This suggests the teleport
+  and fade-back progressed; world visibility/camera reset needs investigation.
+  The snapshot is non-atomic, so it is not proof that every script step passed.
