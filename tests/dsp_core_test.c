@@ -21,6 +21,47 @@ static void dma(DSPState *d,bool out) {
     dsp_dma_write(&d->dma,DMA_CONTROL,DMA_CONTROL_ACTION_START);
     CHECK(d->dma.eol);
 }
+static unsigned extractu_tests(DSPState *d) {
+    /* Independent bit-by-bit reference, including source/destination aliasing. */
+    const uint64_t values[]={0,UINT64_C(0xffffffffffffff),UINT64_C(0x80000000000000),UINT64_C(0xabcdef12345678),UINT64_C(0x0000000003a800)};
+    const unsigned widths[]={0,1,7,23,24,25,47,48,55,56};
+    unsigned cases=0;
+    for(unsigned s=0;s<2;++s) for(unsigned t=0;t<2;++t)
+    for(unsigned v=0;v<5;++v) for(unsigned w=0;w<10;++w)
+    for(unsigned off=0;off+widths[w]<=56;++off) for(unsigned scale=0;scale<3;++scale) {
+        dsp_reset(d); dsp_sync_to_vm(d);
+        d->core.pc=0;
+        d->core.registers[DSP_REG_SR]=0xc3|(scale<<10);
+        d->core.registers[s?DSP_REG_B0:DSP_REG_A0]=(uint32_t)values[v]&0xffffff;
+        d->core.registers[s?DSP_REG_B1:DSP_REG_A1]=(uint32_t)(values[v]>>24)&0xffffff;
+        d->core.registers[s?DSP_REG_B2:DSP_REG_A2]=(uint32_t)(values[v]>>48)&255;
+        dsp_sync_from_vm(d);
+        dsp_write_memory(d,'P',0,0x0c1880|(s<<4)|t);
+        dsp_write_memory(d,'P',1,(widths[w]<<12)|off);
+        dsp_step(d); dsp_sync_to_vm(d);
+        uint64_t want=0;
+        for(unsigned bit=0;bit<widths[w];++bit)
+            if((values[v]>>(off+bit))&1) want|=UINT64_C(1)<<bit;
+        CHECK(d->core.pc==2);
+        CHECK(d->core.registers[t?DSP_REG_B0:DSP_REG_A0]==(want&0xffffff));
+        CHECK(d->core.registers[t?DSP_REG_B1:DSP_REG_A1]==((want>>24)&0xffffff));
+        CHECK(d->core.registers[t?DSP_REG_B2:DSP_REG_A2]==((want>>48)&255));
+        if(s!=t) {
+            uint64_t unchanged=((uint64_t)d->core.registers[s?DSP_REG_B2:DSP_REG_A2]<<48)|
+                ((uint64_t)d->core.registers[s?DSP_REG_B1:DSP_REG_A1]<<24)|d->core.registers[s?DSP_REG_B0:DSP_REG_A0];
+            CHECK(unchanged==values[v]);
+        }
+        unsigned signbit=scale==0?47:scale==1?48:46;
+        unsigned extension=0;
+        for(unsigned bit=signbit+1;bit<56;++bit)
+            if(((want>>bit)&1)!=((want>>signbit)&1)) extension=1;
+        unsigned unnormalized=((want>>signbit)&1)==((want>>(signbit-1))&1);
+        unsigned sr=0xc0|(scale<<10)|(extension<<5)|(unnormalized<<4)|(((unsigned)(want>>55)&1)<<3)|((want==0)<<2);
+        CHECK(d->core.registers[DSP_REG_SR]==sr);
+        ++cases;
+    }
+    return cases;
+}
 int main(void) {
     DSPState *d=dsp_init(scratch,memory,fifo,true); CHECK(d);
     unsigned cases=0;
@@ -41,6 +82,7 @@ int main(void) {
         CHECK(d->core.registers[dest?DSP_REG_B2:DSP_REG_A2]==(((uint64_t)expected>>24)&255));
         ++cases;
     }
+    unsigned extracts=extractu_tests(d);
     memset(scratch,0x5A,sizeof(scratch));
     const uint32_t data[4]={0x123456,0xABCDEF,0x800001,0xFFFFFF};
     memcpy(scratch+0x100,data,sizeof(data));
@@ -55,5 +97,6 @@ int main(void) {
     dsp_bootstrap(d); CHECK(dsp_read_memory(d,'P',0)==0x014780);
     dsp_destroy(d);
     printf("PASS: %u executed DSP arithmetic vectors, bidirectional scratch DMA with guards, bootstrap masking (%u transfers).\n",cases,transfers);
+    printf("PASS: %u EXTRACTU vectors including flags, field boundaries and accumulator aliasing.\n",extracts);
     return 0;
 }

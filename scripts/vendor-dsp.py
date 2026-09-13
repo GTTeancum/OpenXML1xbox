@@ -24,6 +24,19 @@ text = text[:start] + '''void dsp_set_engine(DSPState *dsp, bool use_jit)
 }
 '''
 (dest/'dsp.c').write_text(text,encoding='utf-8')
+emu = dest/'interp/dsp_emu.c.inc'
+emu.write_text(emu.read_text(encoding='utf-8') + '\n' + (root/'src/dsp_extractu.c.inc').read_text(encoding='utf-8'), encoding='utf-8')
+cpu = dest/'interp/dsp_cpu.c'
+cpu_text = cpu.read_text(encoding='utf-8').replace('"extractu #CO, S2, D", NULL, NULL', '"extractu #CO, S2, D", NULL, emu_extractu_imm')
+cpu_text = cpu_text.replace('        assert(address < DSP_YRAM_SIZE);', '''        if (address >= DSP_YRAM_SIZE) {
+            fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\\n", dsp->pc, dsp->cur_inst, address);
+            for (unsigned reg = 0; reg < 64; ++reg)
+                fprintf(stderr, "DSP reg[%u]=%06x\\n", reg, dsp->registers[reg]);
+            for (unsigned at = dsp->pc > 8 ? dsp->pc - 8 : 0; at < dsp->pc + 8 && at < DSP_PRAM_SIZE; ++at)
+                fprintf(stderr, "DSP P[%04x]=%06x\\n", at, dsp->pram[at]);
+        }
+        assert(address < DSP_YRAM_SIZE);''')
+cpu.write_text(cpu_text, encoding='utf-8')
 (dest/'SOURCE.md').write_text(f'''# xemu DSP interpreter
 
 Source: https://github.com/xemu-project/xemu/tree/{pin}/hw/xbox/mcpx/apu/dsp
@@ -35,6 +48,9 @@ original LGPL notice. COPYING contains the upstream license text.
 Local adaptations: select the existing C interpreter without the Rust JIT or UI
 settings; narrow qemu compatibility headers provide allocation/endian helpers;
 trace event macros are disabled. DSP instructions and DMA operations retain
-upstream implementations. Standalone CMake and tests are project additions.
+upstream implementations except the EXTRACTU immediate extension imported from
+src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics).
+Y-memory bounds failures log register/program context before the original assert.
+Standalone CMake and tests are project additions.
 ''',encoding='utf-8')
 print('Imported pinned DSP interpreter and DMA sources')

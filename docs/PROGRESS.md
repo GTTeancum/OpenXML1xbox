@@ -217,3 +217,20 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   the APU, creates the audio worker and opens x_common.zsM before the interpreter
   rejects EXTRACTU immediate (0x0c1890 at DSP PC 0x0519). The prior 8007000E stack
   value was not evidence of memory exhaustion. No new visual/audio milestone.
+
+## DSP EXTRACTU (2026-09-13)
+
+- Implemented the encountered immediate instruction using NXP DSP56300FM Rev. 5,
+  pages 13-72/73. Supports 56-bit extraction in normal arithmetic mode, clears
+  C/V, updates E/U/N/Z and preserves S/L. Sixteen-bit arithmetic mode fails
+  explicitly; register-controlled EXTRACTU remains unimplemented.
+- 17,040 executed vectors pass a separate bit-by-bit reference, including field
+  boundaries, both accumulators, aliasing, three scaling settings and flags.
+  Existing 640 arithmetic vectors, DMA guards and bootstrap checks also pass.
+- Changes reproduce through vendor-dsp.py from src/dsp_extractu.c.inc. The
+  imported processor sources retain their license notices and document changes.
+- boot-026/027 advances through the instruction and reads x_common.zsM, then
+  stops on a Y-memory bounds failure at PC031e/op5ee800/address0fc9. R0=0fc2,
+  N0=7; nearby program includes the literal R0 initialization. Diagnostics log
+  the original failing state without suppressing the assertion. No new screen,
+  audible-output validation or gameplay milestone.

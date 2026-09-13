@@ -237,7 +237,7 @@ static const OpcodeEntry nonparallel_opcodes[] = {
     { "0000110000011010000sSSSD", "extract S1, S2, D", NULL, NULL },
     { "0000110000011000000s000D", "extract #CO, S2, D", NULL, NULL },
     { "0000110000011010100sSSSD", "extractu S1, S2, D", NULL, NULL },
-    { "0000110000011000100s000D", "extractu #CO, S2, D", NULL, NULL },
+    { "0000110000011000100s000D", "extractu #CO, S2, D", NULL, emu_extractu_imm },
     { "000000000000000000000101", "ill", NULL, emu_illegal },
     { "00000000000000000000100d", "inc D", NULL, emu_inc },
     { "00001100000110110qqqSSSD", "insert S1, S2, D", NULL, NULL },
@@ -915,6 +915,13 @@ uint32_t dsp56k_read_memory(dsp_core_t* dsp, int space, uint32_t address)
             }
         }
     } else if (space == DSP_SPACE_Y) {
+        if (address >= DSP_YRAM_SIZE) {
+            fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\n", dsp->pc, dsp->cur_inst, address);
+            for (unsigned reg = 0; reg < 64; ++reg)
+                fprintf(stderr, "DSP reg[%u]=%06x\n", reg, dsp->registers[reg]);
+            for (unsigned at = dsp->pc > 8 ? dsp->pc - 8 : 0; at < dsp->pc + 8 && at < DSP_PRAM_SIZE; ++at)
+                fprintf(stderr, "DSP P[%04x]=%06x\n", at, dsp->pram[at]);
+        }
         assert(address < DSP_YRAM_SIZE);
         return dsp->yram[address];
     } else if (space == DSP_SPACE_P) {
@@ -952,6 +959,13 @@ static void write_memory_raw(dsp_core_t* dsp, int space, uint32_t address, uint3
             dsp->xram[address] = value;
         }
     } else if (space == DSP_SPACE_Y) {
+        if (address >= DSP_YRAM_SIZE) {
+            fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\n", dsp->pc, dsp->cur_inst, address);
+            for (unsigned reg = 0; reg < 64; ++reg)
+                fprintf(stderr, "DSP reg[%u]=%06x\n", reg, dsp->registers[reg]);
+            for (unsigned at = dsp->pc > 8 ? dsp->pc - 8 : 0; at < dsp->pc + 8 && at < DSP_PRAM_SIZE; ++at)
+                fprintf(stderr, "DSP P[%04x]=%06x\n", at, dsp->pram[at]);
+        }
         assert(address < DSP_YRAM_SIZE);
         dsp->yram[address] = value;
     } else if (space == DSP_SPACE_P) {

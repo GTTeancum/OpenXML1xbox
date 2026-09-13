@@ -51,8 +51,13 @@ self-clears reset and preserves interrupt enables, tested without an audio devic
 The contiguous-window MmGetPhysicalAddress fix then allows DSP scatter/gather DMA
 to read physical offsets. boot-025 starts the APU, creates the audio worker and
 opens x_common.zsM, before rejecting DSP opcode 0x0c1890 at PC 0x0519.
-The decoder identifies this as unimplemented EXTRACTU immediate; implementation
-and real program validation are still required. AC97 DMA progress is not implemented.
+EXTRACTU immediate is now implemented for normal arithmetic mode from NXP's
+DSP56300FM Rev. 5, pp. 13-72/73; 17,040 independent instruction vectors pass.
+Sixteen-bit arithmetic mode remains explicitly unsupported. boot-026/027 passes
+that instruction and reads the common sound bank, then stops at a Y-memory
+bounds assertion: PC 0x031e, opcode 0x5ee800, address 0x0fc9 (R0=0x0fc2, N0=7).
+Program/register context is recorded before the original assertion; mapping,
+program setup and decoding still need investigation. AC97 DMA progress is not implemented.
 
 ## Remaining integration
 
@@ -60,7 +65,7 @@ and real program validation are still required. AC97 DMA progress is not impleme
   low guest RAM and the 0x80000000 contiguous allocation window separately;
   the current connection uses contiguous RAM for the observed DSP allocations.
   Low-memory PCM buffers and all physical-address translations remain unverified.
-- Implement and test the encountered DSP instruction, then exercise the game's
+- Diagnose the Y-memory bounds failure, then exercise the game's
   actual GP/EP programs beyond the synthetic integration tests.
 - Validate the actual command completion, decoded/mixed output and timing through
   native logs/captures. Do not replace the wait with a success-only return.

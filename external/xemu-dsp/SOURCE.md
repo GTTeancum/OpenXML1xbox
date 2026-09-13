@@ -9,4 +9,7 @@ original LGPL notice. COPYING contains the upstream license text.
 Local adaptations: select the existing C interpreter without the Rust JIT or UI
 settings; narrow qemu compatibility headers provide allocation/endian helpers;
 trace event macros are disabled. DSP instructions and DMA operations retain
-upstream implementations. Standalone CMake and tests are project additions.
+upstream implementations except the EXTRACTU immediate extension imported from
+src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics).
+Y-memory bounds failures log register/program context before the original assert.
+Standalone CMake and tests are project additions.
