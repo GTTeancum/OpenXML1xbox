@@ -11,12 +11,29 @@ typedef BOOL WINBOOL;
 #include <io.h>
 #include <fcntl.h>
 
+static bool user_closed = false;
+static LRESULT CALLBACK playtest_window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    if (message == WM_CLOSE) { user_closed = true; return 0; }
+    return DefWindowProcW(window, message, wparam, lparam);
+}
+
+static bool pump_playtest_window() {
+    MSG message;
+    while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&message);
+        DispatchMessageW(&message);
+    }
+    return !user_closed;
+}
+
 // Stage one: establish actual system D3D8 capabilities before defining the
 // Xbox-to-PC graphics bridge. This probe does not run or render game code.
 int main(int argc, char** argv) {
     const bool replayMode = argc == 4 && std::strcmp(argv[1], "--replay") == 0;
     const bool vblankMode = argc == 3 && std::strcmp(argv[1], "--vblank-stream") == 0;
     const bool liveMode = vblankMode || (argc == 3 && std::strcmp(argv[1], "--stream") == 0);
+    const char* visibleEnv = std::getenv("XML1_DX8_VISIBLE");
+    const bool visible = liveMode && !vblankMode && visibleEnv && !std::strcmp(visibleEnv, "1");
     if (liveMode) {
         std::freopen(vblankMode?"build/dx8-vblank.log":"build/dx8-live.log","wb",stdout);
         std::freopen(vblankMode?"build/dx8-vblank-errors.log":"build/dx8-live-errors.log","wb",stderr);
@@ -45,12 +62,16 @@ int main(int argc, char** argv) {
         adapter.Description, caps.VertexShaderVersion, caps.PixelShaderVersion,
         caps.MaxTextureWidth, caps.MaxTextureHeight, caps.MaxTextureBlendStages, caps.MaxSimultaneousTextures);
     WNDCLASSW wc = {};
-    wc.lpfnWndProc = DefWindowProcW;
+    wc.lpfnWndProc = playtest_window_proc;
     wc.hInstance = GetModuleHandleW(nullptr);
     wc.lpszClassName = L"OpenXML1DX8Probe";
     RegisterClassW(&wc);
-    HWND window = CreateWindowW(wc.lpszClassName, L"XML1 D3D8 probe", WS_OVERLAPPEDWINDOW,
-        0, 0, 640, 480, nullptr, nullptr, wc.hInstance, nullptr);
+    const DWORD windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+    RECT client = {0, 0, 640, 480};
+    AdjustWindowRect(&client, windowStyle, FALSE);
+    HWND window = CreateWindowW(wc.lpszClassName, visible ? L"OpenXML1 - DX8 Playtest" : L"XML1 D3D8 probe", windowStyle,
+        CW_USEDEFAULT, CW_USEDEFAULT, client.right-client.left, client.bottom-client.top,
+        nullptr, nullptr, wc.hInstance, nullptr);
     D3DPRESENT_PARAMETERS pp = {};
     D3DDISPLAYMODE mode = {};
     api->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode);
@@ -68,7 +89,8 @@ int main(int argc, char** argv) {
     IDirect3DDevice8* device = nullptr;
     hr = api->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window,
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE, &pp, &device);
-    std::printf("Hidden D3D8 HAL device creation: %08lx\n", static_cast<unsigned long>(hr));
+    std::printf("%s D3D8 HAL device creation: %08lx\n", visible ? "Visible playtest" : "Hidden", static_cast<unsigned long>(hr));
+    if (device && visible) ShowWindow(window, SW_SHOWNORMAL);
     if (device && replayMode) {
         try { replay(device,argv[2],argv[3]); }
         catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
@@ -82,6 +104,18 @@ int main(int argc, char** argv) {
             if (!input) throw std::runtime_error("Cannot read graphics pipe");
             unsigned frame=1;
             for (unsigned sequence=1;;++sequence) {
+                if (visible) {
+                    // The producer waits for each acknowledgement before
+                    // sending its next command, so no next-command bytes
+                    // can remain in stdio's buffer at this boundary.
+                    DWORD available = 0;
+                    while (pump_playtest_window()) {
+                        if (!PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr)) break;
+                        if (available) break;
+                        MsgWaitForMultipleObjectsEx(0, nullptr, 10, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
+                    }
+                    if (user_closed) { std::printf("Playtest window closed by user\n"); break; }
+                }
                 int next=std::fgetc(input);
                 if (next==EOF) break;
                 std::ungetc(next,input);

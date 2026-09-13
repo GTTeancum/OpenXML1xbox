@@ -1112,3 +1112,20 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   the existing combat/location, not a new verified progression milestone.
 - About9h31m of the30-hour goal allowance has elapsed. Full level traversal,
   overall rendering fidelity and audio correctness remain unfinished.
+
+## 2026-09-13 - Human playtest entry point
+
+- Added opt-in XML1_DX8_VISIBLE=1 for the game renderer, with a640x480 client
+  area, native window message handling and user-close support. The vblank
+  helper remains hidden. Ordinary diagnostic runs remain hidden by default.
+- Play XML1.cmd and scripts/playtest.ps1 select optimized native DX8, C DSP
+  audio and real XInput, explicitly clearing automated test-input variables.
+  The default session limit is30 minutes; each playtest has a timestamped log.
+- Rebuilt the32-bit renderer; all native batch, texture-format, lighting,
+  culling, primitive, mipmap and vblank rendering regressions pass. PowerShell
+  launcher syntax parses without errors. The visible window and physical
+  controller session are left for the user to test; no desktop input is sent.
+- Closing the renderer currently ends the game with a pipe-disconnect
+  diagnostic. Full human playability and all fidelity requirements remain
+  unverified. Do not rebuild or run competing probes while a human test
+  process is active; verify live process state before resuming implementation.

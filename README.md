@@ -50,6 +50,13 @@ with the diagnostic build before drawing compatibility conclusions.
 See `docs/PROGRESS.md`, `docs/UPSTREAM-REVIEW.md` and `docs/GOAL.md` for evidence,
 remaining work and the 30-hour cutoff.
 
+## Human playtest
+
+Connect an XInput controller and double-click `Play XML1.cmd` in this repository.
+It opens the optimized native DX8 build with audio, real controller input, and a
+30-minute session limit. See `docs/HUMAN-PLAYTEST.md` for controls and feedback
+targets. Human playability and full graphics/audio fidelity remain unverified.
+
 ## Import the ISO
 
 Place the image in `inputs/` or pass its existing absolute path:
