@@ -1054,3 +1054,35 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   (10.855s); a paused level interval measures13.60 FPS at2580..2640. These are
   capture timestamp measurements, not an instrumentation-free benchmark.
   Current performance is inadequate; this is still part of the active goal.
+
+## Native texture reuse and pending fence submission (boot162-163)
+
+- External read-only captured-stack profiling of boot161 main thread samples
+  finds71/80 samples in graphics receive_ack, including41 in push-buffer flush.
+  The worker recreated managed DX8 textures for each draw, including unchanged
+  texture data. No desktop input/capture or window manipulation was used.
+- Added an exact-content native texture cache bounded to256 entries and64MiB
+  of retained payload. Dimensions, format/mips, hash and full bytes must all
+  agree; changed data cannot reuse an old upload. Eviction releases its COM
+  reference, and worker teardown clears the cache before releasing the device.
+  XML1_DX8_NO_TEXTURE_CACHE disables it for comparison. Transport still sends
+  complete texture data; no guest update is assumed absent.
+- Native rendering regressions pass. test-dx8-texture-cache.py compares exact
+  cached/uncached BMP bytes for changed/repeated textures, an intentional hash
+  collision, and eviction after270 distinct textures. Statistics also prove
+  actual reuse and the256-entry bound.
+- boot162 starting area measures42.80 FPS across3180..3600. Its action interval
+  measures35.10 FPS across5340..5520, but then stalls in a GPU event wait in
+  0035FDE0 (KeWaitForSingleObject loop at0035FF34). It was intentionally stopped.
+- Before a pending resource fence wait, the bridge now submits all preceding
+  recorded native work. The existing worker completion acknowledgement still
+  precedes publication of latest-issued fence (latest-2), including its tag.
+  It does not publish a future/unissued fence or skip the original guest wait.
+  This covers deferred kickoff before the guest chooses its event-wait path.
+- boot163 completes300-second bound3 through movement, attacks, powers, healing
+  and pauses, passing12720 presented frames without the prior fence stall or
+  a fatal guard. Combat interval6840..7020 measures33.26 FPS. Both boot builds
+  relink successfully. Full encounter/level completion is still unverified.
+- FPS comes from consecutive native capture timestamps. Starting area versus
+  combat are different scenes; these are not universal minimum/average figures.
+  Overall visual/audio correctness and all synchronization paths remain open.

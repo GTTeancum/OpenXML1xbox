@@ -24,7 +24,7 @@ static uint32_t draws, frames;
 unsigned xml1_graphics_frame_number(void) { return frames; }
 static uint32_t sequence;
 static int frame_geometry;
-static void flush_completed_work(void);
+static void flush_completed_work(uint32_t device);
 static void ordered_clear(const uint32_t *args);
 static HANDLE pipe=INVALID_HANDLE_VALUE, worker_job;
 static xml1_fair_gate transport_lock;
@@ -112,8 +112,25 @@ void xml1_graphics_live_observe(uint32_t va) {
             va,a[0],a[1],a[2],a[3],a[4],fvf,stride,pixel_shader,*(const uint32_t *)guest(g_esp,4));
         fatal("unimplemented indexed/UP/immediate draw API");
     }
-    if (va==0x35FC00 && frames) flush_completed_work();
-    if (va==0x35FDE0) {
+    if (va==0x35FC00 && frames) {
+        uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
+        if(g_ecx!=device) fatal("unexpected push-buffer flush device");
+        flush_completed_work(device);
+    }
+    if (va==0x35FDE0 && frames) {
+        uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
+        const uint32_t *d=guest(device,0x938);
+        uint32_t latest=d[0x2c/4],complete=*(uint32_t*)guest(d[0x30/4],4);
+        /* A resource can wait on an InsertFence with deferred kickoff. Submit
+         * all recorded preceding native work before the guest chooses its
+         * interrupt/event wait path. Only issued fences (latest-2) are published,
+         * and only after the worker's actual GPU-completion acknowledgement. */
+        if((uint32_t)(latest-a[0]) < (uint32_t)(latest-complete)) {
+            flush_completed_work(device);
+            static unsigned pending_reports;
+            if(pending_reports++<12) fprintf(stderr,"[DX8 WAIT SUBMIT] target=%08X complete=%08X latest=%08X\n",
+                a[0],*(uint32_t*)guest(d[0x30/4],4),latest);
+        }
         static unsigned logged;
         if (logged++<8) {
             uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
@@ -256,14 +273,12 @@ static void receive_ack(void) {
         fatal("graphics acknowledgement failed");
     ++sequence;
 }
-static void flush_completed_work(void) {
+static void flush_completed_work(uint32_t device) {
     LARGE_INTEGER started,locked,finished,frequency;
     QueryPerformanceCounter(&started);
     lock_transport("flush");
     QueryPerformanceCounter(&locked);
-    uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
     uint32_t *d=guest(device,0x938);
-    if (g_ecx!=device) fatal("unexpected push-buffer flush device");
     uint32_t fence=d[0x2c/4]-2;
     send_bytes("XMLDX8F6",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
     QueryPerformanceCounter(&finished); QueryPerformanceFrequency(&frequency);

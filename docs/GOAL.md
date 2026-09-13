@@ -107,3 +107,9 @@ Raised-IRQL host-thread exclusion and regression tests are added; boot159
 completes300 seconds through level1 combat and defeat, and boot160 passes a
 nearby movie-skip timing. Successful level traversal and full fidelity remain
 unverified. The gate does not replace full interrupt-preemption scheduling.
+
+Native exact-content texture reuse raises measured frame rates to42.8 FPS in
+boot162 starting area and33.3 FPS in boot163 combat. A newly reached GPU-event
+wait is addressed by completing pending native submissions before entering
+that wait path. boot163 runs300 seconds past12720 frames without a fatal guard.
+Full level traversal and overall graphics/audio fidelity remain unverified.

@@ -19,21 +19,72 @@ static D3DFORMAT replay_format(uint32_t format) {
         default:throw std::runtime_error("Unsupported texture format");
     }
 }
+struct TextureEntry {
+    unsigned width,height; uint32_t packed,hash;
+    uint64_t touched;
+    std::vector<unsigned char> pixels;
+    IDirect3DTexture8* texture;
+};
+static std::vector<TextureEntry> texture_cache;
+static size_t texture_cache_bytes;
+static uint64_t texture_requests,texture_hits;
+static uint32_t texture_hash(const std::vector<unsigned char>& pixels) {
+    // A hash only narrows lookup: full byte equality is required for reuse.
+    uint32_t h=2166136261u; size_t i=0;
+    for(;i+4<=pixels.size();i+=4) {uint32_t word;std::memcpy(&word,pixels.data()+i,4);h=(h^word)*16777619u;}
+    for(;i<pixels.size();++i) h=(h^pixels[i])*16777619u;
+    return h;
+}
+static void clear_texture_cache() {
+    for(auto& entry:texture_cache) entry.texture->Release();
+    texture_cache.clear(); texture_cache_bytes=0;
+}
+static void report_texture_cache(unsigned frame) {
+    std::printf("[DX8 TEXTURES] frame=%u requests=%llu hits=%llu retained=%zu bytes=%zu\n",
+        frame,texture_requests,texture_hits,texture_cache.size(),texture_cache_bytes);
+}
 static IDirect3DTexture8* read_texture(IDirect3DDevice8* device,FILE* file,unsigned width,unsigned height,uint32_t packed) {
-    if(!xml1_texture_bytes(width,height,packed)) throw std::runtime_error("Invalid texture mip chain");
+    const size_t bytes=xml1_texture_bytes(width,height,packed);
+    if(!bytes) throw std::runtime_error("Invalid texture mip chain");
+    std::vector<unsigned char> pixels(bytes);
+    if(std::fread(pixels.data(),1,bytes,file)!=bytes) throw std::runtime_error("Truncated texture mip chain");
+    static const bool enabled=std::getenv("XML1_DX8_NO_TEXTURE_CACHE")==nullptr;
+    const uint32_t hash=enabled?texture_hash(pixels):0;
+    ++texture_requests;
+    if(enabled) for(auto& entry:texture_cache) {
+        if(entry.width==width && entry.height==height && entry.packed==packed && entry.hash==hash && entry.pixels==pixels) {
+            entry.touched=texture_requests; ++texture_hits;
+            entry.texture->AddRef(); return entry.texture;
+        }
+    }
     unsigned format=packed&255,levels=xml1_texture_levels(packed);
     IDirect3DTexture8* texture=nullptr;
     checked(device->CreateTexture(width,height,levels,0,replay_format(format),D3DPOOL_MANAGED,&texture));
-    for(unsigned level=0;level<levels;++level) {
-        unsigned rows=format==14?(height+3)/4:height;
-        unsigned row_bytes=format==14?((width+3)/4)*16:width*(format==6?4:1);
-        std::vector<unsigned char> pixels((size_t)rows*row_bytes);
-        if(std::fread(pixels.data(),1,pixels.size(),file)!=pixels.size()) throw std::runtime_error("Truncated texture mip chain");
-        D3DLOCKED_RECT lock={}; checked(texture->LockRect(level,&lock,nullptr,0));
-        for(unsigned y=0;y<rows;++y) std::memcpy((char*)lock.pBits+y*lock.Pitch,pixels.data()+y*row_bytes,row_bytes);
-        checked(texture->UnlockRect(level));
-        width=width>1?width/2:1; height=height>1?height/2:1;
-    }
+    unsigned w=width,h=height;size_t offset=0;
+    try {
+        for(unsigned level=0;level<levels;++level) {
+            unsigned rows=format==14?(h+3)/4:h;
+            unsigned row_bytes=format==14?((w+3)/4)*16:w*(format==6?4:1);
+            D3DLOCKED_RECT lock={}; checked(texture->LockRect(level,&lock,nullptr,0));
+            for(unsigned y=0;y<rows;++y) std::memcpy((char*)lock.pBits+y*lock.Pitch,pixels.data()+offset+y*row_bytes,row_bytes);
+            checked(texture->UnlockRect(level));
+            offset+=(size_t)rows*row_bytes;
+            w=w>1?w/2:1; h=h>1?h/2:1;
+        }
+        const size_t limit=64u*1024u*1024u;
+        if(enabled && bytes<=limit) {
+            while(!texture_cache.empty() && (texture_cache.size()>=256 || texture_cache_bytes+bytes>limit)) {
+                size_t oldest=0;
+                for(size_t i=1;i<texture_cache.size();++i) if(texture_cache[i].touched<texture_cache[oldest].touched) oldest=i;
+                texture_cache_bytes-=texture_cache[oldest].pixels.size();
+                texture_cache[oldest].texture->Release();
+                texture_cache.erase(texture_cache.begin()+oldest);
+            }
+            texture_cache.push_back({width,height,packed,hash,texture_requests,std::move(pixels),texture});
+            texture_cache_bytes+=bytes;
+            texture->AddRef(); // Cache owns original reference; caller releases this one.
+        }
+    } catch(...) {texture->Release();throw;}
     return texture;
 }
 static DWORD blend(DWORD v) {

@@ -103,13 +103,15 @@ int main(int argc, char** argv) {
                 DWORD ack=sequence,written=0;
                 if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                 if (presented) {
-                    if (frame==1||frame%60==0) std::printf("Presented live frame %u\n",frame);
+                    if (frame==1||frame%60==0) {std::printf("Presented live frame %u\n",frame);report_texture_cache(frame);}
                     ++frame;
                 }
             }
             std::fclose(input);
         } catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
     }
+    if(texture_requests) report_texture_cache(0);
+    clear_texture_cache();
     if (device) device->Release();
     if (window) DestroyWindow(window);
     UnregisterClassW(wc.lpszClassName, wc.hInstance);
