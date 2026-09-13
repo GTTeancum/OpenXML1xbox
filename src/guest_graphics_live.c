@@ -77,28 +77,30 @@ static void append_texture(uint32_t address,unsigned width,unsigned height,uint3
         pixels+=bytes; width=width>1?width/2:1; height=height>1?height/2:1;
     }
 }
-static void connect_worker(void) {
+static void connect_worker_channel(HANDLE *channel,HANDLE *job,const char *suffix,const char *mode) {
     char name[128], command[512];
-    snprintf(name,sizeof(name),"\\\\.\\pipe\\OpenXML1DX8-%lu",GetCurrentProcessId());
-    pipe=CreateNamedPipeA(name,PIPE_ACCESS_DUPLEX,PIPE_TYPE_BYTE|PIPE_READMODE_BYTE|PIPE_WAIT|PIPE_REJECT_REMOTE_CLIENTS,
+    snprintf(name,sizeof(name),"\\\\.\\pipe\\OpenXML1DX8-%lu-%s",GetCurrentProcessId(),suffix);
+    *channel=CreateNamedPipeA(name,PIPE_ACCESS_DUPLEX,PIPE_TYPE_BYTE|PIPE_READMODE_BYTE|PIPE_WAIT|PIPE_REJECT_REMOTE_CLIENTS,
         1,1024*1024,4096,10000,NULL);
-    if (pipe==INVALID_HANDLE_VALUE) fatal("CreateNamedPipe failed");
-    worker_job=CreateJobObjectW(NULL,NULL);
+    if (*channel==INVALID_HANDLE_VALUE) fatal("CreateNamedPipe failed");
+    *job=CreateJobObjectW(NULL,NULL);
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit={0};
     limit.BasicLimitInformation.LimitFlags=JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-    if (!worker_job||!SetInformationJobObject(worker_job,JobObjectExtendedLimitInformation,&limit,sizeof(limit)))
+    if (!*job||!SetInformationJobObject(*job,JobObjectExtendedLimitInformation,&limit,sizeof(limit)))
         fatal("cannot bind graphics worker lifetime");
     STARTUPINFOA start={0}; PROCESS_INFORMATION process={0}; start.cb=sizeof(start);
-    snprintf(command,sizeof(command),"build\\renderer\\Release\\xml1-dx8-worker.exe --stream %s",name);
+    snprintf(command,sizeof(command),"build\\renderer\\Release\\xml1-dx8-worker.exe %s %s",mode,name);
     if (!CreateProcessA(NULL,command,NULL,NULL,FALSE,CREATE_NO_WINDOW|CREATE_SUSPENDED,NULL,NULL,&start,&process))
         fatal("cannot launch native DX8 worker");
-    if (!AssignProcessToJobObject(worker_job,process.hProcess)) {
+    if (!AssignProcessToJobObject(*job,process.hProcess)) {
         TerminateProcess(process.hProcess,4); fatal("cannot contain graphics worker lifetime");
     }
     ResumeThread(process.hThread); CloseHandle(process.hThread); CloseHandle(process.hProcess);
-    if (!ConnectNamedPipe(pipe,NULL)&&GetLastError()!=ERROR_PIPE_CONNECTED) fatal("graphics worker connection failed");
-    fprintf(stderr,"[DX8 LIVE] connected persistent native DX8 worker\n");
+    if (!ConnectNamedPipe(*channel,NULL)&&GetLastError()!=ERROR_PIPE_CONNECTED) fatal("graphics worker connection failed");
+    fprintf(stderr,"[DX8 LIVE] connected native DX8 %s worker\n",suffix);
 }
+static void connect_worker(void) { connect_worker_channel(&pipe,&worker_job,"graphics","--stream"); }
+
 void xml1_graphics_live_observe(uint32_t va) {
     if (!live()||va<0x35ADA0||va>=0x36F300) return;
     const uint32_t *a=guest(g_esp+4,32);
@@ -112,7 +114,7 @@ void xml1_graphics_live_observe(uint32_t va) {
         static unsigned logged;
         if (logged++<8) {
             uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
-            const uint32_t *d=guest(device,0x40);
+            const uint32_t *d=guest(device,0x938);
             fprintf(stderr,"[DX8 FENCE] target=%08X flags=%08X latest=%08X completion_ptr=%08X completion=%08X frames=%u pending_draws=%u caller=%08X\n",
                 a[0],a[1],d[0x2c/4],d[0x30/4],*(uint32_t*)guest(d[0x30/4],4),frames,draws,*(uint32_t*)guest(g_esp,4));
         }
@@ -249,7 +251,7 @@ static void flush_completed_work(void) {
     lock_transport("flush");
     QueryPerformanceCounter(&locked);
     uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
-    uint32_t *d=guest(device,0x40);
+    uint32_t *d=guest(device,0x938);
     if (g_ecx!=device) fatal("unexpected push-buffer flush device");
     uint32_t fence=d[0x2c/4]-2;
     send_bytes("XMLDX8F6",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
@@ -261,19 +263,34 @@ static void flush_completed_work(void) {
     draws=0; used=0;
     /* InsertFence records this counter before incrementing by two. Signal only
      * after all preceding native submissions have completed; no Present here. */
+    /* The XDK also compares this completed fence with PGRAPH PATT_COLOR0's
+     * low fence tag (0035FB70). Publish both only after native completion. */
+    if(d[0x934/4]!=0xFD000000u) fatal("unexpected graphics register aperture");
+    volatile uint32_t *tag=(volatile uint32_t *)((uintptr_t)g_xbox_mem_offset+0xFD400B10u);
+    *tag=(*tag&~0x7Cu)|((fence<<2)&0x7Cu);
     *(uint32_t*)guest(d[0x30/4],4)=fence;
     static unsigned logged;
     if (logged++<8) fprintf(stderr,"[DX8 FENCE] native completion=%08X sequence=%u\n",fence,sequence);
     xml1_fair_leave(&transport_lock);
 }
 void xml1_graphics_wait_vblank(void) {
+    static HANDLE channel=INVALID_HANDLE_VALUE,job;
+    static xml1_fair_gate gate;
+    static DWORD sequence;
     if(!live()) fatal("Vertical blank wait requires native DX8");
-    lock_transport("vblank");
-    if(pipe==INVALID_HANDLE_VALUE) connect_worker();
-    send_bytes("XMLDX8V1",8); receive_ack();
-    xml1_fair_leave(&transport_lock);
+    /* Adapter raster observation must not hold the draw/fence transport while
+     * waiting for the next scanout. Its own DX8 device observes the same adapter. */
+    xml1_fair_enter(&gate);
+    if(channel==INVALID_HANDLE_VALUE) connect_worker_channel(&channel,&job,"vblank","--vblank-stream");
+    DWORD bytes=0,ack=0;
+    if(!WriteFile(channel,"XMLDX8V1",8,&bytes,NULL)||bytes!=8 ||
+       !ReadFile(channel,&ack,4,&bytes,NULL)||bytes!=4||ack!=sequence+1)
+        fatal("native vertical blank acknowledgement failed");
+    ++sequence;
+    xml1_fair_leave(&gate);
     g_eax=0; g_esp+=4;
 }
+
 static void ordered_clear(const uint32_t *a) {
     lock_transport("clear");
     if((a[2]&~0xF3u)||((a[2]&0xF0)!=0&&(a[2]&0xF0)!=0xF0)||a[0]>4096)
@@ -297,7 +314,7 @@ void xml1_graphics_swap(void) {
     if (flags) fatal("unimplemented swap flags");
     if (frames<8) {
         uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
-        const uint32_t *d=guest(device,0x40);
+        const uint32_t *d=guest(device,0x938);
         fprintf(stderr,"[DX8 SUBMIT] frame=%u latest_fence=%08X completed=%08X draws=%u\n",
             frames+1,d[0x2c/4],*(uint32_t*)guest(d[0x30/4],4),draws);
     }

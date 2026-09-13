@@ -16,10 +16,41 @@ static uint32_t test_connected;
 static XBOX_INPUT_STATE test_states[4];
 static uint32_t test_press_frame;
 static uint32_t test_move_frame;
+static char test_input_path[1024];
+static uint32_t test_input_id;
+static ULONGLONG test_release_tick;
+static void test_file_input(uint32_t frame) {
+    if(!test_input_path[0]) return;
+    if(test_release_tick && GetTickCount64()>=test_release_tick) {
+        XBOX_GAMEPAD state={0}; xml1_input_test_state(0,1,&state);
+        test_release_tick=0;
+        fprintf(stderr,"[INPUT FILE] frame=%u released\n",frame);
+    }
+    FILE *file=fopen(test_input_path,"rb");
+    if(!file) return;
+    char line[128]={0},action[32],extra; unsigned id;
+    int read=fgets(line,sizeof(line),file)!=NULL; fclose(file);
+    /* A writer may be replacing the file. Apply complete lines only. */
+    if(!read || !strchr(line,'\n')) return;
+    if(sscanf(line,"%u %31s %c",&id,action,&extra)!=2) {
+        fprintf(stderr,"[FATAL INPUT] malformed test command\n"); _exit(4);
+    }
+    if(id<=test_input_id) return;
+    XBOX_GAMEPAD state={0}; unsigned duration=300;
+    if(!strcmp(action,"a")) state.bAnalogButtons[XBOX_BUTTON_A]=255;
+    else if(!strcmp(action,"start")) state.wButtons=XBOX_GAMEPAD_START;
+    else if(!strcmp(action,"right")) {state.sThumbLX=32767;duration=1000;}
+    else if(!strcmp(action,"neutral")) duration=0;
+    else {fprintf(stderr,"[FATAL INPUT] unsupported test command %s\n",action);_exit(4);}
+    test_input_id=id; test_release_tick=duration?GetTickCount64()+duration:0;
+    xml1_input_test_state(0,1,&state);
+    fprintf(stderr,"[INPUT FILE] id=%u frame=%u action=%s duration_ms=%u (process-local only)\n",id,frame,action,duration);
+}
 
 void xml1_input_test_frame(uint32_t frame)
 {
     if(!test_mode) return;
+    test_file_input(frame);
     if(test_press_frame && (frame==test_press_frame || frame==test_press_frame+12)) {
         XBOX_GAMEPAD state={0};
         state.bAnalogButtons[XBOX_BUTTON_A]=frame==test_press_frame?255:0;
@@ -52,6 +83,13 @@ static DWORD poll(unsigned port, XBOX_INPUT_STATE *state)
     if (test_mode) {
         if (!(test_connected & (1u << port))) return DISCONNECTED;
         *state = test_states[port];
+        static uint32_t logged_packet[4];
+        if(logged_packet[port]!=state->dwPacketNumber) {
+            fprintf(stderr,"[INPUT POLL] port=%u packet=%u A=%u buttons=%04X leftX=%d\n",port,
+                state->dwPacketNumber,state->Gamepad.bAnalogButtons[XBOX_BUTTON_A],
+                state->Gamepad.wButtons,state->Gamepad.sThumbLX);
+            logged_packet[port]=state->dwPacketNumber;
+        }
         return 0;
     }
     return xbox_InputGetState(port, state);
@@ -85,6 +123,12 @@ void xml1_XInitDevices(void)
 {
     const char *mode = getenv("XML1_TEST_PAD");
     test_mode = mode && strcmp(mode, "1") == 0;
+    test_input_path[0]=0; test_input_id=0; test_release_tick=0;
+    const char *input_file=getenv("XML1_TEST_INPUT_FILE");
+    if(test_mode && input_file && *input_file) {
+        if(strlen(input_file)>=sizeof(test_input_path)) {fprintf(stderr,"[FATAL INPUT] test command path too long\n");_exit(4);}
+        strcpy(test_input_path,input_file);
+    }
     const char *press=getenv("XML1_TEST_A_FRAME");
     test_press_frame=0;
     if(test_mode && press && *press) {

@@ -73,3 +73,10 @@ boot128 now reaches the main menu with its background visible after correcting
 guest-visible IRQL/DPC level and accepting valid physical0 audio buffers.
 Native menu frame1560 is saved as new evidence. Level1 on this build, sustained
 playability and graphics/audio correctness remain required work.
+
+
+Native raster waits no longer block rendering; boot130 reaches660 frames/30s.
+The missing GPU fence tag is now published after native completion; boot134
+runs300s through menu/attract video without its earlier fence stall. Directed,
+elapsed-time process-local input is ready for the next level1 test. Audio
+reference mismatch remains visible before DSP processing; goal remains active.

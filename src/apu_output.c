@@ -22,6 +22,22 @@ void xml1_apu_trace_frame(unsigned gp,unsigned ep,const float *mix,unsigned coun
     unsigned nonzero=0;
     for(unsigned i=0;i<count;++i) nonzero+=mix[i]!=0;
     ++frames;
+    static int capture_mix=-1;
+    static FILE *mix_file;
+    if(capture_mix<0) {
+        capture_mix=getenv("XML1_CAPTURE_APU_MIX")!=NULL;
+        if(capture_mix) {
+            mix_file=fopen("build/apu-premix-stereo.f32","wb");
+            if(!mix_file) { fprintf(stderr,"[FATAL APU MIX] capture open failed\n"); _exit(4); }
+        }
+    }
+    if(capture_mix) {
+        if(count!=32*32) { fprintf(stderr,"[FATAL APU MIX] unexpected mix dimensions\n"); _exit(4); }
+        float stereo[32][2];
+        for(unsigned i=0;i<32;++i) { stereo[i][0]=mix[i]; stereo[i][1]=mix[32+i]; }
+        if(fwrite(stereo,sizeof(stereo),1,mix_file)!=1) { fprintf(stderr,"[FATAL APU MIX] capture write failed\n"); _exit(4); }
+        fflush(mix_file);
+    }
     if(frames<=4||frames%4096==0||(nonzero&&!reported_nonzero)) {
         fprintf(stderr,"[APU DSP INPUT] frame=%u gp_reset=%08X ep_reset=%08X nonzero_mix_samples=%u\n",frames,gp,ep,nonzero);
         reported_nonzero|=nonzero!=0;

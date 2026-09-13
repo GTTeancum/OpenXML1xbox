@@ -80,13 +80,7 @@ static void complete_rendering(IDirect3DDevice8* device) {
     if (SUCCEEDED(hr)) hr=surface->UnlockRect();
     surface->Release(); checked(hr);
 }
-static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capture, bool live=false) {
-    auto read = [&](void* dst, size_t bytes) {
-        if (std::fread(dst,1,bytes,file) != bytes) throw std::runtime_error("Truncated replay");
-    };
-    char magic[8]; read(magic,8);
-    static bool frame_open=false;
-    if(!std::memcmp(magic,"XMLDX8V1",8)) {
+static void wait_native_vblank(IDirect3DDevice8* device) {
         D3DRASTER_STATUS raster={};
         ULONGLONG started=GetTickCount64();
         bool active=false;
@@ -99,6 +93,15 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         }
         static unsigned waits;
         if(++waits<=3) std::printf("Native DX8 vertical blank observed (%llu ms)\n",GetTickCount64()-started);
+}
+static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capture, bool live=false) {
+    auto read = [&](void* dst, size_t bytes) {
+        if (std::fread(dst,1,bytes,file) != bytes) throw std::runtime_error("Truncated replay");
+    };
+    char magic[8]; read(magic,8);
+    static bool frame_open=false;
+    if(!std::memcmp(magic,"XMLDX8V1",8)) {
+        wait_native_vblank(device);
         return false;
     }
     if(!std::memcmp(magic,"XMLDX8C4",8)) {

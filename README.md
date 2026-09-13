@@ -81,3 +81,11 @@ including calling conventions, into ignored `analysis/` metadata.
 
 See `docs/SETUP.md` for setup provenance and validation. No game code or assets
 are included. Upstream retains its own licenses and notices.
+
+
+For directed process-local input, set XML1_TEST_INPUT_FILE to an absolute text
+file path before launching with -TestPad. Start with `0 neutral` followed by a
+newline. While the game runs, replace the line with a larger ID and one command,
+for example `1 start`, `2 a`, `3 right`, or `4 neutral`. Each ID applies once.
+A/Start hold300ms and movement holds1000ms before automatic release. The file
+harness changes only the targeted game's controller state, never host input.

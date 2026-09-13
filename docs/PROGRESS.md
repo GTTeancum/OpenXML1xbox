@@ -835,3 +835,42 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   with its background visible (native frame1560). This is new visual evidence
   compared with the previous menu over black; saved as the main-menu-background
   deliverable. Current level1 still requires a process-local Begin Story run.
+
+
+## Separate native raster waits, fence tag and directed test input (boot129–134)
+
+- boot129's frame1800 A press opens story cinematic r102, with subtitles and
+  native movie imagery; the240-second run ends before level1. A decoded i102
+  audio reference and captured DSP output have weak waveform alignment. New
+  exploratory compare-movie-audio.py reports energy/waveform correlations and
+  excludes silent windows; self-comparison validates the non-silent windows.
+  These metrics are not a complete audio-fidelity check.
+- Native vertical blank observation now has an independent pipe and hidden
+  system-D3D8 device on the same default adapter. It still waits for a measured
+  active-to-blank transition, but no longer holds the rendering/fence transport.
+  It accepts only the native V1 command and uses a separate lifetime-bound job.
+  Renderer pixel/format/material/geometry/mip/vblank regressions pass.
+- boot130 reaches frame660 in30 seconds versus420 before. The first measured
+  movie flush drops from24.78ms to0.064ms. Converter time remains about7ms;
+  movie playback and audio still need work.
+- Faster timing made boot131's predetermined A press occur before the menu.
+  That run was deliberately terminated after it reached an idle menu; exit-1
+  is intentional, not a crash. A new opt-in XML1_TEST_INPUT_FILE harness reads
+  monotonically increasing IDs with a/start/right/neutral commands. It never
+  sends host input. Complete lines apply once, buttons release after300ms and
+  rightward movement uses leftX for1000ms. Existing fixed-frame
+  controls remain. Unit tests verify complete-line handling, one-shot behavior,
+  elapsed-time release, packet state and zero host input/output calls.
+- boot132 captures stereo mixbins0/1 before DSP processing. Their waveform also
+  mismatches the decoded movie reference, placing at least part of the remaining
+  sound discrepancy before the DSP. This does not identify the exact cause.
+- boot132 stalls in original D3D helper0035FB50. Its0035FB70 loop compares the
+  completed fence to bits0x7C of NV_PGRAPH_PATT_COLOR0 (FD400B10). The bridge had
+  updated only the memory counter. Both tag and counter are now published after
+  the same real native completion; unrelated register bits are preserved.
+  boot133 first rejected the MMIO address through the RAM-only resource guard;
+  the implementation now accesses the explicitly validated mapped aperture.
+- boot134 completes300 seconds at captured frame7440 without that fence stall,
+  traversing menu and attract video. A later short file-driven A press did not
+  enter the story; elapsed-time holds and packet-poll logs are in the next build
+  to distinguish missed input from scene timing. Current level1 is not verified.

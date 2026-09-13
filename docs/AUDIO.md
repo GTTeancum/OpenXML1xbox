@@ -248,3 +248,12 @@ the assertion. Patch19 accepts valid physical0; actual stream-reader regressions
 verify both16-bit PCM and known stereo ADPCM at that address. Patch18 separately
 publishes IRQL to guest fs:[0x24] and runs DPCs at dispatch level. boot128 reaches
 the main menu with both fixes. Full audio fidelity and level1 remain unverified.
+
+
+Audio comparison remains weak even with independent native vblank observation.
+XML1_CAPTURE_APU_MIX optionally records48-kHz stereo mixbins0/1 immediately before
+DSP processing as build/apu-premix-stereo.f32. Their mismatch with the decoded
+movie reference shows the final DSP/output stage is not the sole investigation.
+scripts/compare-movie-audio.py accepts s16 PCM or --native-format f32 captures;
+its exploratory normalized correlations exclude quiet windows and do not certify
+perceptual quality, channel routing or full-band frequency response.

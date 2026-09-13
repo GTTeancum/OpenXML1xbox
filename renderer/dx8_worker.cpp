@@ -15,10 +15,11 @@ typedef BOOL WINBOOL;
 // Xbox-to-PC graphics bridge. This probe does not run or render game code.
 int main(int argc, char** argv) {
     const bool replayMode = argc == 4 && std::strcmp(argv[1], "--replay") == 0;
-    const bool liveMode = argc == 3 && std::strcmp(argv[1], "--stream") == 0;
+    const bool vblankMode = argc == 3 && std::strcmp(argv[1], "--vblank-stream") == 0;
+    const bool liveMode = vblankMode || (argc == 3 && std::strcmp(argv[1], "--stream") == 0);
     if (liveMode) {
-        std::freopen("build/dx8-live.log","wb",stdout);
-        std::freopen("build/dx8-live-errors.log","wb",stderr);
+        std::freopen(vblankMode?"build/dx8-vblank.log":"build/dx8-live.log","wb",stdout);
+        std::freopen(vblankMode?"build/dx8-vblank-errors.log":"build/dx8-live-errors.log","wb",stderr);
         std::setvbuf(stdout,nullptr,_IONBF,0);
     }
     if (!replayMode && !liveMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
@@ -87,6 +88,15 @@ int main(int argc, char** argv) {
                 char capture[128];
                 std::snprintf(capture,sizeof(capture),"build/dx8-live-frame-%06u.bmp",frame);
                 ULONGLONG command_start=GetTickCount64();
+                if(vblankMode) {
+                    char magic[8];
+                    if(std::fread(magic,1,8,input)!=8 || std::memcmp(magic,"XMLDX8V1",8))
+                        throw std::runtime_error("Invalid vertical blank command");
+                    wait_native_vblank(device);
+                    DWORD ack=sequence,written=0;
+                    if(!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
+                    continue;
+                }
                 bool presented=replay_stream(device,input,(std::getenv("XML1_DX8_CAPTURE_ALL")||frame<=8||frame%60==0)?capture:nullptr,true);
                 ULONGLONG command_ms=GetTickCount64()-command_start;
                 if(command_ms>=50) std::printf("[DX8 COMMAND] seq=%u frame=%u presented=%u ms=%llu\n",sequence,frame,presented,command_ms);

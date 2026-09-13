@@ -29,6 +29,9 @@ static uint32_t call(uint32_t va, unsigned n, const uint32_t *args) {
     return g_eax;
 }
 int main(void) {
+    char command_path[MAX_PATH];
+    REQUIRE(GetTempFileNameA(".","xml",0,command_path)!=0);
+    _putenv_s("XML1_TEST_INPUT_FILE",command_path);
     _putenv_s("XML1_TEST_PAD", "1");
     _putenv_s("XML1_TEST_A_FRAME", "600");
     _putenv_s("XML1_TEST_MOVE_FRAME", "750");
@@ -66,6 +69,24 @@ int main(void) {
     xml1_input_test_frame(810);
     REQUIRE(call(0x3C0398, 2, args) == 0);
     REQUIRE(*(int16_t *)(memory+0x600012) == 0);
+    FILE *command=fopen(command_path,"wb"); REQUIRE(command); fputs("1 a",command); fclose(command);
+    xml1_input_test_frame(1000); REQUIRE(call(0x3C0398,2,args)==0 && memory[0x60000A]==0);
+    command=fopen(command_path,"wb"); REQUIRE(command); fputs("1 a\n",command); fclose(command);
+    xml1_input_test_frame(1001); REQUIRE(call(0x3C0398,2,args)==0 && memory[0x60000A]==255);
+    xml1_input_test_frame(1013); REQUIRE(call(0x3C0398,2,args)==0 && memory[0x60000A]==255);
+    Sleep(350);
+    xml1_input_test_frame(1013); REQUIRE(call(0x3C0398,2,args)==0 && memory[0x60000A]==0);
+    xml1_input_test_frame(1014); REQUIRE(call(0x3C0398,2,args)==0 && memory[0x60000A]==0);
+    command=fopen(command_path,"wb"); REQUIRE(command); fputs("2 start\n",command); fclose(command);
+    xml1_input_test_frame(1020); REQUIRE(call(0x3C0398,2,args)==0 && *(uint16_t *)(memory+0x600008)==XBOX_GAMEPAD_START);
+    Sleep(350);
+    xml1_input_test_frame(1032); REQUIRE(call(0x3C0398,2,args)==0 && *(uint16_t *)(memory+0x600008)==0);
+    command=fopen(command_path,"wb"); REQUIRE(command); fputs("3 right\n",command); fclose(command);
+    xml1_input_test_frame(1040); REQUIRE(call(0x3C0398,2,args)==0 && *(int16_t *)(memory+0x600012)==32767);
+    command=fopen(command_path,"wb"); REQUIRE(command); fputs("4 neutral\n",command); fclose(command);
+    xml1_input_test_frame(1041); REQUIRE(call(0x3C0398,2,args)==0 && *(int16_t *)(memory+0x600012)==0);
+    REQUIRE(DeleteFileA(command_path));
+    puts("PASS: file commands wait for complete lines, apply once, release buttons and stay process-local");
     memset(memory + 0x600100, 0, 70);
     *(uint32_t *)(memory + 0x600104) = 123;
     *(uint32_t *)(memory + 0x3C6C90) = 0xFE1234;
