@@ -2,11 +2,21 @@
 #include <cstdint>
 #include <vector>
 #include <stdexcept>
+#include "../src/dx8_packet.h"
 
 static void checked(HRESULT hr) {
     if (FAILED(hr)) {
         std::fprintf(stderr, "D3D8 replay HRESULT %08lx\n", (unsigned long)hr);
         throw std::runtime_error("D3D8 call failed");
+    }
+}
+static D3DFORMAT replay_format(uint32_t format) {
+    switch(format) {
+        case 0:return D3DFMT_L8;
+        case 6:return D3DFMT_A8R8G8B8;
+        case 14:return D3DFMT_DXT3;
+        case 25:return D3DFMT_A8;
+        default:throw std::runtime_error("Unsupported texture format");
     }
 }
 static DWORD blend(DWORD v) {
@@ -58,13 +68,29 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         if (std::fread(dst,1,bytes,file) != bytes) throw std::runtime_error("Truncated replay");
     };
     char magic[8]; read(magic,8);
-    const bool version2=magic[7]=='2';
+    static bool frame_open=false;
+    if(!std::memcmp(magic,"XMLDX8C4",8)) {
+        uint32_t clear[5]; read(clear,sizeof(clear));
+        if((clear[0]&~0xF3u)||((clear[0]&0xF0)!=0&&(clear[0]&0xF0)!=0xF0)||clear[4]>4096)
+            throw std::runtime_error("Unsupported clear command");
+        std::vector<D3DRECT> rects(clear[4]);
+        if(clear[4]) read(rects.data(),rects.size()*sizeof(D3DRECT));
+        if(!frame_open) checked(device->Clear(0,nullptr,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL,0,1.0f,0));
+        frame_open=true;
+        DWORD flags=((clear[0]&0xF0)?D3DCLEAR_TARGET:0)|((clear[0]&1)?D3DCLEAR_ZBUFFER:0)|((clear[0]&2)?D3DCLEAR_STENCIL:0);
+        float depth; std::memcpy(&depth,&clear[2],4);
+        checked(device->Clear(clear[4],clear[4]?rects.data():nullptr,flags,clear[1],depth,clear[3]));
+        complete_rendering(device);
+        return false;
+    }
+    const bool version4=magic[7]=='4';
+    const bool version3=magic[7]=='3'||version4;
+    const bool version2=magic[7]=='2'||version3;
     const bool flush=!std::memcmp(magic,"XMLDX8F",7);
     if ((!flush && std::memcmp(magic,"XMLDX8R",7)) || (!version2 && magic[7]!='1')) throw std::runtime_error("Invalid replay version");
     uint32_t count; read(&count,4);
     if (flush && !count) { complete_rendering(device); return false; }
     if ((!live && !count) || count>10000) throw std::runtime_error("Invalid draw count");
-    static bool frame_open=false;
     if (!frame_open) checked(device->Clear(0,nullptr,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL,0,1.0f,0));
     frame_open=true;
     checked(device->BeginScene());
@@ -73,19 +99,40 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         D3DVIEWPORT8 viewport; D3DMATRIX matrices[3];
         read(header,version2?sizeof(header):12); read(&viewport,sizeof(viewport));
         read(matrices,sizeof(matrices)); read(rs,sizeof(rs)); read(ts,sizeof(ts));
+        D3DMATERIAL8 material={}; uint32_t light_mask=0; D3DLIGHT8 lights[32]={};
+        if(version3) {
+            static_assert(sizeof(material)==68 && sizeof(D3DLIGHT8)==104,"DX8 lighting wire layout");
+            read(&material,sizeof(material)); read(&light_mask,4);
+            for(unsigned i=0;i<32;++i) if(light_mask&(1u<<i)) read(&lights[i],sizeof(D3DLIGHT8));
+        }
+        uint32_t second_header[3]={}; D3DMATRIX texture_matrices[2]={};
+        if(version4) { read(second_header,sizeof(second_header)); read(texture_matrices,sizeof(texture_matrices)); }
         auto width=header[0],height=header[1],vertices=header[2];
         if (!width||!height||width>4096||height>4096||vertices<3||vertices>1000000)
             throw std::runtime_error("Invalid replay geometry");
-        if ((header[3]!=14&&header[3]!=6)||(header[4]!=0x142&&header[4]!=0x102))
+        if ((header[3]!=14&&header[3]!=6&&header[3]!=0&&header[3]!=25)||!xml1_fvf_stride(header[4]))
             throw std::runtime_error("Unsupported replay format");
-        const unsigned stride=header[4]==0x142?24:20;
-        const unsigned rows=header[3]==6?height:(height+3)/4;
-        const unsigned rowBytes=header[3]==6?width*4:((width+3)/4)*16;
+        const unsigned stride=xml1_fvf_stride(header[4]);
+        const unsigned rows=header[3]!=14?height:(height+3)/4;
+        const unsigned rowBytes=header[3]!=14?width*(header[3]==6?4:1):((width+3)/4)*16;
         size_t texBytes=(size_t)rows*rowBytes;
         std::vector<unsigned char> tex(texBytes), vb(vertices*stride);
-        read(tex.data(),tex.size()); read(vb.data(),vb.size());
+        read(tex.data(),tex.size());
+        IDirect3DTexture8* second_texture=nullptr;
+        if(second_header[0]) {
+            unsigned w=second_header[0],h=second_header[1],fmt=second_header[2];
+            if(w>4096||!h||h>4096||(fmt!=6&&fmt!=14&&fmt!=0&&fmt!=25)) throw std::runtime_error("Invalid second texture");
+            unsigned second_rows=fmt!=14?h:(h+3)/4,second_row_bytes=fmt!=14?w*(fmt==6?4:1):((w+3)/4)*16;
+            std::vector<unsigned char> second_pixels((size_t)second_rows*second_row_bytes);
+            read(second_pixels.data(),second_pixels.size());
+            checked(device->CreateTexture(w,h,1,0,replay_format(fmt),D3DPOOL_MANAGED,&second_texture));
+            D3DLOCKED_RECT second_lock={};checked(second_texture->LockRect(0,&second_lock,nullptr,0));
+            for(unsigned y=0;y<second_rows;++y) std::memcpy((char*)second_lock.pBits+y*second_lock.Pitch,second_pixels.data()+y*second_row_bytes,second_row_bytes);
+            checked(second_texture->UnlockRect(0));
+        }
+        read(vb.data(),vb.size());
         IDirect3DTexture8* texture=nullptr;
-        checked(device->CreateTexture(width,height,1,0,header[3]==6?D3DFMT_A8R8G8B8:D3DFMT_DXT3,D3DPOOL_MANAGED,&texture));
+        checked(device->CreateTexture(width,height,1,0,replay_format(header[3]),D3DPOOL_MANAGED,&texture));
         D3DLOCKED_RECT lock={}; checked(texture->LockRect(0,&lock,nullptr,0));
         for (unsigned y=0;y<rows;++y)
             std::memcpy((char*)lock.pBits+y*lock.Pitch,tex.data()+y*rowBytes,rowBytes);
@@ -94,9 +141,22 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         checked(device->SetTransform(D3DTS_WORLD,&matrices[0]));
         checked(device->SetTransform(D3DTS_VIEW,&matrices[1]));
         checked(device->SetTransform(D3DTS_PROJECTION,&matrices[2]));
+        if(version4) for(unsigned i=0;i<2;++i) checked(device->SetTransform((D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0+i),&texture_matrices[i]));
         checked(device->SetVertexShader(header[4])); checked(device->SetPixelShader(0));
         auto state=[&](D3DRENDERSTATETYPE type,DWORD value){ checked(device->SetRenderState(type,value)); };
         state(D3DRS_LIGHTING,rs[102]); state(D3DRS_SPECULARENABLE,rs[103]);
+        if(version3) {
+            if(rs[137]||rs[141]) throw std::runtime_error("Unsupported vertex blend or two-sided lighting");
+            checked(device->SetMaterial(&material));
+            for(unsigned i=0;i<32;++i) {
+                if(light_mask&(1u<<i)) checked(device->SetLight(i,&lights[i]));
+                checked(device->LightEnable(i,(light_mask&(1u<<i))!=0));
+            }
+            state(D3DRS_LOCALVIEWER,rs[104]); state(D3DRS_COLORVERTEX,rs[105]);
+            state(D3DRS_SPECULARMATERIALSOURCE,rs[110]); state(D3DRS_DIFFUSEMATERIALSOURCE,rs[111]);
+            state(D3DRS_AMBIENTMATERIALSOURCE,rs[112]); state(D3DRS_EMISSIVEMATERIALSOURCE,rs[113]);
+            state(D3DRS_AMBIENT,rs[115]); state(D3DRS_NORMALIZENORMALS,rs[142]);
+        }
         state(D3DRS_FOGENABLE,rs[92]); state(D3DRS_ZENABLE,rs[143]);
         state(D3DRS_ZWRITEENABLE,rs[64]); state(D3DRS_ZFUNC,rs[57]-0x200+1);
         state(D3DRS_ALPHABLENDENABLE,rs[59]); state(D3DRS_ALPHATESTENABLE,rs[60]);
@@ -107,6 +167,7 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         state(D3DRS_CULLMODE,D3DCULL_NONE); state(D3DRS_STENCILENABLE,FALSE);
         state(D3DRS_BLENDOP,D3DBLENDOP_ADD);
         state(D3DRS_COLORWRITEENABLE, ((rs[67]&0x10000)?1:0)|((rs[67]&0x100)?2:0)|((rs[67]&1)?4:0)|((rs[67]&0x1000000)?8:0));
+        if(version4) state(D3DRS_TEXTUREFACTOR,rs[148]);
         const D3DTEXTURESTAGESTATETYPE mapping[22]={D3DTSS_ADDRESSU,D3DTSS_ADDRESSV,D3DTSS_ADDRESSW,
             D3DTSS_MAGFILTER,D3DTSS_MINFILTER,D3DTSS_MIPFILTER,D3DTSS_MIPMAPLODBIAS,
             D3DTSS_MAXMIPLEVEL,D3DTSS_MAXANISOTROPY,(D3DTEXTURESTAGESTATETYPE)0,
@@ -118,10 +179,11 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
             for (unsigned t=0;t<22;++t) if (mapping[t])
                 checked(device->SetTextureStageState(stage,mapping[t],ts[stage*32+t]));
             checked(device->SetTextureStageState(stage,D3DTSS_TEXCOORDINDEX,ts[stage*32+28]));
-            checked(device->SetTexture(stage,stage?nullptr:texture));
+            checked(device->SetTexture(stage,stage==0?texture:stage==1?second_texture:nullptr));
         }
         checked(device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,vertices-2,vb.data(),stride));
         texture->Release();
+        if(second_texture) second_texture->Release();
         if (!live) std::printf("Replayed game draw %u: %u vertices, %ux%u format %u\n",n+1,vertices,width,height,header[3]);
     }
     checked(device->EndScene());

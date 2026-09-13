@@ -435,3 +435,25 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   as new content. No claim of complete menu, FMV fidelity, audio or playable level1.
 - Next: implement the observed second texture stage with native DX8, while
   retaining the movie timing/lifetime defects as required work, not skipping FMVs.
+
+## Native menu geometry and fixed-function rendering (boot058–071)
+
+- Added indexed triangle strips using original stream/base/index data; normals,
+  materials and directional lights; L8/A8 texture formats; a second texture
+  stage with generated normal coordinates and original texture matrices.
+  Shared FVF stride handling covers the observed 12/102/112/142/152 layouts.
+- Version4 replay packets carry the additional state. Ordered Clear commands
+  flush preceding geometry before applying native DX8 depth/stencil/color clears.
+  Partial color-channel clears remain explicitly unsupported.
+- Native regression: splash pixels match across whole/split batches and wire
+  versions1–4, including a depth-only clear between batches. Known ARGB colors,
+  enabled/disabled directional light and red material, and second-stage texel
+  selection through transformed normal coordinates all pass (dx8-v4-test.log).
+- boot069 first renders the metallic menu logo; capture407 copied unchanged to
+  outputs/xml1-dx8-menu-logo.bmp and posted once. boot071 runs25 seconds through
+  frame780, rendering menu background geometry, then ends at diagnostic bound3.
+  Background shading is not yet validated. No level1/playability claim.
+- Texture mip chains currently transmit only the base level and remain required
+  fidelity work. boot061 also ended with an AV after prolonged partial-menu
+  rendering; this has not been established resolved. Movie timing/lifetime and
+  audio correctness remain open. Next: process-local Begin Story input harness.

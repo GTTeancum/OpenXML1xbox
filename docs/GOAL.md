@@ -22,9 +22,11 @@ do not expose a pause operation; report the deadline stop accurately rather than
 marking an unfinished goal complete.
 
 Current milestone: live native Windows DX8 legal splash and a partial main menu
-have been captured. Seed12 recovers00184FD0; the next stop is an unsupported
-second texture stage. Menu background, interaction and full rendering remain
-unverified. The movie converter's INC/DEC carry bug is fixed and now writes all
+have been captured. Indexed geometry, materials/lights, a second texture stage,
+normal-based texture coordinates and ordered native depth clears now render the
+menu logo and 3D background. Interaction and full visual correctness remain
+unverified; mipmap chains still need implementation. The movie converter's
+INC/DEC carry bug is fixed and now writes all
 480 rows, but the intros advance too quickly and stream lifetime is unstable.
 Only very dark early-fade FMV captures are verified; no recognizable FMV artwork
 has been posted. Audio fidelity and playable level1 remain unverified.
