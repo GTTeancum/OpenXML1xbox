@@ -1,0 +1,3 @@
+[submodule "external/xboxrecomp"]
+	path = external/xboxrecomp
+	url = https://github.com/sp00nznet/xboxrecomp.git
