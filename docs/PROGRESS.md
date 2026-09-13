@@ -1016,3 +1016,30 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Temporary bridge and Rust experiments were restored. The optional no-inline
   patch is saved for reproduction. See DSP-COMPARISON.md for limitations.
   No new visual milestone; level completion and full fidelity remain open.
+
+## Raised-IRQL exclusion (boot158-160)
+
+- boot158 stalls after Start at frame1099 during an opening movie. Native
+  thread snapshots show the main thread waiting in DirectSound critical-section
+  entry while its worker repeatedly moves linked-list nodes in 00372F9A via
+  00372AA8. Audio device processing continues. No desktop input/capture was used.
+- The kernel previously published IRQL but did not exclude concurrent raised
+  regions. Added a shared gate on transitions from below DISPATCH_LEVEL to
+  DISPATCH_LEVEL or higher, retained through nested raises, released on lowering
+  below DISPATCH_LEVEL. Guest KPCR publication and return levels remain intact.
+- A four-thread regression fails with exit4 before the change (a contender
+  enters while its owner is raised), then passes with the change. It checks
+  nested 2/5/2 transitions, restoration to APC/passive levels, and4000 protected
+  counter updates with forced scheduling opportunities. Device IRQ/DPC and
+  thread-local dispatch tests pass; default/optimized builds pass.
+- boot159 completes300-second bound3 through movie skips, level1 movement,
+  attacks, powers, healing and defeat. The first encounter remains uncleared.
+  boot160 retries Start at frame1082, close to the earlier failure, and continues
+  rendering into the menu. This is regression evidence, not proof every race is
+  eliminated. The22-patch stack validates in reverse order.
+- Limitation: this conservative gate serializes raised regions; it does not
+  implement full single-CPU scheduling or higher-priority ISR preemption of a
+  raised guest thread. A path waiting for such an ISR while holding the gate
+  needs a fuller scheduler rather than a forced completion or skipped wait.
+  No new screenshots or claim of overall graphics/audio correctness.
+- boot160 subsequently completes90-second bound3 without a fatal guard.

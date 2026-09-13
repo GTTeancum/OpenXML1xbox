@@ -1,0 +1,64 @@
+--- a/src/kernel/kernel_hal.c
++++ b/src/kernel/kernel_hal.c
+@@ -26,18 +26,31 @@
+  *   APC_LEVEL (1) - APC delivery
+  *   DISPATCH_LEVEL (2) - scheduler/DPC level, no page faults allowed
+  *
+- * On Windows, we simulate IRQL with a thread-local variable. Raising to
+- * DISPATCH_LEVEL doesn't actually prevent preemption, but the tracking
+- * allows code that checks IRQL to function correctly.
++ * IRQL values are thread-local and published to the guest KPCR. Regions at
++ * DISPATCH_LEVEL or higher exclude other raised regions across host threads.
++ * This does not implement full single-CPU scheduling or interrupt preemption.
+  * ============================================================================ */
+ 
+ static XBOX_THREAD_LOCAL KIRQL g_current_irql = PASSIVE_LEVEL;
++static SRWLOCK g_dispatch_execution = SRWLOCK_INIT;
++static void transition_irql(KIRQL level);
+ static void publish_irql(KIRQL level) {
+     g_current_irql=level;
+     /* Translated XDK code reads KPCR.Irql directly through fs:[0x24]. */
+     if (g_xbox_mem_offset && g_fs_base)
+         *(volatile uint8_t *)((uintptr_t)g_xbox_mem_offset+g_fs_base+0x24)=level;
+ }
++static void transition_irql(KIRQL level) {
++    KIRQL old = g_current_irql;
++    /* Guest code uses raised IRQL as a uniprocessor exclusion mechanism.
++     * TLS alone lets DPCs and other host threads corrupt those shared lists.
++     * Acquire only when crossing into the region; nested raises retain it. */
++    if (old < DISPATCH_LEVEL && level >= DISPATCH_LEVEL)
++        AcquireSRWLockExclusive(&g_dispatch_execution);
++    publish_irql(level);
++    if (old >= DISPATCH_LEVEL && level < DISPATCH_LEVEL)
++        ReleaseSRWLockExclusive(&g_dispatch_execution);
++}
+ KIRQL __stdcall xbox_KeGetCurrentIrql(void) { return g_current_irql; }
+ 
+ /*
+@@ -54,7 +67,7 @@
+             old, NewIrql);
+     }
+ 
+-    publish_irql(NewIrql);
++    transition_irql(NewIrql);
+     return old;
+ }
+ 
+@@ -70,7 +83,7 @@
+             g_current_irql, NewIrql);
+     }
+ 
+-    publish_irql(NewIrql);
++    transition_irql(NewIrql);
+ }
+ 
+ /*
+@@ -79,7 +92,7 @@
+ KIRQL __stdcall xbox_KeRaiseIrqlToDpcLevel(void)
+ {
+     KIRQL old = g_current_irql;
+-    publish_irql(DISPATCH_LEVEL);
++    transition_irql(DISPATCH_LEVEL);
+     return old;
+ }
+ 

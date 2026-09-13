@@ -101,3 +101,9 @@ boot145 corrects concurrent vblank waits to share the same measured native edge,
 removing repeated ring reads in the tested first movie and restoring near-source
 movie-audio duration. boot146 revalidates level1 movement/combat on this change.
 Full sound/graphics fidelity and successful level traversal remain incomplete.
+
+boot158 exposes an opening-movie skip stall in DirectSound list processing.
+Raised-IRQL host-thread exclusion and regression tests are added; boot159
+completes300 seconds through level1 combat and defeat, and boot160 passes a
+nearby movie-skip timing. Successful level traversal and full fidelity remain
+unverified. The gate does not replace full interrupt-preemption scheduling.
