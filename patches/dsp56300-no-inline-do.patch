@@ -1,0 +1,11 @@
+diff --git a/crates/emu/src/emit/loops.rs b/crates/emu/src/emit/loops.rs
+index 452398d..fa0a8e9 100644
+--- a/crates/emu/src/emit/loops.rs
++++ b/crates/emu/src/emit/loops.rs
+@@ -71,5 +71,6 @@ impl<'a> Emitter<'a> {
+         la: u32,
+         outer_stop_pc: u32,
+     ) -> bool {
++        if std::env::var_os("XML1_DSP_NO_INLINE_DO").is_some() { return false; }
+         Self::is_do_body_inlineable_inner(map, body_start, la, outer_stop_pc, 0)
+     }

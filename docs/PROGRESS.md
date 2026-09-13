@@ -1003,3 +1003,16 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - boot147/148/151/152 finish25-second bound3 on C without fatal guards. Default
   and optimized builds pass; native APU/output checks and21-patch validation
   pass. See DSP-COMPARISON.md for formats, pins and reproduction details.
+
+## EP comparison investigation (boot153-157)
+
+- Isolated original filter reproduces JIT block-length corruption in compiled
+  execution. Disabling DO/DOR inlining allows 60-second live playback but is
+  not a validated backend fix. Default remains C.
+- tools/ep-replay strictly checks captured EP reads and records FIFO output.
+  C replay matches all 960,000 channel samples in the first ten seconds of
+  movie audio after a 2304-frame startup offset. Whole-capture equality is
+  not established. JIT diverges at read8 even when single-stepped.
+- Temporary bridge and Rust experiments were restored. The optional no-inline
+  patch is saved for reproduction. See DSP-COMPARISON.md for limitations.
+  No new visual milestone; level completion and full fidelity remain open.

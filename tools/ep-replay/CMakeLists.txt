@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.20)
+project(EPReplay C)
+add_subdirectory(../../external/xemu-dsp dsp)
+add_executable(ep-replay main.c)
+target_link_libraries(ep-replay PRIVATE xml1-dsp)
+target_include_directories(ep-replay PRIVATE ../../external/xemu-dsp/compat)
+target_compile_definitions(ep-replay PRIVATE _CRT_SECURE_NO_WARNINGS)
