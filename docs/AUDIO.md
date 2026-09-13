@@ -263,3 +263,16 @@ boot136 voice68 agrees on ADPCM container2, samples-per-block2, stereo1, with
 valid physical0. This does not support overriding voice fields from descriptors.
 boot135 sustains APU output while reaching level1 and accepting movement, but
 reference waveform mismatch and full audio fidelity remain unresolved.
+
+Pre-resampling source capture is now available with XML1_CAPTURE_VOICE_SOURCE
+set to a decimal voice ID0..255. It writes stereo float32 source samples plus
+CSV format/base/offset records. This is fetched guest audio, before any SRC,
+mixing, GP/EP DSP or XAudio2 submission; it is not host audio capture.
+
+boot140's first movie voice76 (records3776..984800, format5A01E0E6/base2124)
+contains538080 unchanged same-position ring frames out of981024 (54.85%);
+519670 of those are nonzero. Reproduce with scripts/analyze-voice-ring.py and
+work/boot140-voice76.f32/.csv, --begin 3776 --end 984800.
+Raw source also mismatches decoded i102 before SRC. Refill timing/source decode
+are current leads. Do not remove repetitions from runtime audio: unchanged
+samples may be legitimate, and the current evidence does not prove underrun.

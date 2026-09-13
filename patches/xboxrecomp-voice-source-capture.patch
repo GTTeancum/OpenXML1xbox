@@ -1,0 +1,14 @@
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -967,6 +967,11 @@
+ 
+     voice_set_mask(d, (uint16_t)v, NV_PAVS_VOICE_PAR_OFFSET,
+                    NV_PAVS_VOICE_PAR_OFFSET_CBO, cbo);
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++    extern void xml1_apu_capture_source(unsigned voice,const float *samples,unsigned count,unsigned format,unsigned base,unsigned offset);
++    xml1_apu_capture_source(v,&samples[0][0],sample_count,
++        voice_get_mask(d,(uint16_t)v,NV_PAVS_VOICE_CFG_FMT,0xFFFFFFFF),ba,cbo);
++#endif
+     return sample_count;
+ }
+ 

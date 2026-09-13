@@ -46,6 +46,14 @@ static void test_file_input(uint32_t frame) {
     else if(!strcmp(action,"b")) state.bAnalogButtons[XBOX_BUTTON_B]=255;
     else if(!strcmp(action,"x")) state.bAnalogButtons[XBOX_BUTTON_X]=255;
     else if(!strcmp(action,"y")) state.bAnalogButtons[XBOX_BUTTON_Y]=255;
+    else if(!strcmp(action,"black")) state.bAnalogButtons[XBOX_BUTTON_BLACK]=255;
+    else if(!strcmp(action,"white")) state.bAnalogButtons[XBOX_BUTTON_WHITE]=255;
+    else if(!strcmp(action,"lt")) state.bAnalogButtons[XBOX_BUTTON_LTRIGGER]=255;
+    else if(!strcmp(action,"rt")) state.bAnalogButtons[XBOX_BUTTON_RTRIGGER]=255;
+    else if(!strcmp(action,"rta")||!strcmp(action,"rtb")||!strcmp(action,"rtx")||!strcmp(action,"rty")) {
+        state.bAnalogButtons[XBOX_BUTTON_RTRIGGER]=255;
+        state.bAnalogButtons[action[2]=='a'?XBOX_BUTTON_A:action[2]=='b'?XBOX_BUTTON_B:action[2]=='x'?XBOX_BUTTON_X:XBOX_BUTTON_Y]=255;
+    }
     else if(!strcmp(action,"neutral")) duration=0;
     else {fprintf(stderr,"[FATAL INPUT] unsupported test command %s\n",action);_exit(4);}
     test_input_id=id; test_release_tick=duration?GetTickCount64()+duration:0;

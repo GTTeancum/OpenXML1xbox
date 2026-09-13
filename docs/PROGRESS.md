@@ -908,3 +908,35 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   largely idle; frame2880 displays the normal elimination menu. This is not
   verified successful player combat. The run was deliberately stopped after
   frame3180 once this state was recorded; its termination is not a game crash.
+
+## Full analog harness and pre-resampling source evidence (boot139-141)
+
+- File commands now cover black/white, left/right triggers and rta/rtb/rtx/rty
+  (right trigger plus the named face button). Native tests verify all eight
+  analog bytes for each command and combinations, with zero host input calls.
+- boot139 uses repeated A/A/B attacks after two upward movements. Native frame3780
+  shows an Anti-Mutant Troop health bar reduced while Wolverine needs health.
+  The player still dies; the run was deliberately stopped on the elimination
+  menu (exit-1). This is not a successful encounter or a crash.
+- boot141 exercises health packs and right-trigger powers alongside attacks.
+  Frame2760 shows one remaining health pack (from three) and reduced energy.
+  Later commands reach the normal elimination and empty Load Game menus.
+  The run ends300-second bound3 at captured frame4980 without a fatal guard.
+  No encounter-clear, save/load correctness or full-level success is claimed.
+- Optional XML1_CAPTURE_VOICE_SOURCE=0..255 captures a selected voice immediately
+  after sample fetch, before SRC/mixing/DSP. build/apu-voice-source.f32 is stereo
+  float32; its CSV records sample frame/count, format, base and next ring offset.
+  Toolkit patch21 only inserts this diagnostic callback. The known PCM fixture
+  verifies captured values and channel polarity; existing source/SRC tests pass.
+- boot140 runs60 seconds to bound3 with voice76, pre-DSP and final-output captures.
+  Source records3776..984800 retain format5A01E0E6/base2124 during the first movie.
+  analyze-voice-ring.py finds538080 of981024 frames unchanged at the same ring
+  position (54.85%), including519670 nonzero frames. Raw-source waveform windows
+  still mismatch the FFmpeg-decoded44100-Hz i102 reference before SRC.
+  This directs investigation toward source decoding and movie buffer refill
+  timing. Repetition can be legitimate, so it alone does not prove underrun.
+  An offline exploratory removal of unchanged reads improves some alignment but
+  is NOT used in playback and is NOT an audio fix or fidelity certification.
+- Default/optimized builds succeed. An attempted optimized relink while boot139
+  was running was blocked by Windows' executable lock; rebuilding after its
+  deliberate termination succeeds. No test result from a failed build is used.

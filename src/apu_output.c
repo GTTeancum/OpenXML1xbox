@@ -8,6 +8,31 @@
 #include "apu_xaudio2.h"
 extern void xbox_SetDeviceInterruptLine(uint32_t vector,int asserted);
 void recomp_apu_irq_level(int asserted) { xbox_SetDeviceInterruptLine(5,asserted); }
+void xml1_apu_capture_source(unsigned voice,const float *samples,unsigned count,unsigned format,unsigned base,unsigned offset) {
+    static int selected=-2;
+    static FILE *pcm,*trace;
+    static uint64_t total;
+    if(selected==-2) {
+        const char *value=getenv("XML1_CAPTURE_VOICE_SOURCE");
+        selected=-1;
+        if(value) {
+            char *end; unsigned long parsed=strtoul(value,&end,10);
+            if(!*value||*end||parsed>=256) {fprintf(stderr,"[FATAL APU SOURCE] invalid voice selection\n");_exit(4);}
+            selected=(int)parsed;
+            pcm=fopen("build/apu-voice-source.f32","wb");
+            trace=fopen("build/apu-voice-source.csv","wb");
+            if(!pcm||!trace) {fprintf(stderr,"[FATAL APU SOURCE] cannot open capture\n");_exit(4);}
+            fputs("sample_frame,count,voice,format,base,next_offset\n",trace);
+        }
+    }
+    if((int)voice!=selected||!count) return;
+    if(fwrite(samples,2*sizeof(float),count,pcm)!=count ||
+       fprintf(trace,"%llu,%u,%u,%08X,%08X,%u\n",total,count,voice,format,base,offset)<0) {
+        fprintf(stderr,"[FATAL APU SOURCE] cannot write capture\n");_exit(4);
+    }
+    total+=count;
+    fflush(pcm); fflush(trace);
+}
 void xml1_apu_trace_voices(const uint8_t *ram,unsigned base,unsigned a,unsigned b,unsigned c) {
     if(base>64u*1024*1024-256*128) { fprintf(stderr,"[APU VOICES] invalid base=%08X\n",base); return; }
     unsigned active=0,first=0xffff,state=0,format=0;

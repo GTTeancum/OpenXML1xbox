@@ -91,3 +91,8 @@ boot138 passes the lighting limit and reaches live enemy combat, hit effects,
 health loss and the normal elimination menu. Sparse retained light IDs32-39
 are mapped to active native slots. The idle player dies; successful combat and
 level completion are still unverified. Audio fidelity remains a separate blocker.
+
+boot141 validates health/power input and completes300 seconds without a fatal
+error, but the encounter still ends in defeat. boot140's pre-resampling movie
+voice capture exposes extensive unchanged ring reads and source mismatch;
+source decode/refill timing is the next audio investigation. Goal remains active.
