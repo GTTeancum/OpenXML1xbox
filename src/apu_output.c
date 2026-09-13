@@ -49,7 +49,7 @@ void recomp_apu_dsp_output(const int16_t *samples,unsigned frames) {
     unsigned retries=0;
     while(!xa2_submit_samples(samples,(int)frames)) {
         if(++retries>100) { fprintf(stderr,"[FATAL APU OUTPUT] XAudio2 submission stalled\n"); _exit(4); }
-        Sleep(1);
+        if(!xa2_wait_for_buffer(100)) { fprintf(stderr,"[FATAL APU OUTPUT] XAudio2 completion timeout/device error\n"); _exit(4); }
     }
     for(unsigned i=0;i<frames*2;++i) {
         int value=samples[i]; unsigned magnitude=value<0?(unsigned)-value:(unsigned)value;

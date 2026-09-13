@@ -1,8 +1,8 @@
 # Audio bring-up
 
 The live game produces original DSP audio through XAudio2 with mapped DMA and
-stateful voice resampling. Playback remains slower than real time; complete
-audio fidelity and synchronization are unverified. Details below retain the
+stateful voice resampling. Consumer-paced output now produces samples near real time in boot115; complete
+audio fidelity and synchronization remain unverified. Details below retain the
 bring-up history.
 
 XboxRecomp at 3706cefa includes XAudio2 error handling (PR31) and synchronized
@@ -209,3 +209,27 @@ No recognizable FMV or audible correctness milestone has been established.
   stereo values, peak27417 and no clipping. Pitch path is improved, but output
   is still slower than real time and full A/V fidelity is not established.
   Next investigate pacing/performance, then revalidate movies/menu/level1.
+
+
+## Consumer-paced audio output (boot113–115)
+
+- Profiling boot113 separates throttle time from processing/output: by24576 VP
+  frames,6.08s was spent in throttle and14.56s in processing/output. The old
+  throttle periodically rebased its clock after overruns and added waits on top
+  of the native output path; 30s of PCM had required38.663s in boot112.
+- Ordered patch16 adds an XAudio2 voice callback event for completed source
+  buffers. Root PCM output waits for this event under backpressure instead of
+  polling Sleep(1). The native-DSP path bypasses the separate wall-clock
+  throttle; XAudio2's48kHz consumer and bounded queue set the pace.
+- boot114 showed that retaining the APU device mutex during output waits would
+  starve guest register writes. Completed256-frame PCM blocks are now copied
+  locally, the mutex is released around output, then reacquired. A native test
+  uses another own-process thread to prove the mutex is available during the
+  callback and held afterward, while checking payload and buffer clearing.
+- boot115 ends30s bound3 with nonzero audio:1344000 sample frames(28s) at28.010
+  wall seconds,1938666 nonzero stereo values, peak17301, no clipping or fatal
+  guard. This establishes near-real-time production in this run, not full
+  audible fidelity or movie synchronization. Movie presentation remains slow.
+- Output retry/payload/event-wait test, output mutex test, actual VP resampling
+  and GP/EP bootstrap tests pass. Sixteen-patch reverse-stack validation passes.
+  Next investigate movie processing speed and revalidate menu/level1 with audio.

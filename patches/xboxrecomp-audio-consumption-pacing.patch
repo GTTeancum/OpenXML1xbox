@@ -1,0 +1,117 @@
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -289,7 +289,11 @@
+      * those samples instead of clearing them for the separate HLE mixer. */
+     extern void recomp_apu_dsp_output(const int16_t *samples,unsigned frames);
+     if(g_audio_muted) memset(d->monitor.frame_buf,0,sizeof(d->monitor.frame_buf));
+-    recomp_apu_dsp_output(&d->monitor.frame_buf[0][0],256);
++    int16_t completed[256][2];
++    memcpy(completed,d->monitor.frame_buf,sizeof(completed));
++    qemu_mutex_unlock(&d->lock);
++    recomp_apu_dsp_output(&completed[0][0],256);
++    qemu_mutex_lock(&d->lock);
+     memset(d->monitor.frame_buf,0,sizeof(d->monitor.frame_buf));
+     return;
+ #endif
+@@ -388,6 +392,11 @@
+ 
+ static void throttle(MCPXAPUState *d)
+ {
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++    /* Native output blocks on XAudio2 consumption; a second wall-clock
++     * throttle would add delay and periodically discard elapsed audio time. */
++    return;
++#endif
+     if (d->ep_frame_div % 8) {
+         return;
+     }
+@@ -469,7 +478,9 @@
+         /* Always run the audio output loop — the software mixer and test tone
+          * need continuous frame delivery regardless of APU register state.
+          * The VP/DSP pipeline (se_frame) only runs when registers allow it. */
++        int64_t profile_start=qemu_clock_get_us(QEMU_CLOCK_REALTIME);
+         throttle(d);
++        int64_t profile_process=qemu_clock_get_us(QEMU_CLOCK_REALTIME);
+ 
+         int xcntmode = GET_MASK(qatomic_read(&d->regs[NV_PAPU_SECTL]),
+                                 NV_PAPU_SECTL_XCNTMODE);
+@@ -496,6 +507,12 @@
+         }
+         update_irq(d);
+         d->set_irq=false;
++        {
++            static uint64_t wait_us,process_us,count;
++            wait_us+=profile_process-profile_start;
++            process_us+=qemu_clock_get_us(QEMU_CLOCK_REALTIME)-profile_process;
++            if(++count%4096==0) fprintf(stderr,"[APU TIMING] frames=%llu wait_us=%llu process_us=%llu\n",count,wait_us,process_us);
++        }
+     }
+ 
+     qemu_mutex_unlock(&d->lock);
+--- a/src/apu/apu_xaudio2.c
++++ b/src/apu/apu_xaudio2.c
+@@ -34,6 +34,15 @@
+ static int                     g_xa2_next_buf = 0;
+ static int                     g_xa2_initialized = 0;
+ static int                     g_xa2_frames_written = 0;
++static HANDLE g_xa2_buffer_event;
++static volatile LONG g_xa2_voice_error;
++static void STDMETHODCALLTYPE cb_pass_start(IXAudio2VoiceCallback *self,UINT32 bytes) { (void)self;(void)bytes; }
++static void STDMETHODCALLTYPE cb_noop(IXAudio2VoiceCallback *self) { (void)self; }
++static void STDMETHODCALLTYPE cb_buffer_start(IXAudio2VoiceCallback *self,void *context) { (void)self;(void)context; }
++static void STDMETHODCALLTYPE cb_buffer_end(IXAudio2VoiceCallback *self,void *context) { (void)self;(void)context; SetEvent(g_xa2_buffer_event); }
++static void STDMETHODCALLTYPE cb_error(IXAudio2VoiceCallback *self,void *context,HRESULT error) { (void)self;(void)context; InterlockedExchange(&g_xa2_voice_error,(LONG)error); SetEvent(g_xa2_buffer_event); }
++static IXAudio2VoiceCallbackVtbl g_xa2_callbacks={cb_pass_start,cb_noop,cb_noop,cb_buffer_start,cb_buffer_end,cb_buffer_start,cb_error};
++static IXAudio2VoiceCallback g_xa2_callback={&g_xa2_callbacks};
+ 
+ int xa2_init(void)
+ {
+@@ -70,8 +79,11 @@
+     wfx.nBlockAlign     = XA2_CHANNELS * 2;
+     wfx.nAvgBytesPerSec = XA2_SAMPLE_RATE * wfx.nBlockAlign;
+ 
++    g_xa2_buffer_event=CreateEventW(NULL,FALSE,FALSE,NULL);
++    g_xa2_voice_error=0;
++    if(!g_xa2_buffer_event) goto fail;
+     hr = IXAudio2_CreateSourceVoice(g_xa2, &g_xa2_source,
+-        &wfx, 0, XAUDIO2_DEFAULT_FREQ_RATIO, NULL, NULL, NULL);
++        &wfx, 0, XAUDIO2_DEFAULT_FREQ_RATIO, &g_xa2_callback, NULL, NULL);
+     if (FAILED(hr)) {
+         fprintf(stderr, "[XA2] CreateSourceVoice failed: 0x%08lX\n", hr);
+         goto fail;
+@@ -118,6 +130,16 @@
+     if (g_xa2_initialized)
+         fprintf(stderr, "[XA2] Shut down (%d frames written)\n", g_xa2_frames_written);
+     g_xa2_initialized = 0;
++    if(g_xa2_buffer_event) { CloseHandle(g_xa2_buffer_event); g_xa2_buffer_event=NULL; }
++}
++
++int xa2_wait_for_buffer(unsigned timeout_ms) {
++    XAUDIO2_VOICE_STATE state;
++    if(!g_xa2_source || InterlockedCompareExchange(&g_xa2_voice_error,0,0)) return 0;
++    IXAudio2SourceVoice_GetState(g_xa2_source,&state,XAUDIO2_VOICE_NOSAMPLESPLAYED);
++    if(state.BuffersQueued<XA2_NUM_BUFS) return 1;
++    return WaitForSingleObject(g_xa2_buffer_event,timeout_ms)==WAIT_OBJECT_0 &&
++        !InterlockedCompareExchange(&g_xa2_voice_error,0,0);
+ }
+ 
+ int xa2_is_active(void)
+@@ -167,6 +189,7 @@
+ void xa2_shutdown(void)                               {}
+ int  xa2_is_active(void)                              { return 0; }
+ int  xa2_submit_samples(const int16_t *s, int n)      { (void)s; (void)n; return 0; }
++int xa2_wait_for_buffer(unsigned timeout_ms) { (void)timeout_ms; return 0; }
+ int  xa2_get_buffer_size(void)                        { return 0; }
+ 
+ #endif /* _WIN32 */
+--- a/src/apu/apu_xaudio2.h
++++ b/src/apu/apu_xaudio2.h
+@@ -17,6 +17,8 @@
+ 
+ /* Submit interleaved stereo 16-bit samples. Returns 1 if accepted. */
+ int xa2_submit_samples(const int16_t *samples, int num_samples);
++/* Wait for actual source-buffer completion; returns 0 on timeout/device error. */
++int xa2_wait_for_buffer(unsigned timeout_ms);
+ 
+ /* Get the preferred buffer size in samples. */
+ int xa2_get_buffer_size(void);

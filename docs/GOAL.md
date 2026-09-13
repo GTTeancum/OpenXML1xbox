@@ -51,3 +51,7 @@ Activision capture). Decoder block artifacts and audio/timing remain unresolved.
 
 Stateful voice resampling is active and tested; boot112 produces30 seconds of
 audio in38.663 seconds, so real-time pacing and A/V fidelity remain open.
+
+Consumer-paced audio reaches28 seconds of PCM in28.010 seconds (boot115).
+Movie speed, intermittent image artifacts and full A/V synchronization remain
+unverified; the level1 completion goal is still active.
