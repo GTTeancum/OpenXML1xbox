@@ -1495,3 +1495,11 @@ IMPORTANT: game generated C and executable have NOT been regenerated/rebuilt for
 ### 2026-09-13: upstream SAR PR50
 
 Fetched origin and checked both actual published branches: main3706cef and work/v0.7.0-non-local208fc9d retain the incorrect SAR implementation. Created clean worktree work/upstream-sar, branch fix/sar-operand-width. The compiled396-case regression fails on unmodified main (first carry failure: masked count32 must preserve incoming CF). Applied only the SAR correction;161 tests +10 subtests pass. Fork commit08a06df pushed and upstream PR50 opened: https://github.com/sp00nznet/xboxrecomp/pull/50 . Local game patch27 remains queued for regeneration/rebuild after human testing. Human PID9260/session26412 confirmed live this turn; no input, restart, or game rebuild. Previous goal turn was substantive progress, not a blocked wait. Goal elapsed approximately12h31m of30h.
+
+### 2026-09-13 18:47 UTC: human native-capture checkpoint
+
+Human playtest remains live (PID9260/session26412). Read-only state: hero1e01 at1739.980/812.305/-105.618; fade current/target0, completed remaining-0.0335/duration0.5. Native renderer frame36000 shows living Wolverine in a rendered underground passage, HUD level2, and comic-unlock text. Preserved internally as work/human-143244-frame36000-subway.bmp; no duplicate screenshot posted. This is direct evidence of ongoing rendered gameplay, not proof of the full route or level completion. User still controls the game. No runtime changes or input performed.
+
+### 2026-09-13: user confirms normal subway traversal succeeds
+
+User reports: "Oh we're long past the subway. It's working great, but I will have notes". This closes the earlier normal-traversal validation gap for the reported subway fade/camera failure, beyond the isolated fixture checks. It does not establish complete level1 or defect-free graphics/audio. Preserve the running human build and await the user's notes before changing it. Latest source-only SAR/expanded ADX diagnostics remain unapplied to that executable.
