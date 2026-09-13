@@ -1341,3 +1341,33 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   reset method50570 identified from its vtable. This suggests the teleport
   and fade-back progressed; world visibility/camera reset needs investigation.
   The snapshot is non-atomic, so it is not proof that every script step passed.
+
+## 2026-09-13: live route attempt and validated hero-position lookup
+
+- Previous turn made progress (subway binding instrumentation). Clock16:59:45
+  UTC was about10h45 after start. boot169 optimized600-second process-local
+  input run reached level1, moved/jumped through the starting area, and ended
+  at its configured bound3. It did NOT reach the subway exit or clear the
+  fights; do not call it a successful transition regression test.
+- Read-only inspection shows camera singleton offsets10..24 retain scripted
+  position/target while the hero moves. The earlier failed target matching
+  subway_upA therefore proves stored requested state, not the live viewpoint.
+  Its matrix at+304 likewise stayed constant during this route movement.
+  Renderer view slot0 sampled700 times was a fixed handedness matrix; that
+  sample alone also does not provide the live game camera position.
+- Derived actual entity lookup from original6BF80 ->BEF20 ->BDFD0: singleton
+  4DB2B8, mask at+185C, identity table at+105C, pointer table at+4. Hero slot1
+  ID is at48585C. Local read-only work/live-state helper validates identity
+  before reading the entity's position at+20, derived from copyOriginAndAngles.
+- Failed human snapshot: hero ID A01, entity0470F188, position
+  (2280,2502.040039,0.1), facing1.5708; collision bounds
+  (2264,2486.040039,0.1)..(2296,2518.040039,72.1). This is subway_upA with
+  floor offset and translated bounds, independent of the camera target data.
+- boot169: hero ID1201, same allocator address0470F188, moves from the start
+  through positions1176/1915/-10.62 and1390/1340/1.30. Identity is re-read,
+  not assumed stable across boots. These reads are non-atomic diagnostics.
+  Camera-request fields staying constant confirms they are insufficient for
+  route navigation or diagnosing the active viewpoint by themselves.
+- Work remains: reproduce the exit (a targeted original-script test can first
+  isolate camera/visibility behavior), then validate the full combat/subway
+  route normally. Scratchy audio and full level1 fidelity remain unresolved.
