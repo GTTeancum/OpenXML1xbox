@@ -916,6 +916,8 @@ uint32_t dsp56k_read_memory(dsp_core_t* dsp, int space, uint32_t address)
         }
     } else if (space == DSP_SPACE_Y) {
         if (address >= DSP_YRAM_SIZE) {
+            FILE *dump = fopen("build/dsp-failure-program.bin", "wb");
+            if (dump) { fwrite(dsp->pram, sizeof(dsp->pram), 1, dump); fclose(dump); }
             fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\n", dsp->pc, dsp->cur_inst, address);
             for (unsigned reg = 0; reg < 64; ++reg)
                 fprintf(stderr, "DSP reg[%u]=%06x\n", reg, dsp->registers[reg]);
@@ -960,6 +962,8 @@ static void write_memory_raw(dsp_core_t* dsp, int space, uint32_t address, uint3
         }
     } else if (space == DSP_SPACE_Y) {
         if (address >= DSP_YRAM_SIZE) {
+            FILE *dump = fopen("build/dsp-failure-program.bin", "wb");
+            if (dump) { fwrite(dsp->pram, sizeof(dsp->pram), 1, dump); fclose(dump); }
             fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\n", dsp->pc, dsp->cur_inst, address);
             for (unsigned reg = 0; reg < 64; ++reg)
                 fprintf(stderr, "DSP reg[%u]=%06x\n", reg, dsp->registers[reg]);

@@ -234,3 +234,16 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   N0=7; nearby program includes the literal R0 initialization. Diagnostics log
   the original failing state without suppressing the assertion. No new screen,
   audible-output validation or gameplay milestone.
+
+## DSP program provenance (2026-09-13)
+
+- Added a native dump of DSP program RAM at the original Y-memory assertion.
+  boot-028 reproduces the failure and saves build/dsp-failure-program.bin.
+- Program words 0310..0327 exactly match original XBE file offset 46f528.
+  The R0 initialization at program 0317..0318 also matches XBE offset 46f544.
+  Thus the observed 0fc2 literal is present in the shipped program, not introduced
+  by this upload. This narrows the investigation but does not prove all program
+  relocation, initialization, control flow or DSP memory mapping correct.
+- The current C decoder interprets 5ee800 as MOVE Y:(R0+N0),A. The pinned xemu
+  C and JIT integrations both map Y RAM only below 0800. Do not enlarge or wrap
+  this mapping without evidence of actual hardware behavior or required setup.

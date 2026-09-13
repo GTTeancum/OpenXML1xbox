@@ -29,6 +29,8 @@ emu.write_text(emu.read_text(encoding='utf-8') + '\n' + (root/'src/dsp_extractu.
 cpu = dest/'interp/dsp_cpu.c'
 cpu_text = cpu.read_text(encoding='utf-8').replace('"extractu #CO, S2, D", NULL, NULL', '"extractu #CO, S2, D", NULL, emu_extractu_imm')
 cpu_text = cpu_text.replace('        assert(address < DSP_YRAM_SIZE);', '''        if (address >= DSP_YRAM_SIZE) {
+            FILE *dump = fopen("build/dsp-failure-program.bin", "wb");
+            if (dump) { fwrite(dsp->pram, sizeof(dsp->pram), 1, dump); fclose(dump); }
             fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\\n", dsp->pc, dsp->cur_inst, address);
             for (unsigned reg = 0; reg < 64; ++reg)
                 fprintf(stderr, "DSP reg[%u]=%06x\\n", reg, dsp->registers[reg]);
