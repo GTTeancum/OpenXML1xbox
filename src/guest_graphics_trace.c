@@ -24,6 +24,15 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    if ((va==0x30EF30||va==0x30EF60||va==0x30EF90) && g_esp<xbox_GetMappedSize()-64) {
+        const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
+        const uint32_t *stack=(const uint32_t *)(memory+g_esp);
+        if (va!=0x30EF90||stack[1]==0x5E9100) {
+            fprintf(stderr,"[MOVIE LIFETIME] call=%08X thread=%lu caller=%08X object_arg=%08X refcount=%08X vtable=%08X\n",
+                va,GetCurrentThreadId(),stack[0],stack[1],*(const uint32_t *)(memory+0x5BFA78),*(const uint32_t *)(memory+0x5E9100));
+            for (unsigned i=0;i<12;++i) fprintf(stderr,"  lifetime_stack[%u]=%08X\n",i,stack[i]);
+        }
+    }
     xml1_graphics_live_observe(va);
     static int enabled = -1;
     static FILE *calls;

@@ -119,6 +119,18 @@ void xml1_graphics_live_observe(uint32_t va) {
         append(rs,sizeof(rs)); append(guest(0x36C660,512),512);
         const void *pixels=guest(0x80000000+tex[1],tex_bytes);
         if (format==6) {
+            static unsigned argb_reports;
+            if (argb_reports<4 || frames%60==0) {
+                const uint32_t *rgba=pixels;
+                size_t colored=0,opaque=0;
+                for (size_t i=0;i<tex_bytes/4;++i) {
+                    colored+=(rgba[i]&0xFFFFFF)!=0;
+                    opaque+=(rgba[i]>>24)!=0;
+                }
+                fprintf(stderr,"[DX8 ARGB] frame=%u texture=%08X data=%08X size=%ux%u colored=%zu alpha_nonzero=%zu first=%08X\n",
+                    frames,textures[0],tex[1],header[0],header[1],colored,opaque,rgba[0]);
+                ++argb_reports;
+            }
             void *linear=malloc(tex_bytes);
             if (!linear) fatal("texture conversion allocation failed");
             xbox_unswizzle_rect(linear,pixels,header[0],header[1],4);

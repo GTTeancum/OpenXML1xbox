@@ -47,3 +47,9 @@ Do not blindly merge branches or replace the pin during an experiment.
   Isolated disassembler suite:37 passed. Creation succeeded after earlier
   GitHub server errors; verified the returned PR URL.
   Body is saved locally in work/imm-boundary-pr.md. No game bytes are included.
+
+- Submitted thread-local kernel dispatch fix as
+  https://github.com/sp00nznet/xboxrecomp/pull/43, isolated commit8a40793.
+  Includes a Windows synthetic-memory regression requiring no game assets;
+  before-fix wrong-service/stack failure and after-fix pass verified locally.
+  Isolated upstream CMake/CTest build passes. No game bytes are included.

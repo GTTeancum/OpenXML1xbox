@@ -366,3 +366,35 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   No duplicate splash or black screenshot posted. The cross-thread kernel test
   still passes after the final regeneration/build. Next: verify00336970 against
   original bytes and diagnose this worker callback before another seed.
+
+
+## Decoder callback recovered; movie fidelity and lifetime diagnosis (2026-09-13)
+
+- Verified00336970 against original/runtime bytes and its three initializer
+  stores into decoder field12FC (00325462/0032616E/0032617F). Added seed11,
+  regenerated and built. boot-047 now reaches the30-second watchdog instead of
+  a missing decoder function, presenting through frame422. Final native capture
+  remains black; no screenshot posted.
+- An asset-free kernel-dispatch regression now uses synthetic imports103/151.
+  It fails before the TLS change (wrong ordinal151, ESP20008) and passes after
+  (ordinal103, ESP20004). Isolated upstream checkout also builds/passes CTest.
+  Submitted upstream PR43, commit8a40793, including test/CMake/README.
+- boot-048/049 instead hit null callbacks at00322E18/00322E8F. Guest dump shows
+  stream object005E9100 entirely cleared, not a legitimate missing code target.
+  Added narrow lifetime observations at0030EF30/60/90. boot-050 confirms clears
+  from worker callback00307254 and main cleanup00322CED, followed by refcount
+  releases0030C161/003137D6. Diagnose synchronization/lifetime before patching
+  null dispatch or suppressing destruction.
+- Added native submission texture statistics. Early movie textures are all zero;
+  later ones show only1280 nonzero-alpha pixels in1024x512 textures, occasionally
+  a few hundred nonzero RGB pixels. This suggests incomplete decoded/copy output;
+  full-frame output/fidelity is unproven. It is not evidence of a renderer-only
+  color problem. No FMV milestone claimed.
+- boot-050 advances through i102,i101,i103,i104,i105.sfd and then stops at unresolved
+  main-thread callback00184FD0 (not yet validated/seeded). Other runs wait in
+  original GPU FIFO/fence routines: boot-047 guest stack includes0035FEBF,
+  00360184,00361262; current abstract completion may not cover FIFO consumption.
+- Local ffprobe identifies i102.sfd as640x480 MPEG1 video at60000/1001 with two
+  ADX audio streams, duration10.403267s. Finishing multiple intros in a short
+  probe is not a playback correctness claim. Next investigate incomplete image
+  transfer and worker lifetime/timing alongside the new game callback.

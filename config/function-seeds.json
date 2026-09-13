@@ -1,4 +1,5 @@
 [
+  { "start": "0x00336970", "reason": "boot-046 decoder callback; runtime prefix matches XBE; aligned sub esp,8 entry after int3 padding; original stores at00325462/0032616E/0032617F install it in decoder field12FC" },
   { "start": "0x00396920", "reason": "boot-045 worker callback; start of PSFD_P section, runtime 64-byte prefix matches original raw offset 0x386000; sub esp,0x18 prologue" },
   { "start": "0x00395C20", "reason": "boot-043/044 worker callback; start of PSFD_I section, runtime 64-byte prefix matches original section raw offset 0x384000; sub esp,0x10 / push ebx prologue" },
   { "start": "0x00345453", "reason": "boot-038 PsCreateSystemThreadEx worker context; verified SEH prologue push 0xc, push scope table, call 003432A8; distinct entry merged after 00345449" },

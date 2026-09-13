@@ -28,7 +28,9 @@ now advances beyond 180 splash frames. Regenerated vtable function0011F170 passe
 startup passes saved-game enumeration and opens movies/ntsc/i/1/i102.sfd,
 the CRT worker entry00345453 now runs. A deterministic test reproduced and fixed
 a shared kernel-dispatch-slot race behind callback stack corruption. Movie startup
-passes PSFD entries00395C20 and00396920 and stops at callback00336970.
+passes PSFD entries00395C20/00396920 and decoder callback00336970. Startup can
+advance through all five intro movie files, but textures remain nearly empty and
+worker object lifetime is unstable. One run next stopped at callback00184FD0.
 Native DX8 also accepts the observed ARGB texture/FVF102 draw path.
 Encoded audio remains unsupported. FMV,
 menu, level 1, audio and visual correctness remain unverified; see PROGRESS.md.
