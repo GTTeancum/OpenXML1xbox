@@ -121,7 +121,7 @@ void xml1_graphics_live_observe(uint32_t va) {
         uint32_t second_color_op=*(const uint32_t *)guest(0x36C660+128+12*4,4);
         const uint32_t *ts=guest(0x36C660,512);
         int second_active=ts[12]!=1&&second_color_op!=1;
-        if ((a[0]!=6&&a[0]!=7)||vertex_count<3||vertex_count>1000000||!xml1_fvf_stride(fvf)||stride!=xml1_fvf_stride(fvf)||pixel_shader||!stream||!textures[0]||(second_active&&(!textures[1]||ts[76]!=1))) {
+        if ((a[0]!=5&&a[0]!=6&&a[0]!=7)||(a[0]==5&&vertex_count%3)||vertex_count<3||vertex_count>1000000||!xml1_fvf_stride(fvf)||stride!=xml1_fvf_stride(fvf)||pixel_shader||!stream||!textures[0]||(second_active&&(!textures[1]||ts[76]!=1))) {
             for(unsigned stage=0;stage<4;++stage) if (textures[stage]) {
                 const uint32_t *t=guest(textures[stage],20);
                 const uint32_t *s=guest(0x36C660+stage*128,128);

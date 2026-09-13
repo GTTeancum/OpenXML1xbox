@@ -480,3 +480,14 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   Version5 packets carry primitive type, preserving original fan/index ordering.
   Native regression confirms an equivalent fan and strip have identical pixels;
   earlier batching, lighting, texture-stage and culling tests still pass.
+
+## First level1 native frame (boot076)
+
+- Native capture653 shows Wolverine standing in the NYC environment, including
+  street geometry, trees, fences, vehicles and a question-mark marker. Copied
+  unchanged to outputs/xml1-dx8-level1-first.bmp and posted once as new content.
+  This is a first rendered scene, not yet sustained gameplay/fidelity validation.
+- The following frame stops at triangle-list primitive5,18 vertices. Added
+  native triangle-list mapping with count divisibility validation; regression
+  confirms equivalent list, strip and fan capture identical pixels. Rebuilt game
+  and renderer. Next run boot077 checks progress beyond that draw.

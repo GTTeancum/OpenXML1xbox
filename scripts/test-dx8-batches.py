@@ -134,3 +134,12 @@ fan_output=fan.with_suffix('.bmp')
 subprocess.run([str(worker),'--replay',str(fan),str(fan_output)],cwd=root,check=True)
 assert fan_output.read_bytes()==(root/'build/dx8-env-0.75-152.bmp').read_bytes(), 'Equivalent fan and strip differ'
 print('PASS: version5 triangle fan matches equivalent triangle strip')
+list_header=bytearray(strip_packet[:32]); list_header[:8]=b'XMLDX8R5'
+struct.pack_into('<I',list_header,20,6)
+list_vertices=b''.join(vertex_data[i*36:(i+1)*36] for i in (0,1,2,2,1,3))
+triangles=root/'build/dx8-triangles.bin'
+triangles.write_bytes(list_header+struct.pack('<I',5)+strip_packet[32:-144]+list_vertices)
+triangles_output=triangles.with_suffix('.bmp')
+subprocess.run([str(worker),'--replay',str(triangles),str(triangles_output)],cwd=root,check=True)
+assert triangles_output.read_bytes()==fan_output.read_bytes(), 'Equivalent triangle list differs'
+print('PASS: triangle list matches equivalent fan and strip')

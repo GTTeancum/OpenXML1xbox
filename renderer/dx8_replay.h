@@ -114,7 +114,7 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         if ((header[3]!=14&&header[3]!=6&&header[3]!=0&&header[3]!=25)||!xml1_fvf_stride(header[4]))
             throw std::runtime_error("Unsupported replay format");
         const unsigned stride=xml1_fvf_stride(header[4]);
-        if(header[5]!=6&&header[5]!=7) throw std::runtime_error("Unsupported primitive type");
+        if((header[5]!=5&&header[5]!=6&&header[5]!=7)||(header[5]==5&&vertices%3)) throw std::runtime_error("Unsupported primitive type");
         const unsigned rows=header[3]!=14?height:(height+3)/4;
         const unsigned rowBytes=header[3]!=14?width*(header[3]==6?4:1):((width+3)/4)*16;
         size_t texBytes=(size_t)rows*rowBytes;
@@ -186,7 +186,8 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
             checked(device->SetTextureStageState(stage,D3DTSS_TEXCOORDINDEX,ts[stage*32+28]));
             checked(device->SetTexture(stage,stage==0?texture:stage==1?second_texture:nullptr));
         }
-        checked(device->DrawPrimitiveUP(header[5]==6?D3DPT_TRIANGLESTRIP:D3DPT_TRIANGLEFAN,vertices-2,vb.data(),stride));
+        checked(device->DrawPrimitiveUP(header[5]==5?D3DPT_TRIANGLELIST:header[5]==6?D3DPT_TRIANGLESTRIP:D3DPT_TRIANGLEFAN,
+            header[5]==5?vertices/3:vertices-2,vb.data(),stride));
         texture->Release();
         if(second_texture) second_texture->Release();
         if (!live) std::printf("Replayed game draw %u: %u vertices, %ux%u format %u\n",n+1,vertices,width,height,header[3]);

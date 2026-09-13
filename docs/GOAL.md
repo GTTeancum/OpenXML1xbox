@@ -21,13 +21,12 @@ Do not claim completion solely because the deadline is reached. Goal status tool
 do not expose a pause operation; report the deadline stop accurately rather than
 marking an unfinished goal complete.
 
-Current milestone: live native Windows DX8 legal splash and a partial main menu
-have been captured. Indexed geometry, materials/lights, a second texture stage,
-normal-based texture coordinates and ordered native depth clears now render the
-menu logo and 3D background. Interaction and full visual correctness remain
+Current milestone: native Windows DX8 splash, menu logo/background and a first
+level1 frame with Wolverine in NYC have been captured. A process-local A press
+selects Begin Story. Sustained gameplay and full visual correctness remain
 unverified; mipmap chains still need implementation. The movie converter's
 INC/DEC carry bug is fixed and now writes all
 480 rows, but the intros advance too quickly and stream lifetime is unstable.
 Only very dark early-fade FMV captures are verified; no recognizable FMV artwork
-has been posted. Audio fidelity and playable level1 remain unverified.
+has been posted. Audio fidelity and sustained playable level1 remain unverified.
 All of these remain required work. See PROGRESS.md and UPSTREAM-REVIEW.md.
