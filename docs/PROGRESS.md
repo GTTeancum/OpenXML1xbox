@@ -300,3 +300,19 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Regeneration and native build completed. boot-036 passes0011F170 and enumerates
   UDATA/4156001e before stopping at the fail-fast unresolved sub_000BE01A.
   Investigate that target's original bytes/caller before choosing a seed or alias.
+
+## Immediate-reference boundary repair and first movie open (2026-09-13)
+
+- 000BE01A is the original epilogue inside000BDFD0. A weak immediate candidate
+  at000BE000 landed inside the test instruction at000BDFFF and split the real
+  function. Reject such candidates unless existing prologue/constant-return/
+  virtual-thunk probes provide evidence that the sweep was misaligned.
+- A synthetic regression fails before and passes after; all37 disassembler tests
+  pass in an isolated checkout. A first stricter version lost a real constant
+  callback002B8AD0; the revised rule retains it and tests both thunk exceptions.
+- Regeneration confirms000BDFD0 now ends at000BE01F and the callback remains.
+  boot-038 passes saved-game enumeration and opens movies/ntsc/i/1/i102.sfd.
+  Three workers encounter unresolved target00345453; no FMV rendering yet.
+- Saved as the sixth ordered toolkit patch; idempotence checks pass. The isolated
+  fork branch is pushed. GitHub PR creation returned server errors/HTTP502, and
+  read-back checks show no PR, so creation needs a later retry. See UPSTREAM-REVIEW.

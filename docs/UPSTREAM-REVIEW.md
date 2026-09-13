@@ -41,3 +41,9 @@ Do not blindly merge branches or replace the pin during an experiment.
   the pinned upstream main. Fork branch GTTeancum:fix/cmp-flags-at-joins,
   commit 10a4b66. Recompiler tests: 165 passed, 10 subtests passed.
   Includes translator change and five regression tests, no game/generated data.
+- Prepared immediate-reference boundary fix on fork branch
+  GTTeancum:fix/immediate-reference-boundaries, commits bdc3e18 and dfec4df.
+  Isolated disassembler suite:37 passed. PR creation returned GraphQL server
+  errors and REST HTTP502; subsequent PR-list checks found no matching PR.
+  Branch is pushed; retry creation later after checking for an existing PR.
+  Body is saved locally in work/imm-boundary-pr.md. No game bytes are included.
