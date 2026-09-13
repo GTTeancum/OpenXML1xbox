@@ -28,8 +28,9 @@ response in level1, with a60-second run ending at the diagnostic bound. Combat,
 complete traversal, sustained gameplay and full visual correctness remain
 unverified. Full mipmap chains now upload and pass native level-selection tests.
 Actual DSP output now reaches XAudio2 and guest APU interrupts resume processing,
-but captured samples remain silent despite active voices; audio integration
-and pitch resampling remain open.
+and physical page mapping now produces sustained nonzero game DSP samples.
+Audio fidelity, pitch resampling and movie progression remain open; boot093
+stops presenting after frame780 and later PCM becomes silent.
 The movie converter's
 INC/DEC carry bug is fixed and now writes all
 480 rows, but the intros advance too quickly and stream lifetime is unstable.

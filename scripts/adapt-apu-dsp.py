@@ -51,5 +51,7 @@ void xml1_apu_dsp_write(MCPXAPUState *d, uint64_t addr, uint64_t value, unsigned
 '''
 s=s.replace('    /* Write VP results to the GP DSP MIXBUF */','    extern void xml1_apu_trace_frame(unsigned gp,unsigned ep,const float *mix,unsigned count);\n    xml1_apu_trace_frame(d->gp.regs[NV_PAPU_GPRST],d->ep.regs[NV_PAPU_EPRST],&mixbins[0][0],NUM_MIXBINS*NUM_SAMPLES_PER_FRAME);\n    /* Write VP results to the GP DSP MIXBUF */')
 s=s.replace('    /* Write VP results to the GP DSP MIXBUF */','    static unsigned voice_reports;\n    if(++voice_reports<=4 || voice_reports%4096==0) {\n        extern void xml1_apu_trace_voices(const uint8_t *ram,unsigned base,unsigned a,unsigned b,unsigned c);\n        xml1_apu_trace_voices(d->ram_ptr,d->regs[NV_PAPU_VPVADDR],d->regs[NV_PAPU_TVL2D],d->regs[NV_PAPU_TVL3D],d->regs[NV_PAPU_TVLMP]);\n    }\n    /* Write VP results to the GP DSP MIXBUF */')
+s=s.replace('memcpy(&d->ram_ptr[paddr], ptr, bytes_to_copy);','xml1_physical_write(d->ram_ptr,paddr,ptr,bytes_to_copy);')
+s=s.replace('memcpy(ptr, &d->ram_ptr[paddr], bytes_to_copy);','xml1_physical_read(d->ram_ptr,paddr,ptr,bytes_to_copy);')
 assert 'case NV_PAPU_' not in s and 'default:' not in s
 (root/'src/apu_dsp_real.c').write_text(s,encoding='utf-8')

@@ -3,7 +3,10 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $toolkit = Join-Path $projectRoot 'external/xboxrecomp'
 $pin = (git -C $toolkit rev-parse HEAD).Trim()
 if ($pin -ne '3706cefa416aedea6d10c87ced805f89576560c4') { throw "Unexpected XboxRecomp pin: $pin" }
-foreach ($patchName in @('xboxrecomp-xml1-memory.patch', 'xboxrecomp-flag-joins.patch', 'xboxrecomp-dsp-integration.patch', 'xboxrecomp-kernel-abi.patch', 'xboxrecomp-stereo-output.patch', 'xboxrecomp-immediate-boundaries.patch', 'xboxrecomp-kernel-dispatch-thread.patch', 'xboxrecomp-incdec-carry.patch', 'xboxrecomp-idex-channel.patch', 'xboxrecomp-native-dsp-output.patch', 'xboxrecomp-device-interrupts.patch')) {
+$patchNames = @('xboxrecomp-xml1-memory.patch', 'xboxrecomp-flag-joins.patch', 'xboxrecomp-dsp-integration.patch', 'xboxrecomp-kernel-abi.patch', 'xboxrecomp-stereo-output.patch', 'xboxrecomp-immediate-boundaries.patch', 'xboxrecomp-kernel-dispatch-thread.patch', 'xboxrecomp-incdec-carry.patch', 'xboxrecomp-idex-channel.patch', 'xboxrecomp-native-dsp-output.patch', 'xboxrecomp-device-interrupts.patch', 'xboxrecomp-physical-pages.patch')
+& (Join-Path $projectRoot ".venv/Scripts/python.exe") (Join-Path $PSScriptRoot "check-toolkit-patch-stack.py") @patchNames
+if ($LASTEXITCODE -eq 0) { return }
+foreach ($patchName in $patchNames) {
     $patch = Join-Path $projectRoot "patches/$patchName"
     git -C $toolkit apply --reverse --check $patch 2>$null
     if ($LASTEXITCODE -eq 0) { Write-Host "$patchName already applied."; continue }

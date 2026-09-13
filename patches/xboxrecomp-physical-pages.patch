@@ -1,0 +1,132 @@
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -538,6 +538,10 @@
+             /* Outbuf base/length - ignore for now */
+         } else {
+             /* Unknown method - silently ignore */
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++            static unsigned reports;
++            if(reports++<32) fprintf(stderr,"[VP UNKNOWN METHOD] method=%08X argument=%08X\n",method,argument);
++#endif
+             DPRINTF("Unknown FE method: 0x%08X arg=0x%08X\n", method, argument);
+         }
+         break;
+@@ -843,8 +847,12 @@
+                 uint32_t linear_addr = block_index * (uint32_t)block_size;
+                 if (stream) {
+                     hwaddr addr = segment_offset + linear_addr;
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++                    xml1_physical_read(d->ram_ptr,(uint32_t)addr,adpcm_block,block_size);
++#else
+                     memcpy(adpcm_block, &d->ram_ptr[addr & 0x03FFFFFF],
+                            block_size);
++#endif
+                 } else {
+                     linear_addr += ba;
+                     for (unsigned int word_index = 0;
+@@ -902,6 +910,12 @@
+                     break;
+                 }
+                 samples[sample_count][channel] = fval;
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++                if(!sample_count&&!channel) {
++                    static unsigned reports[256];
++                    if(reports[v]++<3) fprintf(stderr,"[VP SOURCE] voice=%u address=%08X raw=%08X value=%g stream=%u BA=%08X CBO=%u EBO=%u\n",v,(unsigned)addr,ival,fval,stream,ba,cbo,ebo);
++                }
++#endif
+                 addr += container_size;
+             }
+         }
+@@ -1090,6 +1104,18 @@
+         dbg->vol[i] = vol[i];
+     }
+ 
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++    {
++        static unsigned reports[256],seen_nonzero[256],last_volume[256];
++        unsigned nonzero=0;
++        for(unsigned i=0;i<NUM_SAMPLES_PER_FRAME;++i) nonzero+=(samples[i][0]!=0)+(samples[i][1]!=0);
++        if(reports[v]++<3||(nonzero&&!seen_nonzero[v])||vol[0]!=last_volume[v]) {
++            fprintf(stderr,"[VP MIX] voice=%u samples=%u EA=%g rate=%g mute=%u volumes=%u/%u/%u/%u/%u/%u/%u/%u bins=%u/%u/%u/%u/%u/%u/%u/%u\n",v,nonzero,ea_value,rate,voice_should_mute(v),vol[0],vol[1],vol[2],vol[3],vol[4],vol[5],vol[6],vol[7],bin[0],bin[1],bin[2],bin[3],bin[4],bin[5],bin[6],bin[7]);
++            seen_nonzero[v]|=nonzero!=0;
++            last_volume[v]=vol[0];
++        }
++    }
++#endif
+     if (voice_should_mute(v)) return;
+ 
+     /* Low-pass filter */
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -1666,6 +1666,11 @@
+ static void bridge_MmGetPhysicalAddress(void)
+ {
+     uint32_t addr = STACK_ARG(0);
++#ifdef RECOMP_GUEST_PHYSICAL_PAGES
++    extern uint32_t xml1_guest_physical_address(uint32_t address);
++    g_eax=xml1_guest_physical_address(addr);
++    return;
++#endif
+     /* The runtime's contiguous allocation window is a virtual mirror of
+      * physical RAM. DMA must receive its physical offset, not bit 31.
+      * Preserve the legacy identity mapping for low guest RAM. */
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -2157,14 +2157,17 @@
+  * the GPU-instance bridge, so the two do not meet until the window is full.
+  * Never freed: contiguous blocks are framebuffers and pushbuffers, which a
+  * title allocates once. */
+-static uint32_t g_contig_next = XBOX_CONTIG_BASE;
++static volatile LONG g_contig_next = (LONG)XBOX_CONTIG_BASE;
+ 
+ uint32_t xbox_ContiguousAlloc(uint32_t size, uint32_t alignment)
+ {
+     uint32_t result;
+ 
+     if (alignment < 4096) alignment = 4096;
+-    result = (g_contig_next + alignment - 1) & ~(alignment - 1);
++    uint32_t previous;
++    for(;;) {
++    previous=(uint32_t)InterlockedCompareExchange(&g_contig_next,0,0);
++    result = (previous + alignment - 1) & ~(alignment - 1);
+ 
+     /* Leave the top of the window for GPU instance memory. */
+     if ((uint64_t)result + size >
+@@ -2177,7 +2180,8 @@
+         return 0;
+     }
+ 
+-    g_contig_next = result + size;
++    if((uint32_t)InterlockedCompareExchange(&g_contig_next,(LONG)(result+size),(LONG)previous)==previous) break;
++    }
+     memset((void *)((uintptr_t)result + g_memory_offset), 0, size);
+     return result;
+ }
+--- a/src/apu/apu_shim.h
++++ b/src/apu/apu_shim.h
+@@ -95,6 +95,16 @@
+ 
+ extern uint8_t *g_apu_ram_ptr; /* Set at init to point at Xbox 64MB RAM */
+ 
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++void xml1_physical_read(void *ram,uint32_t physical,void *data,size_t bytes);
++void xml1_physical_write(void *ram,uint32_t physical,const void *data,size_t bytes);
++static inline uint32_t ldl_le_phys(void *as,hwaddr addr) { (void)as; uint32_t value; xml1_physical_read(g_apu_ram_ptr,(uint32_t)addr,&value,sizeof(value));return value; }
++static inline uint16_t lduw_le_phys(void *as,hwaddr addr) { (void)as; uint16_t value; xml1_physical_read(g_apu_ram_ptr,(uint32_t)addr,&value,sizeof(value));return value; }
++static inline uint8_t ldub_phys(void *as,hwaddr addr) { (void)as; uint8_t value; xml1_physical_read(g_apu_ram_ptr,(uint32_t)addr,&value,sizeof(value));return value; }
++static inline void stl_le_phys(void *as,hwaddr addr,uint32_t value) { (void)as; xml1_physical_write(g_apu_ram_ptr,(uint32_t)addr,&value,sizeof(value)); }
++static inline void stw_le_phys(void *as,hwaddr addr,uint16_t value) { (void)as; xml1_physical_write(g_apu_ram_ptr,(uint32_t)addr,&value,sizeof(value)); }
++static inline void stb_phys(void *as,hwaddr addr,uint8_t value) { (void)as; xml1_physical_write(g_apu_ram_ptr,(uint32_t)addr,&value,sizeof(value)); }
++#else
+ /* Little-endian physical memory reads */
+ static inline uint32_t ldl_le_phys(void *as, hwaddr addr) {
+     (void)as;
+@@ -122,6 +132,8 @@
+     (void)as;
+     *(uint8_t *)(g_apu_ram_ptr + (addr & 0x03FFFFFF)) = val;
+ }
++
++#endif
+ 
+ /* Stub address space - just passed to ldl_le_phys etc. (ignored) */
+ static int address_space_memory_dummy;

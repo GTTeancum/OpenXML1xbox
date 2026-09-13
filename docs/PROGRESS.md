@@ -547,3 +547,30 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   next inspect each actual source/SG/stream segment and pre-mix sample data.
   Voice resampling currently ignores pitch ratio and is also required fidelity
   work. No new meaningful screenshot posted; no audible/FMVs claim. See AUDIO.md.
+
+
+## Pageable audio DMA mapping (boot085–093)
+
+- Voice/gain tracing established that movie voice76 becomes unmuted but reads
+  zeros: MmGetPhysicalAddress returned low guest VA offsets into an unrelated
+  contiguous backing allocation. Ordered patch12 routes APU VP/GP/EP physical
+  transfers through a live page map. Low guest pages reserve identities from
+  the same atomic contiguous allocator, avoiding physical offset collisions.
+- The map preserves offsets, supports physical and guest page zero, and splits
+  DMA at physical page boundaries. CPU writes and DMA writes share guest bytes.
+  Synthetic tests pass for stable identities, collision avoidance, independent
+  contiguous storage and transfers across physically adjacent but virtually
+  distant pages. GP/EP bootstrap/MMIO, output retry/payload, IRQ and kernel
+  dispatch tests also pass. Adapter regeneration is identical. Overlapping
+  patches are now checked by reversing the complete stack in a temporary copy;
+  all twelve validate without changing the checkout.
+- boot092 produced975562 nonzero stereo sample values, peak20854, no clipping
+  by17.444 seconds. boot093 completed its60-second diagnostic bound(exit3),
+  produced900808 nonzero values with the same peak and no clipping, but audio
+  subsequently became silent and presentation stopped afterframe780. This is
+  a DMA correctness milestone, not a claim of correct audio or movie playback.
+  Native captures remain black; no duplicate screenshot posted.
+- Next: resolve movie/audio progression and implement correct voice resampling;
+  then revalidate level1 input after the IRQ and physical-memory changes.
+  Page mappings currently persist for the process lifetime, as does the existing
+  contiguous arena allocator. No full virtual-memory remap/free semantics claimed.

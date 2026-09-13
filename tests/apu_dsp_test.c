@@ -1,5 +1,7 @@
 #include "apu_state.h"
 #include <stdio.h>
+void *recomp_lookup(ULONG address) { (void)address; return NULL; }
+void *recomp_lookup_manual(ULONG address) { (void)address; return NULL; }
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"APU DSP test failed at line %d: %s\n",__LINE__,#x); exit(1); } } while(0)
 uint64_t mcpx_apu_mmio_read(MCPXAPUState *,uint64_t,unsigned);
 void mcpx_apu_mmio_write(MCPXAPUState *,uint64_t,uint64_t,unsigned);

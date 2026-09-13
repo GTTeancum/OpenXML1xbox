@@ -61,10 +61,10 @@ static void scatter_gather_rw(MCPXAPUState *d, hwaddr sge_base,
         assert(paddr + bytes_to_copy < (64u * 1024u * 1024u));
 
         if (dir) {
-            memcpy(&d->ram_ptr[paddr], ptr, bytes_to_copy);
+            xml1_physical_write(d->ram_ptr,paddr,ptr,bytes_to_copy);
 
         } else {
-            memcpy(ptr, &d->ram_ptr[paddr], bytes_to_copy);
+            xml1_physical_read(d->ram_ptr,paddr,ptr,bytes_to_copy);
         }
 
         ptr += bytes_to_copy;

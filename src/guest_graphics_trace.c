@@ -27,6 +27,32 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    if(va==0x374D3E && g_ecx<xbox_GetMappedSize()-0x74) {
+        static LONG reports;
+        if(InterlockedIncrement(&reports)<=100) {
+            const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
+            uint32_t settings=*(const uint32_t *)(memory+g_ecx+0x70);
+            if(settings && settings<xbox_GetMappedSize()-0xC0) {
+                const uint32_t *s=(const uint32_t *)(memory+settings);
+                fprintf(stderr,"[GAIN CALC] voice=%08X settings=%08X hwvoices=%u bins=%u master=%d spatial=%08X gains=%d/%d/%d/%d/%d/%d\n",g_ecx,settings,memory[g_ecx+0x64],s[0x24/4],(int32_t)s[0x1C/4],s[0xB8/4],(int32_t)s[0x30/4],(int32_t)s[0x34/4],(int32_t)s[0x38/4],(int32_t)s[0x3C/4],(int32_t)s[0x40/4],(int32_t)s[0x44/4]);
+            }
+        }
+    }
+    if(va==0x3706A9||va==0x370821||va==0x36F87B||va==0x36F782) {
+        static LONG reports;
+        if(g_esp<xbox_GetMappedSize()-16 && InterlockedIncrement(&reports)<=600) {
+            const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
+            const uint32_t *a=(const uint32_t *)(memory+g_esp+4);
+            fprintf(stderr,"[GUEST AUDIO GAIN] call=%08X ecx=%08X arg0=%08X arg1=%08X signed1=%d caller=%08X\n",va,g_ecx,a[0],a[1],(int32_t)a[1],*(const uint32_t *)(memory+g_esp));
+            if(va==0x36F782 && a[0] && a[0]<xbox_GetMappedSize()-8) {
+                const uint32_t *mix=(const uint32_t *)(memory+a[0]);
+                if(mix[0]<=32 && mix[1] && (uint64_t)mix[1]+mix[0]*8<=xbox_GetMappedSize()) {
+                    const uint32_t *pairs=(const uint32_t *)(memory+mix[1]);
+                    for(unsigned i=0;i<mix[0];++i) fprintf(stderr,"  mixbin=%u volume=%d\n",pairs[i*2],(int32_t)pairs[i*2+1]);
+                }
+            }
+        }
+    }
     if(va==0x367AF0) xml1_movie_watch_report();
     if(va==0x39A7D1 && g_esp<xbox_GetMappedSize()-16) {
         static LONG reports;
