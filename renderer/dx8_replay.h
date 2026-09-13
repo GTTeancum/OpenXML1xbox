@@ -83,7 +83,8 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         complete_rendering(device);
         return false;
     }
-    const bool version4=magic[7]=='4';
+    const bool version5=magic[7]=='5';
+    const bool version4=magic[7]=='4'||version5;
     const bool version3=magic[7]=='3'||version4;
     const bool version2=magic[7]=='2'||version3;
     const bool flush=!std::memcmp(magic,"XMLDX8F",7);
@@ -95,9 +96,9 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
     frame_open=true;
     checked(device->BeginScene());
     for (uint32_t n=0;n<count;++n) {
-        uint32_t header[5]={0,0,0,14,0x142},rs[168],ts[128];
+        uint32_t header[6]={0,0,0,14,0x142,6},rs[168],ts[128];
         D3DVIEWPORT8 viewport; D3DMATRIX matrices[3];
-        read(header,version2?sizeof(header):12); read(&viewport,sizeof(viewport));
+        read(header,version5?sizeof(header):version2?20:12); read(&viewport,sizeof(viewport));
         read(matrices,sizeof(matrices)); read(rs,sizeof(rs)); read(ts,sizeof(ts));
         D3DMATERIAL8 material={}; uint32_t light_mask=0; D3DLIGHT8 lights[32]={};
         if(version3) {
@@ -113,6 +114,7 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         if ((header[3]!=14&&header[3]!=6&&header[3]!=0&&header[3]!=25)||!xml1_fvf_stride(header[4]))
             throw std::runtime_error("Unsupported replay format");
         const unsigned stride=xml1_fvf_stride(header[4]);
+        if(header[5]!=6&&header[5]!=7) throw std::runtime_error("Unsupported primitive type");
         const unsigned rows=header[3]!=14?height:(height+3)/4;
         const unsigned rowBytes=header[3]!=14?width*(header[3]==6?4:1):((width+3)/4)*16;
         size_t texBytes=(size_t)rows*rowBytes;
@@ -162,9 +164,12 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         state(D3DRS_ALPHABLENDENABLE,rs[59]); state(D3DRS_ALPHATESTENABLE,rs[60]);
         state(D3DRS_ALPHAFUNC,rs[58]-0x200+1); state(D3DRS_ALPHAREF,rs[61]);
         state(D3DRS_SRCBLEND,blend(rs[62])); state(D3DRS_DESTBLEND,blend(rs[63]));
-        if (rs[147] || rs[144] || rs[139]!=0x1B02 || rs[74]!=0x8006)
+        if ((rs[147]!=0 && rs[147]!=0x900 && rs[147]!=0x901) || rs[144] || rs[139]!=0x1B02 || rs[74]!=0x8006) {
+            std::fprintf(stderr,"Unsupported states: cull=%08X stencil=%08X fill=%08X blend=%08X\n",rs[147],rs[144],rs[139],rs[74]);
             throw std::runtime_error("Unsupported replay culling/stencil/fill/blend mode");
-        state(D3DRS_CULLMODE,D3DCULL_NONE); state(D3DRS_STENCILENABLE,FALSE);
+        }
+        state(D3DRS_CULLMODE,rs[147]==0?D3DCULL_NONE:rs[147]==0x900?D3DCULL_CW:D3DCULL_CCW);
+        state(D3DRS_STENCILENABLE,FALSE);
         state(D3DRS_BLENDOP,D3DBLENDOP_ADD);
         state(D3DRS_COLORWRITEENABLE, ((rs[67]&0x10000)?1:0)|((rs[67]&0x100)?2:0)|((rs[67]&1)?4:0)|((rs[67]&0x1000000)?8:0));
         if(version4) state(D3DRS_TEXTUREFACTOR,rs[148]);
@@ -181,7 +186,7 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
             checked(device->SetTextureStageState(stage,D3DTSS_TEXCOORDINDEX,ts[stage*32+28]));
             checked(device->SetTexture(stage,stage==0?texture:stage==1?second_texture:nullptr));
         }
-        checked(device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,vertices-2,vb.data(),stride));
+        checked(device->DrawPrimitiveUP(header[5]==6?D3DPT_TRIANGLESTRIP:D3DPT_TRIANGLEFAN,vertices-2,vb.data(),stride));
         texture->Release();
         if(second_texture) second_texture->Release();
         if (!live) std::printf("Replayed game draw %u: %u vertices, %ux%u format %u\n",n+1,vertices,width,height,header[3]);

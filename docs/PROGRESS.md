@@ -474,3 +474,9 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   boot073 passes the crash, loads NYC/Wolverine/Cyclops assets, and reaches a
   renderer refusal atframe654 (culling/stencil/fill/blend state). Still no playable
   level1 or full audio/graphics fidelity claim. Movie timing remains unresolved.
+
+- boot074 identifies the next state as Xbox cull0900 (clockwise). Native CW/CCW
+  mapping passes an opposite-side plane test. boot075 then reaches triangle fan7.
+  Version5 packets carry primitive type, preserving original fan/index ordering.
+  Native regression confirms an equivalent fan and strip have identical pixels;
+  earlier batching, lighting, texture-stage and culling tests still pass.

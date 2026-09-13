@@ -121,7 +121,7 @@ void xml1_graphics_live_observe(uint32_t va) {
         uint32_t second_color_op=*(const uint32_t *)guest(0x36C660+128+12*4,4);
         const uint32_t *ts=guest(0x36C660,512);
         int second_active=ts[12]!=1&&second_color_op!=1;
-        if (a[0]!=6||vertex_count<3||vertex_count>1000000||!xml1_fvf_stride(fvf)||stride!=xml1_fvf_stride(fvf)||pixel_shader||!stream||!textures[0]||(second_active&&(!textures[1]||ts[76]!=1))) {
+        if ((a[0]!=6&&a[0]!=7)||vertex_count<3||vertex_count>1000000||!xml1_fvf_stride(fvf)||stride!=xml1_fvf_stride(fvf)||pixel_shader||!stream||!textures[0]||(second_active&&(!textures[1]||ts[76]!=1))) {
             for(unsigned stage=0;stage<4;++stage) if (textures[stage]) {
                 const uint32_t *t=guest(textures[stage],20);
                 const uint32_t *s=guest(0x36C660+stage*128,128);
@@ -148,7 +148,7 @@ void xml1_graphics_live_observe(uint32_t va) {
             if(ts[stage*32+21]&&!(matrix_mask&(1u<<(stage+2)))) fatal("missing texture transform");
         uint32_t format=(tex[3]>>8)&255;
         if ((format!=14&&format!=6&&format!=0&&format!=25)||tex[4]) fatal("unimplemented texture format");
-        uint32_t header[5]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),vertex_count,format,fvf};
+        uint32_t header[6]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),vertex_count,format,fvf,a[0]};
         uint64_t offset=(uint64_t)vb[1]+(indexed?0:(uint64_t)a[1]*stride), bytes=(uint64_t)vertex_count*stride;
         size_t tex_bytes=format!=14?(size_t)header[0]*header[1]*(format==6?4:1):(size_t)((header[0]+3)/4)*((header[1]+3)/4)*16;
         if (offset+bytes>64u*1024*1024||(uint64_t)tex[1]+tex_bytes>64u*1024*1024) fatal("resource bounds");
@@ -228,7 +228,7 @@ static void flush_completed_work(void) {
     uint32_t *d=guest(device,0x40);
     if (g_ecx!=device) fatal("unexpected push-buffer flush device");
     uint32_t fence=d[0x2c/4]-2;
-    send_bytes("XMLDX8F4",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+    send_bytes("XMLDX8F5",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
     draws=0; used=0;
     /* InsertFence records this counter before incrementing by two. Signal only
      * after all preceding native submissions have completed; no Present here. */
@@ -242,7 +242,7 @@ static void ordered_clear(const uint32_t *a) {
     const void *rects=a[0]?guest(a[1],(size_t)a[0]*16):NULL;
     if(pipe==INVALID_HANDLE_VALUE) connect_worker();
     if(draws) {
-        send_bytes("XMLDX8F4",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+        send_bytes("XMLDX8F5",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
         draws=0; used=0;
     }
     uint32_t header[5]={a[2],a[3],a[4],a[5],a[0]};
@@ -261,7 +261,7 @@ void xml1_graphics_swap(void) {
             frames+1,d[0x2c/4],*(uint32_t*)guest(d[0x30/4],4),draws);
     }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
-    send_bytes("XMLDX8R4",8); send_bytes(&draws,4); send_bytes(packet,used);
+    send_bytes("XMLDX8R5",8); send_bytes(&draws,4); send_bytes(packet,used);
     receive_ack();
     ++frames;
     xml1_input_test_frame(frames);

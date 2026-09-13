@@ -109,3 +109,28 @@ for uv,expected in ((.25,bytes.fromhex('0000ff')),(.75,bytes.fromhex('ff0000')))
         pixels=output.read_bytes()
         assert pixels[54+(240*640+320)*3:54+(240*640+320)*3+3]==expected, 'Second texture normal coordinates/transform selected incorrect texel'
 print('PASS: L8 primary and second ARGB texture with transformed normal coordinates, FVF112/152')
+
+# Reuse the known-color plane: opposite winding modes must select exactly one
+# side. Positions in this fixture have clockwise winding after viewport mapping.
+source_packet=bytearray(packet.read_bytes())
+culled=[]
+for mode in (0x900,0x901):
+    struct.pack_into('<I',source_packet,32+216+147*4,mode)
+    case=root/f'build/dx8-cull-{mode:x}.bin'; case.write_bytes(source_packet)
+    output=case.with_suffix('.bmp')
+    subprocess.run([str(worker),'--replay',str(case),str(output)],cwd=root,check=True)
+    culled.append(any(output.read_bytes()[54:]))
+assert culled==[False,True], 'Native winding selection differs from expected CW/CCW semantics'
+print('PASS: clockwise and counterclockwise culling select opposite plane sides')
+
+# Equivalent strip and fan describe the same constant-color plane.
+struct.pack_into('<I',source_packet,32+216+147*4,0)
+strip_packet=bytes(source_packet)
+vertex_data=strip_packet[-144:]
+fan_vertices=b''.join(vertex_data[i*36:(i+1)*36] for i in (0,1,3,2))
+fan_packet=b'XMLDX8R5'+strip_packet[8:32]+struct.pack('<I',7)+strip_packet[32:-144]+fan_vertices
+fan=root/'build/dx8-fan.bin';fan.write_bytes(fan_packet)
+fan_output=fan.with_suffix('.bmp')
+subprocess.run([str(worker),'--replay',str(fan),str(fan_output)],cwd=root,check=True)
+assert fan_output.read_bytes()==(root/'build/dx8-env-0.75-152.bmp').read_bytes(), 'Equivalent fan and strip differ'
+print('PASS: version5 triangle fan matches equivalent triangle strip')
