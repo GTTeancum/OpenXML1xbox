@@ -1,0 +1,17 @@
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -828,6 +828,14 @@
+         seg_cs = (segment_length >> 16) & 3;
+         seg_spb = (segment_length >> 18) & 0x1f;
+         seg_s = (segment_length >> 23) & 1;
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++        {
++            static unsigned reported[256];
++            if(reported[v]++<3)
++                fprintf(stderr,"[SSL FORMAT] voice=%u voice_cs=%u voice_spb=%u voice_stereo=%u sample_size=%u segment_cs=%d segment_spb=%d segment_stereo=%d length=%u offset=%08X\n",
++                    v,container_size_index,samples_per_block,stereo,sample_size,seg_cs,seg_spb+1,seg_s,seg_len,(uint32_t)segment_offset);
++        }
++#endif
+         container_size_index = seg_cs;
+         if (seg_cs == NV_PAVS_VOICE_CFG_FMT_CONTAINER_SIZE_ADPCM) {
+             sample_size = NV_PAVS_VOICE_CFG_FMT_SAMPLE_SIZE_S24;

@@ -2,6 +2,7 @@
 #include "dx8_packet.h"
 #include "guest_input.h"
 #include "fair_gate.h"
+#include "light_state.h"
 #include "../external/xboxrecomp/src/d3d/d3d8_swizzle.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -13,7 +14,8 @@ extern ptrdiff_t g_xbox_mem_offset;
 static int enabled=-1;
 static uint32_t matrices[10][16], matrix_mask, viewport[6], stream, stride, textures[4], fvf, pixel_shader;
 static uint32_t methods[0x800], method_set[0x800];
-static uint32_t material[17], lights[32][26], light_mask, light_valid;
+static uint32_t material[17];
+static xml1_light_state light_state;
 static int material_valid;
 static unsigned char *packet;
 static size_t used, capacity;
@@ -125,12 +127,18 @@ void xml1_graphics_live_observe(uint32_t va) {
     } else if (va==0x35BA10) memcpy(viewport,guest(a[0],24),24);
     else if (va==0x35AFB0) { memcpy(material,guest(a[0],68),68); material_valid=1; }
     else if (va==0x35BC40) {
-        if(a[0]>=32) fatal("light index exceeds supported range");
-        memcpy(lights[a[0]],guest(a[1],104),104); light_valid|=1u<<a[0];
+        xml1_light *light=xml1_light_find(&light_state,a[0]);
+        if(!light) fatal("light definition allocation failed");
+        if(a[0]>=32) {
+            static unsigned reports;
+            if(reports++<16) fprintf(stderr,"[DX8 LIGHT ID] set id=%u frame=%u\n",a[0],frames);
+        }
+        memcpy(light->value,guest(a[1],104),104);
     }
     else if (va==0x35BF00) {
-        if(a[0]>=32) fatal("light index exceeds supported range");
-        if(a[1]) light_mask|=1u<<a[0]; else light_mask&=~(1u<<a[0]);
+        xml1_light *light=xml1_light_find(&light_state,a[0]);
+        if(!light) fatal("light definition allocation failed");
+        light->enabled=a[1]!=0;
     }
     else if (va==0x35D760) fvf=a[0];
     else if (va==0x3692E0) pixel_shader=a[0];
@@ -188,7 +196,9 @@ void xml1_graphics_live_observe(uint32_t va) {
         if(!tex_bytes) fatal("invalid primary mip chain");
         if (offset+bytes>64u*1024*1024||(uint64_t)tex[1]+tex_bytes>64u*1024*1024) fatal("resource bounds");
         uint32_t rs[168]; memcpy(rs,guest(0x36C860,sizeof(rs)),sizeof(rs));
-        if(rs[102]&&(!material_valid||(light_mask&~light_valid))) fatal("missing material or enabled light definition");
+        uint32_t lights[32][26], light_mask;
+        if(!xml1_light_snapshot(&light_state,lights,&light_mask)) fatal("more than 32 simultaneously enabled lights");
+        if(rs[102]&&!material_valid) fatal("missing material");
         static const unsigned mapping[][2]={{0x300,60},{0x304,59},{0x33C,58},{0x340,61},{0x344,62},{0x348,63},
             {0x350,74},{0x354,57},{0x358,67},{0x35C,64}};
         for (unsigned i=0;i<sizeof(mapping)/sizeof(mapping[0]);++i)

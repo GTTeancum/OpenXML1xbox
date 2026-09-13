@@ -257,3 +257,9 @@ movie reference shows the final DSP/output stage is not the sole investigation.
 scripts/compare-movie-audio.py accepts s16 PCM or --native-format f32 captures;
 its exploratory normalized correlations exclude quiet windows and do not certify
 perceptual quality, channel routing or full-band frequency response.
+
+Diagnostic patch20 compares SSL and voice format fields without changing them.
+boot136 voice68 agrees on ADPCM container2, samples-per-block2, stereo1, with
+valid physical0. This does not support overriding voice fields from descriptors.
+boot135 sustains APU output while reaching level1 and accepting movement, but
+reference waveform mismatch and full audio fidelity remain unresolved.

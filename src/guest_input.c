@@ -40,6 +40,12 @@ static void test_file_input(uint32_t frame) {
     if(!strcmp(action,"a")) state.bAnalogButtons[XBOX_BUTTON_A]=255;
     else if(!strcmp(action,"start")) state.wButtons=XBOX_GAMEPAD_START;
     else if(!strcmp(action,"right")) {state.sThumbLX=32767;duration=1000;}
+    else if(!strcmp(action,"left")) {state.sThumbLX=-32767;duration=1000;}
+    else if(!strcmp(action,"up")) {state.sThumbLY=32767;duration=1000;}
+    else if(!strcmp(action,"down")) {state.sThumbLY=-32767;duration=1000;}
+    else if(!strcmp(action,"b")) state.bAnalogButtons[XBOX_BUTTON_B]=255;
+    else if(!strcmp(action,"x")) state.bAnalogButtons[XBOX_BUTTON_X]=255;
+    else if(!strcmp(action,"y")) state.bAnalogButtons[XBOX_BUTTON_Y]=255;
     else if(!strcmp(action,"neutral")) duration=0;
     else {fprintf(stderr,"[FATAL INPUT] unsupported test command %s\n",action);_exit(4);}
     test_input_id=id; test_release_tick=duration?GetTickCount64()+duration:0;
@@ -85,9 +91,9 @@ static DWORD poll(unsigned port, XBOX_INPUT_STATE *state)
         *state = test_states[port];
         static uint32_t logged_packet[4];
         if(logged_packet[port]!=state->dwPacketNumber) {
-            fprintf(stderr,"[INPUT POLL] port=%u packet=%u A=%u buttons=%04X leftX=%d\n",port,
+            fprintf(stderr,"[INPUT POLL] port=%u packet=%u A=%u buttons=%04X leftX=%d leftY=%d\n",port,
                 state->dwPacketNumber,state->Gamepad.bAnalogButtons[XBOX_BUTTON_A],
-                state->Gamepad.wButtons,state->Gamepad.sThumbLX);
+                state->Gamepad.wButtons,state->Gamepad.sThumbLX,state->Gamepad.sThumbLY);
             logged_packet[port]=state->dwPacketNumber;
         }
         return 0;

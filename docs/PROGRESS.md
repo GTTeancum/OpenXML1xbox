@@ -874,3 +874,37 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   traversing menu and attract video. A later short file-driven A press did not
   enter the story; elapsed-time holds and packet-poll logs are in the next build
   to distinguish missed input from scene timing. Current level1 is not verified.
+
+## Directed level1 input and stream format evidence (boot135-137)
+
+- boot135 revalidates level1 on the current fence/IRQL/audio-buffer fixes.
+  Normal process-local Start, A, Start presses pass through menu and story video.
+  Right movement moves Wolverine to the taxi/tree corner and the camera follows;
+  the game polls the later A press. The run ends at its300-second bound, exit3,
+  with no fatal guard. This is not proof of combat completion or sound fidelity.
+- The file harness now supports left/up/down and B/X/Y as well. Wire-state tests
+  pass for each direction and button; no host input is generated.
+- boot136 finishes300 seconds without a fatal guard. New diagnostic patch20
+  reports voice68 with ADPCM container2, samples-per-block2 and stereo1 in both
+  its voice configuration and SSL descriptor. They agree; no stream-format
+  override is justified by this evidence. Audio fidelity remains unresolved.
+- boot137 enters level1 and moves upward into the courtyard. The next upward
+  command hits the bridge's light-ID>=32 guard at frame1871 (exit4).
+  The original supplied-XBE SetLight at0035BC40 dynamically grows its table in
+  blocks of16 IDs, so a32-ID limit in the bridge is artificial. LightEnable at
+  0035BF00 also creates the default directional definition when absent.
+- The bridge now retains arbitrary DWORD light IDs separately from the compact
+  per-draw enabled-light mask. Definitions survive disabling/re-enabling, and
+  absent definitions receive the same directional default as original code.
+  It still rejects more than32 simultaneous lights; native DX8 also checks its
+  own hardware capabilities. No light is silently discarded.
+- Sparse-light tests cover200 retained IDs, re-enabling, DWORD_MAX, defaults and
+  enabled overflow. Default/optimized builds and native renderer pixel/lighting/
+  culling/primitive/mip/vblank regressions pass;20-patch stack validation passes.
+- boot138 passes the former movement failure, logging actual light IDs32-39.
+  Frame2640 shows live enemies attacking Wolverine, hit effects and damage7.
+  Saved native capture: outputs/xml1-dx8-level1-first-combat.bmp in this task's
+  deliverables directory. A later A press is polled, but Wolverine dies while
+  largely idle; frame2880 displays the normal elimination menu. This is not
+  verified successful player combat. The run was deliberately stopped after
+  frame3180 once this state was recorded; its termination is not a game crash.

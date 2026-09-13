@@ -85,6 +85,19 @@ int main(void) {
     xml1_input_test_frame(1040); REQUIRE(call(0x3C0398,2,args)==0 && *(int16_t *)(memory+0x600012)==32767);
     command=fopen(command_path,"wb"); REQUIRE(command); fputs("4 neutral\n",command); fclose(command);
     xml1_input_test_frame(1041); REQUIRE(call(0x3C0398,2,args)==0 && *(int16_t *)(memory+0x600012)==0);
+    const char *directions[]={"left","up","down"};
+    for(unsigned i=0;i<3;++i) {
+        command=fopen(command_path,"wb"); REQUIRE(command); fprintf(command,"%u %s\n",5+i,directions[i]); fclose(command);
+        xml1_input_test_frame(1050+i); REQUIRE(call(0x3C0398,2,args)==0);
+        REQUIRE(*(int16_t *)(memory+0x600012)==(i==0?-32767:0));
+        REQUIRE(*(int16_t *)(memory+0x600014)==(i==1?32767:i==2?-32767:0));
+    }
+    const char *buttons[]={"b","x","y"};
+    for(unsigned i=0;i<3;++i) {
+        command=fopen(command_path,"wb"); REQUIRE(command); fprintf(command,"%u %s\n",8+i,buttons[i]); fclose(command);
+        xml1_input_test_frame(1060+i); REQUIRE(call(0x3C0398,2,args)==0);
+        for(unsigned j=0;j<4;++j) REQUIRE(memory[0x60000A+j]==(j==i+1?255:0));
+    }
     REQUIRE(DeleteFileA(command_path));
     puts("PASS: file commands wait for complete lines, apply once, release buttons and stay process-local");
     memset(memory + 0x600100, 0, 70);

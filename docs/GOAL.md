@@ -80,3 +80,14 @@ The missing GPU fence tag is now published after native completion; boot134
 runs300s through menu/attract video without its earlier fence stall. Directed,
 elapsed-time process-local input is ready for the next level1 test. Audio
 reference mismatch remains visible before DSP processing; goal remains active.
+
+boot135 now reaches level1 with native DX8 and APU enabled for the300-second
+bounded run. Directed movement and an A-button poll succeed, but extended
+traversal/combat, sound fidelity and overall graphics correctness are not done.
+boot137 movement exposes an artificial32-light-ID bridge limit; correcting
+retained light indexing and checking the same path is the current work.
+
+boot138 passes the lighting limit and reaches live enemy combat, hit effects,
+health loss and the normal elimination menu. Sparse retained light IDs32-39
+are mapped to active native slots. The idle player dies; successful combat and
+level completion are still unverified. Audio fidelity remains a separate blocker.
