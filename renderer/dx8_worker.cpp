@@ -112,7 +112,11 @@ int main(int argc, char** argv) {
                     while (pump_playtest_window()) {
                         if (!PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr)) break;
                         if (available) break;
-                        MsgWaitForMultipleObjectsEx(0, nullptr, 10, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
+                        // A synchronous pipe does not wake a message-only
+                        // wait. A 10ms timeout here delays every guest flush,
+                        // reducing gameplay to a few FPS. Yield without a
+                        // fixed delay and keep pumping this window's messages.
+                        SwitchToThread();
                     }
                     if (user_closed) { std::printf("Playtest window closed by user\n"); break; }
                 }

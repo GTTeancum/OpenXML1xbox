@@ -1168,3 +1168,27 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   geometry. No unsupported inference or minimap fix is claimed this turn.
 - About9h46m of the30-hour goal allowance has elapsed. No game process remains
   active after the bounded startup check; the human-test launcher is available.
+
+## 2026-09-13 16:08 UTC - Human visible-mode polling correction
+
+- The first requested human launch connected an XInput controller and opened
+  the genuine native DX8 window. Its graphics worker waited up to10ms for
+  window messages between every synchronous pipe command; pipe data cannot
+  wake that message-only wait. Numerous flushes accumulated that delay.
+  Captures600..720 took roughly44 seconds (about2.7 FPS, scene-dependent).
+- Replaced the timed idle wait with SwitchToThread plus continued native
+  window-message pumping and pipe checks. This removes forced command latency
+  but can consume additional CPU while the pipe is idle. An event-driven read
+  remains a possible refinement; no fake GPU completion or vblank is used.
+- Built the renderer separately, then restarted with explicit user approval.
+  The first replacement attempt hit a transient executable lock and relaunched
+  the old renderer; that attempt was stopped immediately. The subsequent copy
+  succeeded and its SHA256 was verified before relaunch:
+  81E3F8F53786C95D6A8CE0892075C4669E7AC892B34ACA425087A103C5059D79.
+- Active corrected session: human-playtest-20260913-120703.log, game PID35668
+  at the last check. Empty flush samples are0.016..0.044ms. Main-menu capture
+  frames1500..1680 span4.0469663s, or44.48 FPS. Frame1680 was inspected as the
+  main menu; this is not a combat measurement or full fidelity certification.
+- User retains interactive control. No host input or desktop capture was used.
+  The optimized game executable remains unchanged; only its native worker was
+  replaced. The older session logs remain preserved under their own names.
