@@ -762,3 +762,36 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   i103, i104 and i105 are reached. Native frame780 shows the Raven logo, new
   artwork relative to the earlier Activision capture. Full movie/A-V fidelity,
   current level1 and sustained gameplay remain unverified.
+
+
+## Longer playback and remaining synchronization failures (boot122–125)
+
+- The runner now supports1–600 seconds and rejects a run whose requested end
+  crosses the30-hour cutoff. Previous limits could not cover the natural intro
+  sequence at current playback speed.
+- boot122 exits with assertion failure in the APU stream reader: a segment-list
+  entry has a zero physical offset. Ordered patch17 logs voice/index/segment,
+  descriptor addresses, length, CBO and list configuration before the existing
+  assertions. The guard is retained; zero is not silently replaced or skipped.
+- boot123 diagnostic build reaches only the first captured frame in25 seconds.
+  Its watchdog reports repeated00128900 calls. This is not movie completion.
+- boot124 optimized run reaches the final Sofdec intro without reproducing the
+  assertion, then stops advancing at the menu transition. At300s its main thread
+  waits in ordinal277 RtlEnterCriticalSection with guest critical section0037A70C,
+  entered by DirectSound helper0036F535 through0036FB7C/003707B2. PCM processing
+  continues, but its nonzero count stops increasing. This identifies the next
+  audio lock investigation; it does not establish who owns the lock or why.
+- Opt-in XML1_MOVIE_TIMELINE records up to256 calls from first conversion through
+  swizzle. boot124 shows8.06ms conversion followed by27.07ms in native GPU flush;
+  the previous assumption that D3DX copy dominated was not supported by this trace.
+  The switch is cached in current code to avoid environment lookup on every call.
+- Empty native flushes now acknowledge already-completed work without repeating
+  a backbuffer lock. Every preceding draw/clear batch still completes before its
+  acknowledgement. Native fixture tests pass, including empty flushes before and
+  between batches, exact splash pixel equality, formats/materials/lights/culling,
+  list/strip/fan geometry, mip levels and vertical blank ordering. Tests may select
+  a separately built worker with --worker for validation.
+- boot125 reaches frame420 in30 seconds, bound3. Early empty flush submissions
+  take0.038–0.101ms, but the first movie flush interval remains24.78ms overall.
+  Queue and submission timings are now recorded separately. Playback speed is
+  still unresolved; removing redundant readbacks alone does not solve it.

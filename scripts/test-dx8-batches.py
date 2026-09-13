@@ -1,5 +1,6 @@
 """Compare native DX8 rendering of the captured splash as one or two batches."""
 from pathlib import Path
+import argparse
 import hashlib
 import struct
 import subprocess
@@ -17,9 +18,13 @@ for _ in range(2):
     at += size
 assert at == len(source)
 batch = root/'build/d3d-replay-split.bin'
-batch.write_bytes(b'XMLDX8F1'+struct.pack('<I',1)+draws[0]+
+batch.write_bytes(b'XMLDX8F1'+struct.pack('<I',0)+
+                  b'XMLDX8F1'+struct.pack('<I',1)+draws[0]+
+                  b'XMLDX8F1'+struct.pack('<I',0)+
                   b'XMLDX8R1'+struct.pack('<I',1)+draws[1])
-worker = root/'build/renderer/Release/xml1-dx8-worker.exe'
+parser=argparse.ArgumentParser()
+parser.add_argument('--worker',type=Path,default=root/'build/renderer/Release/xml1-dx8-worker.exe')
+worker=parser.parse_args().worker.resolve()
 v2 = root/'build/d3d-replay-v2.bin'
 v2.write_bytes(b'XMLDX8R2'+struct.pack('<I',2)+b''.join(
     draw[:12]+struct.pack('<II',14,0x142)+draw[12:] for draw in draws))

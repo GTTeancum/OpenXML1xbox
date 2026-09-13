@@ -123,7 +123,9 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
     const bool flush=!std::memcmp(magic,"XMLDX8F",7);
     if ((!flush && std::memcmp(magic,"XMLDX8R",7)) || (!version2 && magic[7]!='1')) throw std::runtime_error("Invalid replay version");
     uint32_t count; read(&count,4);
-    if (flush && !count) { complete_rendering(device); return false; }
+    /* Every preceding clear/draw batch completes before its acknowledgement.
+     * An empty flush submits no work, so that completion already covers it. */
+    if (flush && !count) return false;
     if ((!live && !count) || count>10000) throw std::runtime_error("Invalid draw count");
     if (!frame_open) checked(device->Clear(0,nullptr,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL,0,1.0f,0));
     frame_open=true;

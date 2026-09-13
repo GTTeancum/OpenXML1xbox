@@ -10,6 +10,30 @@ void xml1_movie_watch_arm(uint32_t va);
 void xml1_movie_watch_report(void);
 static uint32_t movie_source_to_watch;
 static RECOMP_TLS ULONGLONG movie_convert_start;
+static RECOMP_TLS struct { uint32_t va; LARGE_INTEGER at; } movie_timeline[256];
+static RECOMP_TLS unsigned movie_timeline_count;
+static RECOMP_TLS int movie_timeline_done;
+static void trace_movie_timeline(uint32_t va) {
+    static volatile LONG enabled=-1;
+    LONG capture=InterlockedCompareExchange(&enabled,0,0);
+    if(capture<0) {
+        capture=getenv("XML1_MOVIE_TIMELINE")!=NULL;
+        InterlockedCompareExchange(&enabled,capture,-1);
+    }
+    if (movie_timeline_done || !capture) return;
+    if (!movie_timeline_count && va!=0x32B8A0) return;
+    if (movie_timeline_count<256) {
+        movie_timeline[movie_timeline_count].va=va;
+        QueryPerformanceCounter(&movie_timeline[movie_timeline_count++].at);
+    }
+    if (va==0x3A6D39) {
+        LARGE_INTEGER frequency; QueryPerformanceFrequency(&frequency);
+        for(unsigned i=0;i<movie_timeline_count;++i)
+            fprintf(stderr,"[MOVIE TIMELINE] va=%08X elapsed_ms=%.3f\n",movie_timeline[i].va,
+                1000.0*(movie_timeline[i].at.QuadPart-movie_timeline[0].at.QuadPart)/frequency.QuadPart);
+        movie_timeline_done=1;
+    }
+}
 
 static void dump_region(const char *path, uint32_t va, size_t bytes)
 {
@@ -28,6 +52,7 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    trace_movie_timeline(va);
     if(va==0x32B8A0) movie_convert_start=GetTickCount64();
     if(va==0x35DDC0) {
         static unsigned reports;

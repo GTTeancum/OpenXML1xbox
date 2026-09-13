@@ -244,12 +244,20 @@ static void receive_ack(void) {
     ++sequence;
 }
 static void flush_completed_work(void) {
+    LARGE_INTEGER started,locked,finished,frequency;
+    QueryPerformanceCounter(&started);
     lock_transport("flush");
+    QueryPerformanceCounter(&locked);
     uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
     uint32_t *d=guest(device,0x40);
     if (g_ecx!=device) fatal("unexpected push-buffer flush device");
     uint32_t fence=d[0x2c/4]-2;
     send_bytes("XMLDX8F6",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+    QueryPerformanceCounter(&finished); QueryPerformanceFrequency(&frequency);
+    static unsigned timing_reports;
+    if(timing_reports++<12) fprintf(stderr,"[DX8 FLUSH TIME] draws=%u queue_ms=%.3f submit_ms=%.3f\n",draws,
+        1000.0*(locked.QuadPart-started.QuadPart)/frequency.QuadPart,
+        1000.0*(finished.QuadPart-locked.QuadPart)/frequency.QuadPart);
     draws=0; used=0;
     /* InsertFence records this counter before incrementing by two. Signal only
      * after all preceding native submissions have completed; no Present here. */

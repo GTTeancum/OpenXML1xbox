@@ -1,7 +1,7 @@
-param([ValidateRange(1,120)][int]$Seconds = 20, [switch]$TestPad, [switch]$LiveDX8, [switch]$APU, [switch]$Optimized)
+param([ValidateRange(1,600)][int]$Seconds = 20, [switch]$TestPad, [switch]$LiveDX8, [switch]$APU, [switch]$Optimized)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if ([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse('2026-09-14T12:14:26Z')) {
+if ([DateTimeOffset]::UtcNow.AddSeconds($Seconds) -ge [DateTimeOffset]::Parse('2026-09-14T12:14:26Z')) {
     throw 'The 30-hour goal cutoff has passed. Report status before further work.'
 }
 $priorWatchdog = $env:RECOMP_WATCHDOG_SECS

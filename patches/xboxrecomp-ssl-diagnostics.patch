@@ -1,0 +1,17 @@
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -813,6 +813,14 @@
+         hwaddr addr = d->regs[NV_PAPU_VPSSLADDR] + page * 8;
+         segment_offset = ldl_le_phys(address_space_memory, addr);
+         segment_length = ldl_le_phys(address_space_memory, addr + 4);
++        if (!segment_offset || !segment_length) {
++            fprintf(stderr,"[APU INVALID SSL] voice=%u index=%d seg=%d page=%d count=%d table=%08X addr=%08X offset=%08X length=%08X cbo=%u state=%08X bases=%u/%u counts=%u/%u\n",
++                v,ssl_index,ssl_seg,page,count,d->regs[NV_PAPU_VPSSLADDR],(uint32_t)addr,
++                (uint32_t)segment_offset,segment_length,cbo,
++                voice_get_mask(d,(uint16_t)v,NV_PAVS_VOICE_PAR_STATE,0xffffffffu),
++                d->vp.ssl[v].base[0],d->vp.ssl[v].base[1],d->vp.ssl[v].count[0],d->vp.ssl[v].count[1]);
++            fflush(stderr);
++        }
+         assert(segment_offset != 0);
+         assert(segment_length != 0);
+         seg_len = (segment_length >> 0) & 0xffff;

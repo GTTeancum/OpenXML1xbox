@@ -61,3 +61,9 @@ Optimized playback testing and an event-driven FIFO renderer handoff are availab
 boot121 advances naturally through later intro movies, including native Raven
 artwork. One earlier optimized run stalled before movies; startup reliability,
 movie fidelity and current playable level1 still require work.
+
+
+Longer runs expose audio synchronization failures: boot122 invalid streaming
+segment descriptor; boot124 blocks entering DirectSound critical section0037A70C
+after the final intro. Native empty-flush regression tests pass, but the first
+movie GPU flush still spans about25ms. Completion remains unproven.

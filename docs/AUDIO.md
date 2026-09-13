@@ -233,3 +233,10 @@ No recognizable FMV or audible correctness milestone has been established.
 - Output retry/payload/event-wait test, output mutex test, actual VP resampling
   and GP/EP bootstrap tests pass. Sixteen-patch reverse-stack validation passes.
   Next investigate movie processing speed and revalidate menu/level1 with audio.
+
+
+Long-run failures remain: boot122 asserts on a zero streaming segment address;
+patch17 records descriptor context without bypassing the assertion. boot124
+instead completes the intro sequence and then blocks the main thread entering
+DirectSound critical section0037A70C. Lock ownership/recursion and guest IRQ/DPC
+interaction are the next investigation. Correct sustained audio is not verified.
