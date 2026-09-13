@@ -7,5 +7,6 @@
   "0x003C038C": "xml1_XInputClose",
   "0x003C0398": "xml1_XInputGetState",
   "0x003C040B": "xml1_XInputSetState",
-  "0x00368BE0": "xml1_graphics_swap"
+  "0x00368BE0": "xml1_graphics_swap",
+  "0x0035B040": "xml1_graphics_wait_vblank"
 }

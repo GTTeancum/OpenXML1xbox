@@ -22,6 +22,16 @@ static int frame_geometry;
 static void flush_completed_work(void);
 static void ordered_clear(const uint32_t *args);
 static HANDLE pipe=INVALID_HANDLE_VALUE, worker_job;
+static INIT_ONCE transport_once=INIT_ONCE_STATIC_INIT;
+static CRITICAL_SECTION transport_lock;
+static BOOL CALLBACK init_transport(PINIT_ONCE once,PVOID parameter,PVOID *context) {
+    (void)once; (void)parameter; (void)context;
+    InitializeCriticalSection(&transport_lock); return TRUE;
+}
+static void lock_transport(void) {
+    InitOnceExecuteOnce(&transport_once,init_transport,NULL,NULL);
+    EnterCriticalSection(&transport_lock);
+}
 static void fatal(const char* message) {
     fprintf(stderr,"[FATAL DX8 LIVE] %s (Win32=%lu, frame=%u, draws=%u)\n",message,GetLastError(),frames,draws);
     _exit(4);
@@ -230,6 +240,7 @@ static void receive_ack(void) {
     ++sequence;
 }
 static void flush_completed_work(void) {
+    lock_transport();
     uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
     uint32_t *d=guest(device,0x40);
     if (g_ecx!=device) fatal("unexpected push-buffer flush device");
@@ -241,8 +252,18 @@ static void flush_completed_work(void) {
     *(uint32_t*)guest(d[0x30/4],4)=fence;
     static unsigned logged;
     if (logged++<8) fprintf(stderr,"[DX8 FENCE] native completion=%08X sequence=%u\n",fence,sequence);
+    LeaveCriticalSection(&transport_lock);
+}
+void xml1_graphics_wait_vblank(void) {
+    if(!live()) fatal("Vertical blank wait requires native DX8");
+    lock_transport();
+    if(pipe==INVALID_HANDLE_VALUE) connect_worker();
+    send_bytes("XMLDX8V1",8); receive_ack();
+    LeaveCriticalSection(&transport_lock);
+    g_eax=0; g_esp+=4;
 }
 static void ordered_clear(const uint32_t *a) {
+    lock_transport();
     if((a[2]&~0xF3u)||((a[2]&0xF0)!=0&&(a[2]&0xF0)!=0xF0)||a[0]>4096)
         fatal("unsupported clear flags or rectangle count");
     const void *rects=a[0]?guest(a[1],(size_t)a[0]*16):NULL;
@@ -255,8 +276,10 @@ static void ordered_clear(const uint32_t *a) {
     send_bytes("XMLDX8C4",8); send_bytes(header,sizeof(header));
     if(a[0]) send_bytes(rects,(size_t)a[0]*16);
     receive_ack();
+    LeaveCriticalSection(&transport_lock);
 }
 void xml1_graphics_swap(void) {
+    lock_transport();
     if (!live()) fatal("Swap requires XML1_LIVE_DX8=1 (trace mode stops before Swap)");
     uint32_t flags=*(uint32_t*)guest(g_esp+4,4);
     if (flags) fatal("unimplemented swap flags");
@@ -275,4 +298,5 @@ void xml1_graphics_swap(void) {
     draws=0; used=0; frame_geometry=0;
     /* Return only after the native renderer has consumed the submitted frame. */
     g_eax=0; g_esp+=8;
+    LeaveCriticalSection(&transport_lock);
 }

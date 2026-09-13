@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
     D3DPRESENT_PARAMETERS pp = {};
     D3DDISPLAYMODE mode = {};
     api->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode);
+    std::printf("Native display refresh: %u Hz\n",mode.RefreshRate);
     pp.BackBufferWidth = 640;
     pp.BackBufferHeight = 480;
     pp.BackBufferFormat = mode.Format;

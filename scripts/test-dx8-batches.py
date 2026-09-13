@@ -165,3 +165,11 @@ for fmt in (6,14):
         pixels=output.read_bytes(); at=54+(240*640+320)*3
         assert pixels[at:at+3]==expected, f'Incorrect mip level {level} format{fmt}'
 print('PASS: native ARGB/DXT3 mip chains select red/green/blue levels, including sub-block dimensions')
+wait_packet=root/'build/dx8-vblank-test.bin'
+wait_packet.write_bytes(b'XMLDX8V1'*3+source)
+wait_capture=wait_packet.with_suffix('.bmp')
+subprocess.run([str(worker),'--replay',str(wait_packet),str(wait_capture)],cwd=root,check=True,timeout=10)
+baseline=root/'build/dx8-vblank-baseline.bmp'
+subprocess.run([str(worker),'--replay',str(root/'build/d3d-replay.bin'),str(baseline)],cwd=root,check=True,timeout=10)
+assert wait_capture.read_bytes()==baseline.read_bytes()
+print('PASS: three observed native vertical blanks preserve subsequent rendering')

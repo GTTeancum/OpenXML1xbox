@@ -10,10 +10,12 @@ extern ptrdiff_t g_xbox_mem_offset;
 typedef void (*recomp_func_t)(void);
 void xml1_guest_memmove(void);
 void xml1_graphics_swap(void);
+void xml1_graphics_wait_vblank(void);
 recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
 {
     if (xbox_va == 0x00342AA0) return xml1_guest_memmove;
     if (xbox_va == 0x00368BE0) return xml1_graphics_swap;
+    if (xbox_va == 0x0035B040) return xml1_graphics_wait_vblank;
     return xml1_input_lookup(xbox_va);
 }
 

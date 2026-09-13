@@ -574,3 +574,26 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   then revalidate level1 input after the IRQ and physical-memory changes.
   Page mappings currently persist for the process lifetime, as does the existing
   contiguous arena allocator. No full virtual-memory remap/free semantics claimed.
+
+
+## Native vertical blank waits (boot094–096)
+
+- boot094 diagnostic logging proves KeWaitForSingleObject on0036E8BC resolves
+  to an invalid Windows handle and returnsC0000001 repeatedly. The original
+  XDK symbol0035B040 is D3DDevice_BlockUntilVerticalBlank; it clears the guest
+  device event before waiting. This was spinning, not waiting for refresh.
+- Added a manual DX8 implementation using an XMLDX8V1 renderer command. The
+  system D3D8 device must observe active scan followed by vertical blank before
+  acknowledging; unsupported calls or a1-second timeout fail explicitly.
+  This uses the native display clock (reported59Hz here); exact Xbox mode/field
+  timing across other display modes remains unverified.
+- boot095 exposed concurrent pipe commands from guest background/render threads.
+  Commands and acknowledgements now share a process-local critical section.
+  boot096 reaches the45-second diagnostic bound3 without transport failure;
+  initial observed native waits take15–16ms. Full DX8 batch tests pass, including
+  three native blank waits followed by pixel-identical splash rendering.
+- The changed pacing reveals repeated2097200-byte movie buffer allocations
+  exhausting the guest heap (50339888 of50855936 bytes used). Movie buffers and
+  heap reuse/lifetime are the next investigation. The sampled native frame240
+  remains black; no recognizable FMV or repeat screenshot posted. Level1 has
+  not yet been revalidated with the new IRQ, physical mapping and display waits.

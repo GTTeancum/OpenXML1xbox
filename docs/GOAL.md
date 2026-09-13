@@ -37,3 +37,7 @@ INC/DEC carry bug is fixed and now writes all
 Only very dark early-fade FMV captures are verified; no recognizable FMV artwork
 has been posted. Audio fidelity and sustained playable level1 remain unverified.
 All of these remain required work. See PROGRESS.md and UPSTREAM-REVIEW.md.
+
+Native vertical blank waiting now replaces the invalid guest event wait.
+boot096 exposes guest heap exhaustion from repeated movie buffer allocations;
+movie progression and current level1 behavior remain unverified.

@@ -86,6 +86,21 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
     };
     char magic[8]; read(magic,8);
     static bool frame_open=false;
+    if(!std::memcmp(magic,"XMLDX8V1",8)) {
+        D3DRASTER_STATUS raster={};
+        ULONGLONG started=GetTickCount64();
+        bool active=false;
+        for(;;) {
+            checked(device->GetRasterStatus(&raster));
+            if(!raster.InVBlank) active=true;
+            if(active && raster.InVBlank) break;
+            if(GetTickCount64()-started>1000) throw std::runtime_error("Native DX8 vertical blank timeout");
+            SwitchToThread();
+        }
+        static unsigned waits;
+        if(++waits<=3) std::printf("Native DX8 vertical blank observed (%llu ms)\n",GetTickCount64()-started);
+        return false;
+    }
     if(!std::memcmp(magic,"XMLDX8C4",8)) {
         uint32_t clear[5]; read(clear,sizeof(clear));
         if((clear[0]&~0xF3u)||((clear[0]&0xF0)!=0&&(clear[0]&0xF0)!=0xF0)||clear[4]>4096)
