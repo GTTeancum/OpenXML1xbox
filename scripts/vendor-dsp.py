@@ -24,13 +24,28 @@ text = text[:start] + '''void dsp_set_engine(DSPState *dsp, bool use_jit)
 }
 '''
 (dest/'dsp.c').write_text(text,encoding='utf-8')
+c_backend = dest/'dsp_c.c'
+c_backend.write_text(c_backend.read_text(encoding='utf-8').replace('    core->opaque = dsp;', '    core->opaque = dsp;\n    core->is_gp = dsp->is_gp;'), encoding='utf-8')
+core_header = dest/'interp/dsp_cpu.h'
+core_header.write_text(core_header.read_text(encoding='utf-8').replace('    bool is_gp;', '    uint32_t history[64][7];\n    unsigned history_cursor;\n    bool is_gp;'), encoding='utf-8')
 emu = dest/'interp/dsp_emu.c.inc'
 emu.write_text(emu.read_text(encoding='utf-8') + '\n' + (root/'src/dsp_extractu.c.inc').read_text(encoding='utf-8'), encoding='utf-8')
 cpu = dest/'interp/dsp_cpu.c'
 cpu_text = cpu.read_text(encoding='utf-8').replace('"extractu #CO, S2, D", NULL, NULL', '"extractu #CO, S2, D", NULL, emu_extractu_imm')
+cpu_text = cpu_text.replace('    dsp->cur_inst = read_memory_p(dsp, dsp->pc);', '''    dsp->cur_inst = read_memory_p(dsp, dsp->pc);
+    uint32_t *history = dsp->history[dsp->history_cursor++ % 64];
+    history[0] = dsp->pc; history[1] = dsp->cur_inst;
+    history[2] = dsp->registers[DSP_REG_R0]; history[3] = dsp->registers[DSP_REG_N0];
+    history[4] = dsp->registers[DSP_REG_SR]; history[5] = dsp->registers[DSP_REG_A1];
+    history[6] = dsp->registers[DSP_REG_B1];''')
 cpu_text = cpu_text.replace('        assert(address < DSP_YRAM_SIZE);', '''        if (address >= DSP_YRAM_SIZE) {
             FILE *dump = fopen("build/dsp-failure-program.bin", "wb");
             if (dump) { fwrite(dsp->pram, sizeof(dsp->pram), 1, dump); fclose(dump); }
+            fprintf(stderr, "DSP processor: %s\\n", dsp->is_gp ? "GP" : "EP");
+            for (unsigned seq = dsp->history_cursor > 64 ? dsp->history_cursor - 64 : 0; seq < dsp->history_cursor; ++seq) {
+                const uint32_t *h = dsp->history[seq % 64];
+                fprintf(stderr, "DSP history: pc=%04x op=%06x R0=%06x N0=%06x SR=%06x A1=%06x B1=%06x\\n", h[0],h[1],h[2],h[3],h[4],h[5],h[6]);
+            }
             fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\\n", dsp->pc, dsp->cur_inst, address);
             for (unsigned reg = 0; reg < 64; ++reg)
                 fprintf(stderr, "DSP reg[%u]=%06x\\n", reg, dsp->registers[reg]);

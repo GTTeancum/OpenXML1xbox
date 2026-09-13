@@ -252,6 +252,7 @@ void dsp_c_init(DSPState *dsp)
 {
     dsp_core_t *core = g_new0(dsp_core_t, 1);
     core->opaque = dsp;
+    core->is_gp = dsp->is_gp;
     core->read_peripheral = c_read_peripheral;
     core->write_peripheral = c_write_peripheral;
 

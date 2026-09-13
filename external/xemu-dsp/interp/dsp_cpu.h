@@ -46,6 +46,8 @@ typedef struct dsp_interrupt_s {
 typedef struct dsp_core_s dsp_core_t;
 
 struct dsp_core_s {
+    uint32_t history[64][7];
+    unsigned history_cursor;
     bool is_gp;
     bool is_idle;
     uint32_t cycle_count;

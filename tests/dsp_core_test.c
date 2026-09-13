@@ -64,6 +64,9 @@ static unsigned extractu_tests(DSPState *d) {
 }
 int main(void) {
     DSPState *d=dsp_init(scratch,memory,fifo,true); CHECK(d);
+    dsp_sync_to_vm(d); CHECK(d->core.is_gp);
+    DSPState *ep=dsp_init(scratch,memory,fifo,false); CHECK(ep);
+    dsp_sync_to_vm(ep); CHECK(!ep->core.is_gp); dsp_destroy(ep);
     unsigned cases=0;
     const int32_t seeds[]={0,1,-1,0x7FFFFF,-0x800000};
     for (unsigned dest=0;dest<2;++dest) for (unsigned s=0;s<5;++s) for (unsigned x=0;x<64;++x) {

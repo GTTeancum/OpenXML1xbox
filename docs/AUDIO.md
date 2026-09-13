@@ -59,6 +59,14 @@ bounds assertion: PC 0x031e, opcode 0x5ee800, address 0x0fc9 (R0=0x0fc2, N0=7).
 Program/register context is recorded before the original assertion; mapping,
 program setup and decoding still need investigation. AC97 DMA progress is not implemented.
 
+boot-029 identifies that failure as EP execution. The toolkit advertised
+0x00010001 (mono plus AC3), incorrectly labeled stereo in its source, while
+the native output is two-channel PCM. The fifth toolkit patch reports stereo
+PCM (0), verified against Cxbx's src/common/EmuEEPROM.h definitions and by a
+settings API test. boot-030/031 passes this startup point and loads x_voice.zsS;
+the sampled game thread now waits in D3D sub_0035FDE0. The encoded-output DSP
+failure remains unresolved; stereo output correctness is not yet verified.
+
 ## Remaining integration
 
 - Resolve APU physical memory correctly. The current diagnostic runtime backs

@@ -23,5 +23,6 @@ marking an unfinished goal complete.
 
 Current milestone: first legal splash presented from live guest execution through
 native Windows DX8. Audio initialization now starts the APU and loads sound banks,
-then stops on a DSP Y-memory bounds failure after passing EXTRACTU. FMV,
+and voice banks with corrected stereo PCM settings, then waits in D3D resource
+synchronization (0035FDE0). Encoded audio remains unsupported. FMV,
 menu, level 1, audio and visual correctness remain unverified; see PROGRESS.md.

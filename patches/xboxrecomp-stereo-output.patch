@@ -1,0 +1,17 @@
+diff --git a/src/kernel/kernel_xbox.c b/src/kernel/kernel_xbox.c
+index 01a36c4..4ebdfb9 100644
+--- a/src/kernel/kernel_xbox.c
++++ b/src/kernel/kernel_xbox.c
+@@ -154,9 +154,10 @@ NTSTATUS __stdcall xbox_ExQueryNonVolatileSetting(
+         break;
+ 
+     case XC_AUDIO:
+-        /* Stereo + Dolby Digital enabled (0x00000001 = stereo, 0x00010000 = AC3) */
++        /* Stereo PCM matches the two-channel host output. 1 means mono;
++         * advertising AC3 requires an encoded-output path. */
+         if (ValueLength >= sizeof(ULONG)) {
+-            *(PULONG)Value = 0x00010001;
++            *(PULONG)Value = 0x00000000;
+             if (Type) *Type = 4; /* REG_DWORD */
+             if (ResultLength) *ResultLength = sizeof(ULONG);
+         }

@@ -597,6 +597,11 @@ void dsp56k_execute_instruction(dsp_core_t* dsp)
 
     /* Decode and execute current instruction */
     dsp->cur_inst = read_memory_p(dsp, dsp->pc);
+    uint32_t *history = dsp->history[dsp->history_cursor++ % 64];
+    history[0] = dsp->pc; history[1] = dsp->cur_inst;
+    history[2] = dsp->registers[DSP_REG_R0]; history[3] = dsp->registers[DSP_REG_N0];
+    history[4] = dsp->registers[DSP_REG_SR]; history[5] = dsp->registers[DSP_REG_A1];
+    history[6] = dsp->registers[DSP_REG_B1];
 
     /* Initialize instruction size and cycle counter */
     dsp->cur_inst_len = 1;
@@ -918,6 +923,11 @@ uint32_t dsp56k_read_memory(dsp_core_t* dsp, int space, uint32_t address)
         if (address >= DSP_YRAM_SIZE) {
             FILE *dump = fopen("build/dsp-failure-program.bin", "wb");
             if (dump) { fwrite(dsp->pram, sizeof(dsp->pram), 1, dump); fclose(dump); }
+            fprintf(stderr, "DSP processor: %s\n", dsp->is_gp ? "GP" : "EP");
+            for (unsigned seq = dsp->history_cursor > 64 ? dsp->history_cursor - 64 : 0; seq < dsp->history_cursor; ++seq) {
+                const uint32_t *h = dsp->history[seq % 64];
+                fprintf(stderr, "DSP history: pc=%04x op=%06x R0=%06x N0=%06x SR=%06x A1=%06x B1=%06x\n", h[0],h[1],h[2],h[3],h[4],h[5],h[6]);
+            }
             fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\n", dsp->pc, dsp->cur_inst, address);
             for (unsigned reg = 0; reg < 64; ++reg)
                 fprintf(stderr, "DSP reg[%u]=%06x\n", reg, dsp->registers[reg]);
@@ -964,6 +974,11 @@ static void write_memory_raw(dsp_core_t* dsp, int space, uint32_t address, uint3
         if (address >= DSP_YRAM_SIZE) {
             FILE *dump = fopen("build/dsp-failure-program.bin", "wb");
             if (dump) { fwrite(dsp->pram, sizeof(dsp->pram), 1, dump); fclose(dump); }
+            fprintf(stderr, "DSP processor: %s\n", dsp->is_gp ? "GP" : "EP");
+            for (unsigned seq = dsp->history_cursor > 64 ? dsp->history_cursor - 64 : 0; seq < dsp->history_cursor; ++seq) {
+                const uint32_t *h = dsp->history[seq % 64];
+                fprintf(stderr, "DSP history: pc=%04x op=%06x R0=%06x N0=%06x SR=%06x A1=%06x B1=%06x\n", h[0],h[1],h[2],h[3],h[4],h[5],h[6]);
+            }
             fprintf(stderr, "DSP Y bounds: pc=%06x op=%06x address=%06x\n", dsp->pc, dsp->cur_inst, address);
             for (unsigned reg = 0; reg < 64; ++reg)
                 fprintf(stderr, "DSP reg[%u]=%06x\n", reg, dsp->registers[reg]);

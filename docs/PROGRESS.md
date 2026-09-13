@@ -247,3 +247,20 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - The current C decoder interprets 5ee800 as MOVE Y:(R0+N0),A. The pinned xemu
   C and JIT integrations both map Y RAM only below 0800. Do not enlarge or wrap
   this mapping without evidence of actual hardware behavior or required setup.
+
+## Stereo output settings and next GPU wait (2026-09-13)
+
+- A bounded per-processor instruction history identifies the failing program as
+  EP. Fixed the C backend's missing processor identity initialization and tested
+  GP/EP identity after synchronization. The original bounds assertion remains.
+- Toolkit XC_AUDIO returned 00010001, documented incorrectly as stereo plus AC3.
+  Cxbx EmuEEPROM.h defines stereo=0, mono=1, AC3=10000. Our host uses two-channel
+  PCM, so the fifth toolkit patch reports stereo PCM with no encoded capability.
+  The settings API test passes and ordered patch idempotence checks pass.
+- boot-030/031 no longer hits the EP assertion, loads x_voice.zsS and additional
+  audio data, and reaches the watchdog in D3D sub_0035FDE0 (native RIP +2264).
+  Source has a resource/fence completion poll at 0035FF17 and an event wait path;
+  these need completion semantics tied to actual DX8 submissions.
+- Existing DSP vectors pass with diagnostic history enabled. No new screen or
+  audio-correctness claim. Encoded output remains unsupported and its DSP memory
+  issue remains recorded rather than suppressed.
