@@ -10,17 +10,32 @@ assert subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=
 dsp = source / 'hw/xbox/mcpx/apu/dsp'
 dest = root / 'external/xemu-dsp'
 dest.mkdir(exist_ok=True)
-for name in ['dsp.c','dsp.h','dsp_internal.h','dsp_c.c','dsp_dma.c','dsp_dma.h','dsp_dma_regs.h','debug.h']:
+for name in ['dsp.c','dsp.h','dsp_internal.h','dsp_c.c','dsp_jit.c','dsp_dma.c','dsp_dma.h','dsp_dma_regs.h','debug.h']:
     shutil.copyfile(dsp/name,dest/name)
 shutil.copytree(dsp/'interp',dest/'interp',dirs_exist_ok=True)
 shutil.copyfile(source/'COPYING',dest/'COPYING')
 text = (dest/'dsp.c').read_text(encoding='utf-8').replace('#include "ui/xemu-settings.h"','/* Standalone interpreter backend; no UI settings dependency. */')
 text = text.replace('    if (g_config.audio.use_dsp_jit) {\n        dsp_jit_init(dsp);\n    } else {\n        dsp_c_init(dsp);\n    }','    dsp_c_init(dsp);')
+text = text.replace('    dsp_c_init(dsp);', '''    const char *mode=getenv("XML1_DSP_JIT");
+    if(mode && strcmp(mode,"1") && strcmp(mode,"ep")) {fprintf(stderr,"Invalid XML1_DSP_JIT mode\\n");abort();}
+    bool use_jit=mode && (!strcmp(mode,"1") || !is_gp);
+#ifdef XML1_HAVE_DSP_JIT
+    if(use_jit) dsp_jit_init(dsp); else dsp_c_init(dsp);
+#else
+    if(use_jit) {fprintf(stderr,"DSP JIT comparison backend is not built\\n");abort();}
+    dsp_c_init(dsp);
+#endif
+    fprintf(stderr,"[DSP ENGINE] %s=%s\\n",is_gp?"GP":"EP",use_jit?"JIT":"C");''',1)
 start = text.index('void dsp_set_engine(DSPState *dsp, bool use_jit)')
 text = text[:start] + '''void dsp_set_engine(DSPState *dsp, bool use_jit)
 {
     (void)dsp;
-    assert(!use_jit); /* This build intentionally includes the C interpreter. */
+    /* Backend selection is fixed at construction; no live switching. */
+#ifdef XML1_HAVE_DSP_JIT
+    assert((dsp->ops == &jit_dsp_ops) == use_jit);
+#else
+    assert(!use_jit);
+#endif
 }
 '''
 (dest/'dsp.c').write_text(text,encoding='utf-8')
@@ -62,8 +77,9 @@ Pinned revision: `{pin}`. Imported by scripts/vendor-dsp.py. Original notices
 are retained. DSP interpreter code is GPL-2.0-or-later; DMA code carries its
 original LGPL notice. COPYING contains the upstream license text.
 
-Local adaptations: select the existing C interpreter without the Rust JIT or UI
-settings; narrow qemu compatibility headers provide allocation/endian helpers;
+Local adaptations: C remains the default. An optional pinned DSP56300 library
+enables launch-time XML1_DSP_JIT=ep or1 comparison, without UI settings or live
+backend switching. Narrow qemu compatibility headers provide allocation/endian helpers;
 trace event macros are disabled. DSP instructions and DMA operations retain
 upstream implementations except the EXTRACTU immediate extension imported from
 src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics).

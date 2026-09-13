@@ -84,6 +84,9 @@ static void gp_scratch_rw(void *opaque, uint8_t *ptr, uint32_t addr, size_t len,
     // fprintf(stderr, "GP %s scratch 0x%x bytes (0x%x words) at %x (0x%x words)\n", dir ? "writing to" : "reading from", len, len/4, addr, addr/4);
     scatter_gather_rw(d, d->regs[NV_PAPU_GPSADDR], d->regs[NV_PAPU_GPSMAXSGE],
                       ptr, addr, len, dir);
+    extern void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,unsigned bytes);
+    if(dir) xml1_apu_capture_transfer(2,addr,ptr,(unsigned)len);
+
 }
 
 static void ep_scratch_rw(void *opaque, uint8_t *ptr, uint32_t addr, size_t len,
@@ -93,6 +96,9 @@ static void ep_scratch_rw(void *opaque, uint8_t *ptr, uint32_t addr, size_t len,
     // fprintf(stderr, "EP %s scratch 0x%x bytes (0x%x words) at %x (0x%x words)\n", dir ? "writing to" : "reading from", len, len/4, addr, addr/4);
     scatter_gather_rw(d, d->regs[NV_PAPU_EPSADDR], d->regs[NV_PAPU_EPSMAXSGE],
                       ptr, addr, len, dir);
+    extern void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,unsigned bytes);
+    if(!dir) xml1_apu_capture_transfer(3,addr,ptr,(unsigned)len);
+
 }
 
 static uint32_t circular_scatter_gather_rw(MCPXAPUState *d, hwaddr sge_base,
@@ -168,6 +174,9 @@ static void gp_fifo_rw(void *opaque, uint8_t *ptr, unsigned int index,
         ptr, base, end, cur, len, dir);
 
     SET_MASK(d->regs[cur_reg], NV_PAPU_GPOFCUR0_VALUE, cur);
+    extern void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,unsigned bytes);
+    if(dir) xml1_apu_capture_transfer(0,index,ptr,(unsigned)len);
+
 }
 
 static bool ep_sink_samples(MCPXAPUState *d, uint8_t *ptr, size_t len)
@@ -234,6 +243,9 @@ static void ep_fifo_rw(void *opaque, uint8_t *ptr, unsigned int index,
         ptr, base, end, cur, len, dir);
 
     SET_MASK(d->regs[cur_reg], NV_PAPU_GPOFCUR0_VALUE, cur);
+    extern void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,unsigned bytes);
+    if(!dir) xml1_apu_capture_transfer(1,index,ptr,(unsigned)len);
+
 }
 
 static void proc_rst_write(DSPState *dsp, uint32_t oldval, uint32_t val)
@@ -449,6 +461,16 @@ void mcpx_apu_dsp_frame(MCPXAPUState *d, float mixbins[NUM_MIXBINS][NUM_SAMPLES_
             dsp_run(d->gp.dsp, 1000);
         } while (!dsp_get_halt_requested(d->gp.dsp) && d->gp.realtime);
         g_dbg.gp.cycles = dsp_get_cycle_count(d->gp.dsp);
+        extern int xml1_apu_wants_gp_capture(void);
+        extern void xml1_apu_capture_gp(const uint32_t *samples);
+        if(xml1_apu_wants_gp_capture()) {
+            uint32_t stereo[64];
+            for(unsigned i=0;i<32;++i) {
+                stereo[i*2]=dsp_read_memory(d->gp.dsp,'X',0x1400+i);
+                stereo[i*2+1]=dsp_read_memory(d->gp.dsp,'X',0x1420+i);
+            }
+            xml1_apu_capture_gp(stereo);
+        }
 
         if ((d->monitor.point == MCPX_APU_DEBUG_MON_GP) ||
             (d->monitor.point == MCPX_APU_DEBUG_MON_GP_OR_EP && !ep_enabled)) {

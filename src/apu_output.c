@@ -8,6 +8,35 @@
 #include "apu_xaudio2.h"
 extern void xbox_SetDeviceInterruptLine(uint32_t vector,int asserted);
 void recomp_apu_irq_level(int asserted) { xbox_SetDeviceInterruptLine(5,asserted); }
+int xml1_apu_wants_gp_capture(void) {
+    static int enabled=-1;
+    if(enabled<0) enabled=getenv("XML1_CAPTURE_GP_PCM")!=NULL;
+    return enabled;
+}
+void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,unsigned bytes) {
+    static int enabled=-1;
+    static FILE *file;
+    static unsigned reports[4];
+    if(enabled<0) enabled=getenv("XML1_CAPTURE_DSP_TRANSFERS")!=NULL;
+    if(!enabled) return;
+    if(!file) file=fopen("build/apu-dsp-transfers.bin","wb");
+    uint32_t header[3]={kind,address,bytes};
+    if(!file||fwrite(header,sizeof(header),1,file)!=1||fwrite(data,1,bytes,file)!=bytes) {
+        fprintf(stderr,"[FATAL DSP TRANSFER] capture failed\n");_exit(4);
+    }
+    fflush(file);
+    if(kind<4 && reports[kind]++<8) fprintf(stderr,"[DSP TRANSFER] kind=%u address=%08X bytes=%u\n",kind,address,bytes);
+}
+void xml1_apu_capture_gp(const uint32_t *samples) {
+    static FILE *file;
+    if(!file) file=fopen("build/apu-gp-stereo.f32","wb");
+    float pcm[64];
+    for(unsigned i=0;i<64;++i) pcm[i]=(int32_t)(samples[i]<<8)/2147483648.0f;
+    if(!file||fwrite(pcm,sizeof(pcm),1,file)!=1) {
+        fprintf(stderr,"[FATAL APU GP] capture failed\n");_exit(4);
+    }
+    fflush(file);
+}
 void xml1_apu_capture_source(unsigned voice,const float *samples,unsigned count,unsigned format,unsigned base,unsigned offset) {
     static int selected=-2;
     static FILE *pcm,*trace;

@@ -979,3 +979,27 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   completion and overall graphics/audio correctness remain unproven.
 - boot146 completes180-second bound3 with no fatal guard; this bounded run is
   a regression check, not proof of successful encounter or full-level completion.
+
+## Audio transfer boundary and optional DSP comparison (boot147-152)
+
+- boot147/148 capture pre-GP mix and xemu's GP monitor tap. Both preserve much
+  closer movie waveform alignment than final DSP output. The monitor tap alone
+  cannot establish actual GP output routing, so its implication was checked
+  against real transfers rather than treated as proof.
+- boot151 finds no GP FIFO0 writes. boot152 captures actual GP scratch writes
+  and EP scratch reads:32-word blocks in GP8000/8800 rings;256-word blocks in
+  EP10000/10800 rings. Ring sizes2048 bytes. Extracted left/right streams retain
+  the close waveform match across the boundary (0.925/0.809/0.885/0.934 in the
+  four tested windows). The remaining difference is after EP input, not in this
+  GP-to-EP transfer. Correct audible output still is not verified.
+- A pinned DSP56300 v0.1.3 MSVC static library can now be linked optionally for
+  comparison. Rust1.96.0 is local to build/. Default engine stays C; environment
+  ep selects EP only,1 selects both. The generic APU bootstrap/memory test passes
+  with JIT, and upstream31 library plus1009 integration tests pass.
+- boot149/150 do NOT yield a usable JIT comparison: five silent output blocks,
+  then very slow DSP execution. A temporary trace shows PC4D5 with33,129,090
+  cycles and repeated run-budget debt; trace edits were removed. No JIT audio
+  quality claim and no default backend replacement were made.
+- boot147/148/151/152 finish25-second bound3 on C without fatal guards. Default
+  and optimized builds pass; native APU/output checks and21-patch validation
+  pass. See DSP-COMPARISON.md for formats, pins and reproduction details.

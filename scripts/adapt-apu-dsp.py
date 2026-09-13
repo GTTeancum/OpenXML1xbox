@@ -53,5 +53,22 @@ s=s.replace('    /* Write VP results to the GP DSP MIXBUF */','    extern void x
 s=s.replace('    /* Write VP results to the GP DSP MIXBUF */','    static unsigned voice_reports;\n    if(++voice_reports<=4 || voice_reports%4096==0) {\n        extern void xml1_apu_trace_voices(const uint8_t *ram,unsigned base,unsigned a,unsigned b,unsigned c);\n        xml1_apu_trace_voices(d->ram_ptr,d->regs[NV_PAPU_VPVADDR],d->regs[NV_PAPU_TVL2D],d->regs[NV_PAPU_TVL3D],d->regs[NV_PAPU_TVLMP]);\n    }\n    /* Write VP results to the GP DSP MIXBUF */')
 s=s.replace('memcpy(&d->ram_ptr[paddr], ptr, bytes_to_copy);','xml1_physical_write(d->ram_ptr,paddr,ptr,bytes_to_copy);')
 s=s.replace('memcpy(ptr, &d->ram_ptr[paddr], bytes_to_copy);','xml1_physical_read(d->ram_ptr,paddr,ptr,bytes_to_copy);')
+# Capture actual GP output / EP input transfers independently of monitor taps.
+for function, condition, kind, address in [('gp_fifo_rw','dir',0,'index'), ('ep_fifo_rw','!dir',1,'index'), ('gp_scratch_rw','dir',2,'addr'), ('ep_scratch_rw','!dir',3,'addr')]:
+    start=s.index('static void '+function+'(')
+    end=s.index('\n}',start)
+    trace=f"\n    extern void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,unsigned bytes);\n    if({condition}) xml1_apu_capture_transfer({kind},{address},ptr,(unsigned)len);\n"
+    s=s[:end]+trace+s[end:]
+s=s.replace('        g_dbg.gp.cycles = dsp_get_cycle_count(d->gp.dsp);', '''        g_dbg.gp.cycles = dsp_get_cycle_count(d->gp.dsp);
+        extern int xml1_apu_wants_gp_capture(void);
+        extern void xml1_apu_capture_gp(const uint32_t *samples);
+        if(xml1_apu_wants_gp_capture()) {
+            uint32_t stereo[64];
+            for(unsigned i=0;i<32;++i) {
+                stereo[i*2]=dsp_read_memory(d->gp.dsp,'X',0x1400+i);
+                stereo[i*2+1]=dsp_read_memory(d->gp.dsp,'X',0x1420+i);
+            }
+            xml1_apu_capture_gp(stereo);
+        }''')
 assert 'case NV_PAPU_' not in s and 'default:' not in s
 (root/'src/apu_dsp_real.c').write_text(s,encoding='utf-8')

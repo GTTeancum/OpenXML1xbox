@@ -6,8 +6,9 @@ Pinned revision: `75650bd8cd91945f7b79774e2cee0b200ca373ff`. Imported by scripts
 are retained. DSP interpreter code is GPL-2.0-or-later; DMA code carries its
 original LGPL notice. COPYING contains the upstream license text.
 
-Local adaptations: select the existing C interpreter without the Rust JIT or UI
-settings; narrow qemu compatibility headers provide allocation/endian helpers;
+Local adaptations: C remains the default. An optional pinned DSP56300 library
+enables launch-time XML1_DSP_JIT=ep or1 comparison, without UI settings or live
+backend switching. Narrow qemu compatibility headers provide allocation/endian helpers;
 trace event macros are disabled. DSP instructions and DMA operations retain
 upstream implementations except the EXTRACTU immediate extension imported from
 src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics).

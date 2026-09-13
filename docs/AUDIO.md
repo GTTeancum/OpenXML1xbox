@@ -285,3 +285,9 @@ is ~10.432s versus the decoded reference's ~10.400s. Raw-source waveform windows
 now align at their expected times. Final DSP energy correlation reaches0.935,
 but waveform correlation remains substantially weaker; audible fidelity and
 remaining processing differences still require verification.
+
+Actual GP scratch output and EP scratch input now have paired captures (boot152).
+Both preserve close waveform alignment. The remaining difference occurs after
+EP input. The optional newer DSP backend is a diagnostic experiment and does
+not yet play this title's EP program successfully; C remains the default.
+See DSP-COMPARISON.md. No complete audio-fidelity claim is made.

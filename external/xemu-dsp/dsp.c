@@ -119,7 +119,16 @@ DSPState *dsp_init(void *rw_opaque, dsp_scratch_rw_func scratch_rw,
     dsp->dma.scratch_rw = scratch_rw;
     dsp->dma.fifo_rw = fifo_rw;
 
+    const char *mode=getenv("XML1_DSP_JIT");
+    if(mode && strcmp(mode,"1") && strcmp(mode,"ep")) {fprintf(stderr,"Invalid XML1_DSP_JIT mode\n");abort();}
+    bool use_jit=mode && (!strcmp(mode,"1") || !is_gp);
+#ifdef XML1_HAVE_DSP_JIT
+    if(use_jit) dsp_jit_init(dsp); else dsp_c_init(dsp);
+#else
+    if(use_jit) {fprintf(stderr,"DSP JIT comparison backend is not built\n");abort();}
     dsp_c_init(dsp);
+#endif
+    fprintf(stderr,"[DSP ENGINE] %s=%s\n",is_gp?"GP":"EP",use_jit?"JIT":"C");
 
     dsp_reset(dsp);
 
@@ -209,5 +218,10 @@ void dsp_sync_from_vm(DSPState *dsp)
 void dsp_set_engine(DSPState *dsp, bool use_jit)
 {
     (void)dsp;
-    assert(!use_jit); /* This build intentionally includes the C interpreter. */
+    /* Backend selection is fixed at construction; no live switching. */
+#ifdef XML1_HAVE_DSP_JIT
+    assert((dsp->ops == &jit_dsp_ops) == use_jit);
+#else
+    assert(!use_jit);
+#endif
 }
