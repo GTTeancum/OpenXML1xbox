@@ -33,14 +33,18 @@ s=re.sub(r'    case (NV_PAPU_\w+):\n(.*?)        break;',r'    if (addr == \1) {
 s=re.sub(r'    default:\n(.*?)        break;\n    }',r'\1        break;\n    } while (0);',s,flags=re.S)
 s=re.sub(r'const MemoryRegionOps (?:gp|ep)_ops = \{.*?\};\n', '',s,flags=re.S)
 s += '''
+uint64_t xml1_ac97_read(uint32_t address, unsigned size);
+void xml1_ac97_write(uint32_t address, uint64_t value, unsigned size);
 uint64_t xml1_apu_dsp_read(MCPXAPUState *d, uint64_t addr, unsigned size)
 {
+    if (addr >= 0x400000 && addr < 0x401000) return xml1_ac97_read((uint32_t)addr-0x400000,size);
     if (addr >= 0x30000 && addr < 0x40000) return gp_read(d,addr-0x30000,size);
     if (addr >= 0x50000 && addr < 0x60000) return ep_read(d,addr-0x50000,size);
     return 0;
 }
 void xml1_apu_dsp_write(MCPXAPUState *d, uint64_t addr, uint64_t value, unsigned size)
 {
+    if (addr >= 0x400000 && addr < 0x401000) { xml1_ac97_write((uint32_t)addr-0x400000,value,size); return; }
     if (addr >= 0x30000 && addr < 0x40000) gp_write(d,addr-0x30000,value,size);
     else if (addr >= 0x50000 && addr < 0x60000) ep_write(d,addr-0x50000,value,size);
 }

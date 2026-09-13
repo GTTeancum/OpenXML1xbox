@@ -1,0 +1,34 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -1254,13 +1254,13 @@
+ /* ── KfRaiseIrql / KfLowerIrql (ordinals 160, 161) ────── */
+ static void bridge_KfRaiseIrql(void)
+ {
+-    uint32_t new_irql = STACK_ARG(0);
++    uint32_t new_irql = g_ecx; /* fastcall: KIRQL is passed in CL */
+     g_eax = (uint32_t)xbox_KfRaiseIrql((UCHAR)new_irql);
+ }
+ 
+ static void bridge_KfLowerIrql(void)
+ {
+-    uint32_t new_irql = STACK_ARG(0);
++    uint32_t new_irql = g_ecx; /* fastcall: KIRQL is passed in CL */
+     xbox_KfLowerIrql((UCHAR)new_irql);
+     g_eax = 0;
+ }
+@@ -1659,10 +1659,11 @@
+ static void bridge_MmGetPhysicalAddress(void)
+ {
+     uint32_t addr = STACK_ARG(0);
+-    /* Xbox uses identity mapping (physical == virtual) for the lower 64MB.
+-     * Just return the Xbox VA as-is. Don't call xbox_MmGetPhysicalAddress
+-     * which would return a native pointer. */
+-    g_eax = addr;
++    /* The runtime's contiguous allocation window is a virtual mirror of
++     * physical RAM. DMA must receive its physical offset, not bit 31.
++     * Preserve the legacy identity mapping for low guest RAM. */
++    g_eax = (addr >= XBOX_CONTIG_BASE && (uint64_t)addr < (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE)
++          ? addr - XBOX_CONTIG_BASE : addr;
+ }
+ 
+ /* ── MmSetAddressProtect (ordinal 182) ───────────────────── */

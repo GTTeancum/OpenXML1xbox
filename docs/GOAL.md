@@ -22,5 +22,6 @@ do not expose a pause operation; report the deadline stop accurately rather than
 marking an unfinished goal complete.
 
 Current milestone: first legal splash presented from live guest execution through
-native Windows DX8. Startup then waits in Xbox audio DSP initialization. FMV,
+native Windows DX8. Audio initialization now starts the APU and loads sound banks,
+then stops at an unimplemented DSP EXTRACTU instruction. FMV,
 menu, level 1, audio and visual correctness remain unverified; see PROGRESS.md.

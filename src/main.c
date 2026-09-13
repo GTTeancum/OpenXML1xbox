@@ -38,6 +38,8 @@
 #include <math.h>
 
 static int s_memory_query_test;
+static int s_irql_test;
+void xml1_native_probe_start(void);
 
 /* xboxrecomp runtime headers */
 #include <xbox/xboxrecomp.h>
@@ -167,7 +169,8 @@ static LONG CALLBACK veh_handler(PEXCEPTION_POINTERS ep)
     if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
         uintptr_t fault_addr = ep->ExceptionRecord->ExceptionInformation[1];
         uint64_t guest_fault = fault_addr - (uintptr_t)g_xbox_mem_offset;
-        if (g_apu_state && guest_fault >= 0xFE800000 && guest_fault < 0xFE880000 &&
+        if (g_apu_state && ((guest_fault >= 0xFE800000 && guest_fault < 0xFE880000) ||
+                           (guest_fault >= 0xFEC00000 && guest_fault < 0xFEC01000)) &&
             apu_hook_handle_mmio(ep->ContextRecord, fault_addr, (uint32_t)guest_fault,
                                 (int)ep->ExceptionRecord->ExceptionInformation[0]))
             return EXCEPTION_CONTINUE_EXECUTION;
@@ -262,6 +265,50 @@ static int memory_query_bridge_test(void)
     return 0;
 }
 
+static int irql_bridge_test(void)
+{
+    typedef void (*guest_fn)(void);
+    extern guest_fn recomp_lookup_kernel(uint32_t);
+    uint8_t *memory=(uint8_t *)g_xbox_mem_offset;
+    const uint32_t sp=XBOX_STACK_TOP-32;
+    const uint32_t slots[2]={0x003C6D44,0x003C6CEC}; /* verified ordinals 160/161 */
+    const unsigned levels[]={0,1,2,3,15};
+    for (unsigned i=0;i<sizeof(levels)/sizeof(levels[0]);++i) {
+        xbox_KfLowerIrql(0);
+        for (unsigned lowering=0;lowering<2;++lowering) {
+            guest_fn fn=recomp_lookup_kernel(*(uint32_t *)(memory+slots[lowering]));
+            if (!fn) return 20;
+            g_esp=sp; *(uint32_t *)(memory+sp)=0xBEEF0001;
+            *(uint32_t *)(memory+sp+4)=0x55; /* deliberately differs from CL */
+            g_ecx=0x12340000u|(lowering?0:levels[i]);
+            fn();
+            if (g_esp!=sp+4) return 21;
+            if (!lowering&&g_eax!=0) return 22;
+            unsigned actual=xbox_KfRaiseIrql((KIRQL)(lowering?0:levels[i]));
+            if (actual!=(lowering?0:levels[i])) {
+                fprintf(stderr,"[TEST] IRQL %s: expected %u, got %u\n",lowering?"lower":"raise",lowering?0:levels[i],actual);
+                return 23;
+            }
+        }
+    }
+    puts("[TEST] IRQL bridges: CL argument, previous-level return and zero-argument stack cleanup passed.");
+    const uint32_t addresses[]={0x80000000,0x808A4000,0x83FFFFFF,0x01080000,0x00010000};
+    guest_fn physical=recomp_lookup_kernel(*(uint32_t *)(memory+0x003C6D6C));
+    if (!physical) return 24;
+    for (unsigned i=0;i<sizeof(addresses)/sizeof(addresses[0]);++i) {
+        g_esp=sp; *(uint32_t *)(memory+sp)=0xBEEF0001;
+        *(uint32_t *)(memory+sp+4)=addresses[i];
+        physical();
+        uint32_t expected=addresses[i]&0x7FFFFFFF;
+        if (g_esp!=sp+8||g_eax!=expected) {
+            fprintf(stderr,"[TEST] Physical address %08X expected %08X, got %08X\n",addresses[i],expected,g_eax);
+            return 25;
+        }
+    }
+    puts("[TEST] Physical-address bridge: contiguous mirror translation, low identity and stack cleanup passed.");
+    return 0;
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                    LPSTR lpCmdLine, int nCmdShow)
 {
@@ -310,11 +357,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     g_xbox_mem_offset = xbox_GetMemoryOffset();
     printf("Xbox memory mapped. Offset: 0x%llX\n", (unsigned long long)g_xbox_mem_offset);
-    if (getenv("XML1_APU") && !s_memory_query_test) {
+    if (getenv("XML1_APU") && !s_memory_query_test && !s_irql_test) {
         /* DSP scratch buffers and scatter/gather tables currently observed in
          * XML1 use physical allocations backed by the contiguous window. */
         g_apu_state = mcpx_apu_init_standalone((uint8_t *)((uintptr_t)g_xbox_mem_offset + 0x80000000u));
         if (!g_apu_state) { fprintf(stderr,"APU initialization failed\n"); return 1; }
+        DWORD previous_protection;
+        if (!VirtualProtect((void *)((uintptr_t)g_xbox_mem_offset+0xFEC00000u),4096,PAGE_NOACCESS,&previous_protection)) {
+            fprintf(stderr,"Cannot route AC97 register accesses\n"); return 1;
+        }
     }
 
     /* Step 3: Initialize Xbox kernel */
@@ -334,8 +385,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     /* Step 6: Initialize stack */
     g_esp = XBOX_STACK_TOP;
 
-    if (s_memory_query_test) {
-        int result = memory_query_bridge_test();
+    if (s_memory_query_test || s_irql_test) {
+        int result = s_irql_test ? irql_bridge_test() : memory_query_bridge_test();
         xbox_kernel_shutdown();
         xbox_MemoryLayoutShutdown();
         free(xbe_data);
@@ -389,6 +440,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     printf("\nStarting game...\n");
     fflush(stdout);
 
+    xml1_native_probe_start();
     xbe_entry_point();
 
     printf("\nGame returned. Cleaning up...\n");
@@ -443,5 +495,6 @@ static BOOL load_xbe(const char *path, void **out_data, size_t *out_size)
 int main(int argc, char **argv)
 {
     s_memory_query_test = argc == 2 && strcmp(argv[1], "--memory-query-test") == 0;
+    s_irql_test = argc == 2 && strcmp(argv[1], "--irql-test") == 0;
     return WinMain(GetModuleHandle(NULL), NULL, GetCommandLineA(), SW_SHOW);
 }

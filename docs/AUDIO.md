@@ -45,8 +45,14 @@ X/Y/P/mix-buffer register round-trips. It opens no audio device. The existing
 `run-boot-probe.ps1 -Seconds 20 -TestPad -LiveDX8 -APU` now exercises the APU
 register handler. boot-020/021 reaches an initialization/cleanup loop with
 0x8007000E on the guest stack, earlier than the previous DSP command wait.
-This is not proof of an actual out-of-memory condition: allocation returns,
-kernel callbacks and the translated control flow still need tracing.
+This was not an out-of-memory condition: a subsequent native-thread probe located
+the actual wait in the AC97 channel-reset poll. Startup register handling now
+self-clears reset and preserves interrupt enables, tested without an audio device.
+The contiguous-window MmGetPhysicalAddress fix then allows DSP scatter/gather DMA
+to read physical offsets. boot-025 starts the APU, creates the audio worker and
+opens x_common.zsM, before rejecting DSP opcode 0x0c1890 at PC 0x0519.
+The decoder identifies this as unimplemented EXTRACTU immediate; implementation
+and real program validation are still required. AC97 DMA progress is not implemented.
 
 ## Remaining integration
 
@@ -54,7 +60,7 @@ kernel callbacks and the translated control flow still need tracing.
   low guest RAM and the 0x80000000 contiguous allocation window separately;
   the current connection uses contiguous RAM for the observed DSP allocations.
   Low-memory PCM buffers and all physical-address translations remain unverified.
-- Diagnose the current audio initialization/cleanup loop and exercise the game's
+- Implement and test the encountered DSP instruction, then exercise the game's
   actual GP/EP programs beyond the synthetic integration tests.
 - Validate the actual command completion, decoded/mixed output and timing through
   native logs/captures. Do not replace the wait with a success-only return.

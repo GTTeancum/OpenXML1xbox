@@ -200,3 +200,20 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   DSP correctness for the game and any audible output remain unverified.
 - Toolkit changes are a third reproducible patch; clean apply check and repeated
   setup patch checks pass. No new screenshot, FMV/menu/level milestone yet.
+
+## AC97 startup and kernel ABI fixes (2026-09-13)
+
+- A process-local native probe located the actual wait in the AC97 channel-reset
+  poll. The guest reads reset once before spinning; hardware must self-clear it.
+  Implemented the startup register subset, with tests for all four channels,
+  preserved interrupt enables, reset DMA registers and read-only status bits.
+  This does not implement AC97 DMA advancement or interrupts.
+- Fixed KfRaiseIrql/KfLowerIrql to take fastcall CL rather than stack arguments.
+  Actual retail-thunk tests fail before and pass after, including stack cleanup.
+- Fixed MmGetPhysicalAddress for the separately mapped contiguous RAM window.
+  Actual retail-thunk tests prove conversion to physical offsets and unchanged
+  low addresses. This removes the DSP scatter/gather bounds failure.
+- Saved both kernel fixes as a fourth ordered toolkit patch. boot-025 now starts
+  the APU, creates the audio worker and opens x_common.zsM before the interpreter
+  rejects EXTRACTU immediate (0x0c1890 at DSP PC 0x0519). The prior 8007000E stack
+  value was not evidence of memory exhaustion. No new visual/audio milestone.

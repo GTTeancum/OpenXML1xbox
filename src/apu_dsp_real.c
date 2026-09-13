@@ -487,14 +487,18 @@ void mcpx_apu_dsp_init(MCPXAPUState *d)
     mcpx_apu_update_dsp_preference(d);
 }
 
+uint64_t xml1_ac97_read(uint32_t address, unsigned size);
+void xml1_ac97_write(uint32_t address, uint64_t value, unsigned size);
 uint64_t xml1_apu_dsp_read(MCPXAPUState *d, uint64_t addr, unsigned size)
 {
+    if (addr >= 0x400000 && addr < 0x401000) return xml1_ac97_read((uint32_t)addr-0x400000,size);
     if (addr >= 0x30000 && addr < 0x40000) return gp_read(d,addr-0x30000,size);
     if (addr >= 0x50000 && addr < 0x60000) return ep_read(d,addr-0x50000,size);
     return 0;
 }
 void xml1_apu_dsp_write(MCPXAPUState *d, uint64_t addr, uint64_t value, unsigned size)
 {
+    if (addr >= 0x400000 && addr < 0x401000) { xml1_ac97_write((uint32_t)addr-0x400000,value,size); return; }
     if (addr >= 0x30000 && addr < 0x40000) gp_write(d,addr-0x30000,value,size);
     else if (addr >= 0x50000 && addr < 0x60000) ep_write(d,addr-0x50000,value,size);
 }
