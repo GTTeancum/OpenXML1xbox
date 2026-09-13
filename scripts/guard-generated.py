@@ -21,3 +21,14 @@ for path in root.glob('*.c'):
     if result != original:
         path.write_text(result, encoding='utf-8')
 print(f'Installed {count} fail-fast missing-function guards')
+
+types = root / 'recomp_types.h'
+original = types.read_text(encoding='utf-8')
+macro = '#define RECOMP_ABI_CALL(va, fn) (fn)()'
+replacement = ('void xml1_graphics_observe(uint32_t va);\n'
+               '#define RECOMP_ABI_CALL(va, fn) (xml1_graphics_observe(va), (fn)())')
+if macro not in original and replacement not in original:
+    raise SystemExit('Cannot find the pinned RECOMP_ABI_CALL macro for graphics observation')
+result = original.replace(macro, replacement)
+if result != original:
+    types.write_text(result, encoding='utf-8')

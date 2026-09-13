@@ -7,12 +7,14 @@ typedef BOOL WINBOOL;
 #include <d3d8.h>
 #include <cstdio>
 #include <cstring>
+#include "dx8_replay.h"
 
 // Stage one: establish actual system D3D8 capabilities before defining the
 // Xbox-to-PC graphics bridge. This probe does not run or render game code.
 int main(int argc, char** argv) {
-    if (argc != 2 || std::strcmp(argv[1], "--probe") != 0) {
-        std::fprintf(stderr, "Usage: xml1-dx8-worker --probe\n");
+    const bool replayMode = argc == 4 && std::strcmp(argv[1], "--replay") == 0;
+    if (!replayMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
+        std::fprintf(stderr, "Usage: xml1-dx8-worker --probe | --replay packet.bin capture.bmp\n");
         return 2;
     }
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
@@ -52,10 +54,15 @@ int main(int argc, char** argv) {
     pp.Windowed = TRUE;
     pp.EnableAutoDepthStencil = TRUE;
     pp.AutoDepthStencilFormat = D3DFMT_D24S8;
+    pp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
     IDirect3DDevice8* device = nullptr;
     hr = api->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window,
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE, &pp, &device);
     std::printf("Hidden D3D8 HAL device creation: %08lx\n", static_cast<unsigned long>(hr));
+    if (device && replayMode) {
+        try { replay(device,argv[2],argv[3]); }
+        catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
+    }
     if (device) device->Release();
     if (window) DestroyWindow(window);
     UnregisterClassW(wc.lpszClassName, wc.hInstance);

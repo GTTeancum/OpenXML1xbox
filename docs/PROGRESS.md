@@ -106,5 +106,36 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   INVALIDCALL. Using the queried display format succeeds (HRESULT 0).
 - DX8 headers are the pinned mingw-w64 headers recorded under external/dx8-headers;
   original copyright notices and LGPL-2.1 text are retained.
-- Graphics IPC, Xbox D3D8 interception, shaders, asset conversion, and actual game
-  rendering remain pending. The probe is not a game screenshot milestone.
+- The initial capability probe is not a game screenshot milestone.
+
+## First legal splash through genuine DX8 (2026-09-13 07:46 UTC)
+
+- boot-018 captures 1,137 actual D3D calls before the first Swap wait, including
+  two DrawVertices triangle strips: 4 and 3,648 vertices, FVF 0x142/stride 24.
+- Optional XML1_TRACE_D3D observer retains transient matrices/viewports and the
+  deferred texture/render state arrays. Vertex and texture bytes are copied at
+  each draw, so subsequent game writes cannot change the recorded submissions.
+- scripts/prepare-d3d-replay.py packages those submissions for the x86 DX8 worker.
+  It checks the narrow supported path: fixed function, single DXT3 texture, strip.
+  Other rendering paths are not implemented by this diagnostic.
+- Native system D3D8 replays the game's matrices, vertices, texture stages, blend
+  and depth states. The worker saves its own locked backbuffer; no desktop capture,
+  OS input injection, asset viewer, or synthetic test scene was used.
+- Visually inspected 640x480 result shows XML1 character artwork/logo and readable
+  legal text. Posted the capture to the user. This is a diagnostic replay of the
+  legal splash, NOT a live playable build or proof of graphical correctness.
+- The repeat capture using draw-time resource snapshots has the same hash as the
+  initial end-of-frame resource replay. Logs: build/boot-018-d3d-draw-payload.log;
+  screenshot build/d3d-first-replay.bmp; ignored packet build/d3d-replay.bin.
+- Xbox enum values checked against Cxbx XbD3D8Types.h at
+  585c49a50af1255ab155099e06f24505f9c5a800: triangle strip=6, view=0,
+  projection=1, world=6. Toolkit d3d8_xbox.h uses PC values for these and must
+  not be used verbatim to decode the actual guest API.
+- Fastcall SetRenderState_Simple emits NV097 methods without updating the guest
+  state array; replay overlays observed methods. Depth function is 0x354 and
+  blend equation 0x350 (the toolkit D3D11 file mislabels 0x354 as depth enable).
+- Build succeeded, both actual draws returned successful HRESULTs, and the own
+  backbuffer readback succeeded. No audio, FMV, menu or level 1 milestone yet.
+- Next: connect live guest submissions to the DX8 worker, replace the GPU swap
+  wait with real frame completion, then advance startup with fail-fast diagnostics.
+  Goal remains active with the original 2026-09-14 12:14:26 UTC cutoff.
