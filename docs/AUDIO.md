@@ -80,3 +80,29 @@ failure remains unresolved; stereo output correctness is not yet verified.
 
 Current evidence: build/boot-019-live-dx8.log, build/build-dsp-test.log and the
 executed dsp-core-test output. No FMV/audio milestone is claimed.
+
+## Native DSP output routing and silent APU diagnosis (boot080–082)
+
+The inherited monitor discarded the completed256-frame DSP buffer, cleared it,
+and filled a1024-frame XAudio2 submission from a separate HLE software mixer.
+Root builds now enable RECOMP_APU_NATIVE_DSP_OUTPUT through ordered toolkit
+patch10, submitting the actual256 stereo samples and preserving them across
+bounded XAudio2 backpressure. Inactive XAudio2/submission failure is explicit.
+The legacy HLE mixer remains the upstream default when the macro is absent.
+
+src/apu_output.c optionally captures precisely the submitted samples with
+XML1_CAPTURE_DSP_PCM=1 to build/apu-dsp-output.pcm (s16le,48kHz,stereo) and a
+wall-time/sample-count CSV. This is own-process PCM, not host loopback capture.
+The output regression verifies stereo payload preservation across two rejected
+submissions, with no audio device opened. GP/EP bootstrap/MMIO tests still pass;
+the DSP adapter regenerates byte-identically and all ten patches are idempotent.
+
+boot080/081 captures are entirely zero. GP/EP reset flags are both3, but sampled
+VP mixbins are zero. boot082 then identifies an APU transition from active
+FECTL100F to trapped FECTL1FEF, ISTS60, IEND9; DSP frame processing stops while
+the output path continues silence. Standalone pci_irq_assert is a stub. The
+next required work is real process-local delivery to the registered guest ISR,
+plus the earlier silent voice/memory path. Do not bypass the trap or pretend
+completion. No audible fidelity milestone is established. Sample production is
+also slower than48kHz wall time (192000 frames in about4.96s), requiring timing
+validation after interrupt/voice processing works. FMV timing remains open.

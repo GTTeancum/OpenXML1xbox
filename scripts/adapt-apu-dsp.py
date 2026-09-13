@@ -49,5 +49,6 @@ void xml1_apu_dsp_write(MCPXAPUState *d, uint64_t addr, uint64_t value, unsigned
     else if (addr >= 0x50000 && addr < 0x60000) ep_write(d,addr-0x50000,value,size);
 }
 '''
+s=s.replace('    /* Write VP results to the GP DSP MIXBUF */','    extern void xml1_apu_trace_frame(unsigned gp,unsigned ep,const float *mix,unsigned count);\n    xml1_apu_trace_frame(d->gp.regs[NV_PAPU_GPRST],d->ep.regs[NV_PAPU_EPRST],&mixbins[0][0],NUM_MIXBINS*NUM_SAMPLES_PER_FRAME);\n    /* Write VP results to the GP DSP MIXBUF */')
 assert 'case NV_PAPU_' not in s and 'default:' not in s
 (root/'src/apu_dsp_real.c').write_text(s,encoding='utf-8')

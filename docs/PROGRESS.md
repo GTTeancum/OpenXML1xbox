@@ -520,3 +520,15 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Next audio finding: the toolkit monitor clears DSP output then fills it from
   its separate software mixer. Actual guest DSP output is therefore discarded;
   routing and native sample capture are required before any audio fidelity claim.
+
+## Actual DSP output and APU trap diagnosis (boot080–082)
+
+- Ordered patch10 routes completed256-frame DSP blocks to the root XAudio2
+  output, preserving data across backpressure. Native PCM/CSV capture reveals
+  entirely silent samples. Synthetic output payload/retry and GP/EP tests pass;
+  adapter regeneration is identical and ten-patch idempotence passes.
+- boot082 starts APU atFECTL100F then stops processing atFECTL1FEF, ISTS60,
+  IEND9: an APU trap/interrupt is pending and the standalone IRQ signal is stubbed.
+  VP mixbins are also zero before that trap. Next: trace and implement guest ISR
+  delivery, followed by silent voice/physical-memory and pacing investigation.
+  Audio is still incorrect; no recognizable FMV milestone claimed. See AUDIO.md.

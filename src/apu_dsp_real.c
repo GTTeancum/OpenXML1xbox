@@ -420,6 +420,8 @@ static void ep_write(void *opaque, hwaddr addr, uint64_t val, unsigned int size)
 
 void mcpx_apu_dsp_frame(MCPXAPUState *d, float mixbins[NUM_MIXBINS][NUM_SAMPLES_PER_FRAME])
 {
+    extern void xml1_apu_trace_frame(unsigned gp,unsigned ep,const float *mix,unsigned count);
+    xml1_apu_trace_frame(d->gp.regs[NV_PAPU_GPRST],d->ep.regs[NV_PAPU_EPRST],&mixbins[0][0],NUM_MIXBINS*NUM_SAMPLES_PER_FRAME);
     /* Write VP results to the GP DSP MIXBUF */
     for (int mixbin = 0; mixbin < NUM_MIXBINS; mixbin++) {
         uint32_t base = GP_DSP_MIXBUF_BASE + mixbin * NUM_SAMPLES_PER_FRAME;

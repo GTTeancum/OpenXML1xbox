@@ -1,0 +1,34 @@
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -274,6 +274,16 @@
+         return;
+     }
+ 
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++    /* The real VP/GP/EP path has accumulated 8*32 stereo samples. Preserve
++     * those samples instead of clearing them for the separate HLE mixer. */
++    extern void recomp_apu_dsp_output(const int16_t *samples,unsigned frames);
++    if(g_audio_muted) memset(d->monitor.frame_buf,0,sizeof(d->monitor.frame_buf));
++    recomp_apu_dsp_output(&d->monitor.frame_buf[0][0],256);
++    memset(d->monitor.frame_buf,0,sizeof(d->monitor.frame_buf));
++    return;
++#endif
++
+     /* XAudio2 path: render and submit a buffer */
+     if (xa2_is_active()) {
+         int buf_size = xa2_get_buffer_size();
+@@ -457,6 +467,14 @@
+         bool apu_active = (xcntmode != NV_PAPU_SECTL_XCNTMODE_OFF) &&
+                           !(fectl & NV_PAPU_FECTL_FEMETHMODE_TRAPPED) &&
+                           !(fectl & NV_PAPU_FECTL_FEMETHMODE_HALTED);
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++        static int previous_active=-1;
++        if(previous_active!=(int)apu_active) {
++            fprintf(stderr,"[APU MODE] active=%u FECTL=%08X SECTL=%08X ISTS=%08X IEN=%08X\n",
++                apu_active,fectl,d->regs[NV_PAPU_SECTL],d->regs[NV_PAPU_ISTS],d->regs[NV_PAPU_IEN]);
++            previous_active=apu_active;
++        }
++#endif
+ 
+         if (apu_active && !g_test_tone.active) {
+             /* Full pipeline: VP voices → DSP → monitor → waveOut */
