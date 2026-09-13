@@ -159,3 +159,26 @@ No recognizable FMV or audible correctness milestone has been established.
   then revalidate level1 input after the IRQ and physical-memory changes.
   Page mappings currently persist for the process lifetime, as does the existing
   contiguous arena allocator. No full virtual-memory remap/free semantics claimed.
+
+
+## Movie virtual-memory release (boot097–101)
+
+- boot099 confirms repeated MEM_RELEASE requests for movie buffers0136D000,
+  0156E000,0176F000,etc. Each buffer is2097200 bytes. The old low-address VM
+  free fell through to native VirtualFree, despite allocating from xbox_HeapAlloc.
+  No guest blocks were freed; boot096 had22 live blocks and exhausted the heap.
+- Ordered patch13 rounds VM allocations to pages and records low heap-backed
+  VM ownership/state/protection in guest_vmem. Release returns the owning block
+  to xbox_HeapFree. Decommit/recommit and queries use that same metadata; an
+  interior release is rejected. The synthetic VM test now verifies low-address
+  query, decommit/recommit, neighboring-byte preservation, exact-owner release
+  and reuse in addition to the existing high-address VM tests. All pass.
+- boot100(45s) and boot101(30s, native capture every presentation) finish at
+  diagnostic bound3 without movie heap exhaustion. Repeated movie releases
+  reuse0136D000. Thirteen-patch reverse-stack validation passes.
+- Movie output remains black: boot101's renderer upload atframe240 contains
+  242574 colored pixels and307200 alpha-bearing pixels in the1024x512 ARGB
+  texture. The F0000000 aperture is already a view of contiguous memory, and
+  upload contents confirm that path. Next inspect the actual movie draw packet,
+  transforms/UVs/blending and native output rather than assuming another alias
+  mismatch. No new screenshot posted; no FMV/audio fidelity claim.

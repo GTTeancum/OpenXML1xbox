@@ -7,6 +7,8 @@
 size_t g_xbox_total_ram = 64u << 20;
 size_t g_xbox_map_size = 256u << 20;
 ptrdiff_t g_xbox_mem_offset;
+static uint32_t freed;
+void xbox_HeapFree(uint32_t base) { freed=base; }
 #define REQUIRE(c) do { if (!(c)) { fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #c); return 1; } } while (0)
 int main(void) {
     uint8_t *memory = calloc(1, g_xbox_map_size);
@@ -38,6 +40,21 @@ int main(void) {
     REQUIRE(guest_vmem_allocate(&base, &size, 0x2000, 4, &status) && status);
     base = 0xFFFFF000; size = 0x2000;
     REQUIRE(guest_vmem_allocate(&base, &size, 0x3000, 4, &status) && status);
+    base=0x1200000; size=0x201000;
+    guest_vmem_track_heap(base,size,0x801000,4);
+    REQUIRE(guest_vmem_query(base,info) && info[1]==base && info[3]==size && info[4]==0x1000);
+    memory[base]=77;
+    uint32_t interior=base+4096, part=4096;
+    REQUIRE(guest_vmem_free(&interior,&part,0x4000,&status) && !status && !freed);
+    REQUIRE(guest_vmem_allocate(&interior,&part,0x1000,4,&status) && !status && !memory[interior]);
+    REQUIRE(memory[base]==77);
+    part=0;
+    REQUIRE(guest_vmem_free(&interior,&part,0x8000,&status) && status && !freed);
+    size=0;
+    REQUIRE(guest_vmem_free(&base,&size,0x8000,&status) && !status && freed==base && size==0x201000);
+    REQUIRE(!guest_vmem_query(base,info));
+    guest_vmem_track_heap(base,size,0x3000,4);
+    REQUIRE(guest_vmem_query(base,info) && info[4]==0x1000);
     free(memory);
     puts("PASS: exact reserve, conflict, commit rounding, query boundaries, independent backing, recommit, decommit, release/reuse and overflow.");
     return 0;

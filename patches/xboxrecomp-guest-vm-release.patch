@@ -1,0 +1,83 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -837,6 +837,8 @@
+         return;
+     }
+ 
++    if(size>0xFFFFF000u) { g_eax=0xC0000017u; return; }
++    size=(size+4095u)&~4095u;
+     /* Allocate from Xbox heap (MEM_RESERVE or MEM_RESERVE|MEM_COMMIT).
+      *
+      * A pure MEM_RESERVE costs no RAM on real hardware -- it takes address
+@@ -900,6 +902,7 @@
+     }
+ 
+     /* Write back the allocated address and actual size */
++    if(xbox_va<g_xbox_total_ram) guest_vmem_track_heap(xbox_va,size,alloc_type,protect);
+     if (base_ptr) BRIDGE_MEM32(base_ptr) = xbox_va;
+     if (size_ptr) BRIDGE_MEM32(size_ptr) = size;
+ 
+--- a/src/kernel/guest_vmem.c
++++ b/src/kernel/guest_vmem.c
+@@ -13,16 +13,25 @@
+ typedef struct { uint32_t owner, state, protect, initial_protect; } vm_page;
+ /* Metadata costs 8 MiB; guest address backing is separately configured. */
+ static vm_page pages[USER_END / PAGE];
++extern void xbox_HeapFree(uint32_t base);
++void guest_vmem_track_heap(uint32_t base,uint32_t size,uint32_t type,uint32_t protect) {
++    for(uint32_t p=base/PAGE;p<(base+size)/PAGE;++p) {
++        pages[p].owner=base;
++        pages[p].state=(type&COMMIT)?COMMIT:RESERVE;
++        pages[p].protect=(type&COMMIT)?protect:0;
++        pages[p].initial_protect=protect;
++    }
++}
+ 
+ int guest_vmem_allocate(uint32_t *base, uint32_t *size, uint32_t type,
+                         uint32_t protect, uint32_t *status)
+ {
+-    if (*base < g_xbox_total_ram) return 0;
++    if (*base < g_xbox_total_ram && !pages[*base/PAGE].owner) return 0;
+     *status = INVALID;
+     uint64_t end64 = ((uint64_t)*base + *size + PAGE - 1) & ~(uint64_t)(PAGE - 1);
+     uint32_t start = *base & ~((type & RESERVE) ? 0xFFFFu : PAGE - 1);
+     if (!*size || (type != RESERVE && type != COMMIT && type != (RESERVE | COMMIT)) ||
+-        start < g_xbox_total_ram || end64 > USER_END || end64 <= start) return 1;
++        end64 > USER_END || end64 <= start) return 1;
+     if (end64 > g_xbox_map_size) { *status = 0xC0000017u; return 1; }
+     uint32_t end = (uint32_t)end64;
+     uint32_t owner = pages[start / PAGE].owner;
+@@ -45,7 +54,7 @@
+ 
+ int guest_vmem_query(uint32_t address, uint32_t info[7])
+ {
+-    if (address < g_xbox_total_ram || address >= USER_END) return 0;
++    if (address >= USER_END || (address < g_xbox_total_ram && !pages[address/PAGE].owner)) return 0;
+     uint32_t start = address & ~(PAGE - 1);
+     vm_page first = pages[start / PAGE];
+     uint32_t end = start + PAGE;
+@@ -65,7 +74,7 @@
+ int guest_vmem_free(uint32_t *base, uint32_t *size, uint32_t type,
+                     uint32_t *status)
+ {
+-    if (*base < g_xbox_total_ram) return 0;
++    if (*base < g_xbox_total_ram && !pages[*base/PAGE].owner) return 0;
+     *status = INVALID;
+     if (*base >= USER_END) return 1;
+     uint32_t start = *base & ~(PAGE - 1), end;
+@@ -89,5 +98,6 @@
+         else { pages[p].state = RESERVE; pages[p].protect = 0; }
+     }
+     *base = start; *size = end - start; *status = 0;
++    if(type==0x8000 && owner<g_xbox_total_ram) xbox_HeapFree(owner);
+     return 1;
+ }
+--- a/src/kernel/guest_vmem.h
++++ b/src/kernel/guest_vmem.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ #include <stdint.h>
++void guest_vmem_track_heap(uint32_t base,uint32_t size,uint32_t type,uint32_t protect);
+ 
+ /* Extended user VA allocations backed by the distinct mapping above RAM.
+  * Return 1 when handled, 0 to use the legacy below-RAM implementation. */

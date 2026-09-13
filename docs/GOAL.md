@@ -41,3 +41,7 @@ All of these remain required work. See PROGRESS.md and UPSTREAM-REVIEW.md.
 Native vertical blank waiting now replaces the invalid guest event wait.
 boot096 exposes guest heap exhaustion from repeated movie buffer allocations;
 movie progression and current level1 behavior remain unverified.
+
+Movie VM releases now return buffers to the guest heap; boot100/101 no longer
+exhaust it. Nonzero movie textures still render black; draw-state investigation
+and audio rate/progression validation remain necessary.
