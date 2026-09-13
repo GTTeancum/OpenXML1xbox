@@ -457,3 +457,20 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   fidelity work. boot061 also ended with an AV after prolonged partial-menu
   rendering; this has not been established resolved. Movie timing/lifetime and
   audio correctness remain open. Next: process-local Begin Story input harness.
+
+## Begin Story and IDE queue crash (boot072–073)
+
+- Added opt-in XML1_TEST_A_FRAME (requires XML1_TEST_PAD=1), issuing one A press
+  for12 presented frames entirely inside the game process. Extended synthetic
+  input test verifies press/release payloads and zero host input/output calls.
+- boot072 atframe600 selects Begin Story and loads NYC sound assets, then hits
+  the same fault as boot061: sub0034D2C7 reads guestFFFFFFC9 on an audio thread.
+  Original close code walks IdexChannelObject.DeviceQueue.DeviceListHead at+28.
+  The kernel export contained null links; its old16-byte slot also overlaps
+  XboxSignatureKey at those offsets. Moved it to separate reserved storage and
+  initialized an empty circular list, matching host-backed I/O with no guest IRPs.
+- Synthetic import regression fails before and passes after, locally and in an
+  isolated upstream build. Saved ordered patch9 and submitted upstream PR45.
+  boot073 passes the crash, loads NYC/Wolverine/Cyclops assets, and reaches a
+  renderer refusal atframe654 (culling/stencil/fill/blend state). Still no playable
+  level1 or full audio/graphics fidelity claim. Movie timing remains unresolved.

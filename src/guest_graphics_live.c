@@ -1,5 +1,6 @@
 #include "xbox_memory_layout.h"
 #include "dx8_packet.h"
+#include "guest_input.h"
 #include "../external/xboxrecomp/src/d3d/d3d8_swizzle.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -263,6 +264,7 @@ void xml1_graphics_swap(void) {
     send_bytes("XMLDX8R4",8); send_bytes(&draws,4); send_bytes(packet,used);
     receive_ack();
     ++frames;
+    xml1_input_test_frame(frames);
     if (frames==1||frames%60==0) fprintf(stderr,"[DX8 LIVE] presented frame=%u draws=%u bytes=%zu\n",frames,draws,used);
     draws=0; used=0; frame_geometry=0;
     /* Return only after the native renderer has consumed the submitted frame. */

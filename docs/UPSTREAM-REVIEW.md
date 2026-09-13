@@ -59,3 +59,11 @@ Do not blindly merge branches or replace the pin during an experiment.
   Eight synthetic translation regressions; isolated168 tests/10 subtests pass.
   Native local2744 instruction cases fail before and pass after, and original
   movie conversion now writes480 rows instead of2. No game bytes in the PR.
+
+- Submitted IDE channel request-list initialization as
+  https://github.com/sp00nznet/xboxrecomp/pull/45, isolated commit824e387.
+  Synthetic Windows regression fails before and passes after (CTest1/1).
+  Relocates the exported object out of its old 16-byte slot to prevent overlap
+  with key exports; initializes the empty circular request list at+28/+2C.
+  Fixes the reproduced XML1 audio-thread file-close null-list crash. No game
+  bytes in the PR. Local ordered patch9 and all patch idempotence checks pass.

@@ -14,6 +14,18 @@ static int test_mode;
 static uint32_t handles[4], generation, previous_mask;
 static uint32_t test_connected;
 static XBOX_INPUT_STATE test_states[4];
+static uint32_t test_press_frame;
+
+void xml1_input_test_frame(uint32_t frame)
+{
+    if(!test_mode || !test_press_frame) return;
+    if(frame==test_press_frame || frame==test_press_frame+12) {
+        XBOX_GAMEPAD state={0};
+        state.bAnalogButtons[XBOX_BUTTON_A]=frame==test_press_frame?255:0;
+        xml1_input_test_state(0,1,&state);
+        fprintf(stderr,"[INPUT TEST] frame=%u A=%u (process-local only)\n",frame,state.bAnalogButtons[XBOX_BUTTON_A]);
+    }
+}
 
 static void *guest(uint32_t va, size_t size)
 {
@@ -66,6 +78,15 @@ void xml1_XInitDevices(void)
 {
     const char *mode = getenv("XML1_TEST_PAD");
     test_mode = mode && strcmp(mode, "1") == 0;
+    const char *press=getenv("XML1_TEST_A_FRAME");
+    test_press_frame=0;
+    if(test_mode && press && *press) {
+        char *end=NULL; unsigned long parsed=strtoul(press,&end,10);
+        if(!end || *end || parsed==0 || parsed>1000000) {
+            fprintf(stderr,"[FATAL INPUT] XML1_TEST_A_FRAME must be 1..1000000\n"); _exit(4);
+        }
+        test_press_frame=(uint32_t)parsed;
+    }
     memset(handles, 0, sizeof(handles));
     memset(test_states, 0, sizeof(test_states));
     test_connected = test_mode ? 1 : 0;
