@@ -1,0 +1,88 @@
+--- a/src/kernel/kernel_hal.c
++++ b/src/kernel/kernel_hal.c
+@@ -12,6 +12,8 @@
+  */
+ 
+ #include "kernel.h"
++#include "xbox_memory_layout.h"
++extern ptrdiff_t g_xbox_mem_offset;
+ #if defined(_WIN32)
+ #include <intrin.h>
+ #endif
+@@ -30,6 +32,12 @@
+  * ============================================================================ */
+ 
+ static XBOX_THREAD_LOCAL KIRQL g_current_irql = PASSIVE_LEVEL;
++static void publish_irql(KIRQL level) {
++    g_current_irql=level;
++    /* Translated XDK code reads KPCR.Irql directly through fs:[0x24]. */
++    if (g_xbox_mem_offset && g_fs_base)
++        *(volatile uint8_t *)((uintptr_t)g_xbox_mem_offset+g_fs_base+0x24)=level;
++}
+ KIRQL __stdcall xbox_KeGetCurrentIrql(void) { return g_current_irql; }
+ 
+ /*
+@@ -46,7 +54,7 @@
+             old, NewIrql);
+     }
+ 
+-    g_current_irql = NewIrql;
++    publish_irql(NewIrql);
+     return old;
+ }
+ 
+@@ -62,7 +70,7 @@
+             g_current_irql, NewIrql);
+     }
+ 
+-    g_current_irql = NewIrql;
++    publish_irql(NewIrql);
+ }
+ 
+ /*
+@@ -71,7 +79,7 @@
+ KIRQL __stdcall xbox_KeRaiseIrqlToDpcLevel(void)
+ {
+     KIRQL old = g_current_irql;
+-    g_current_irql = DISPATCH_LEVEL;
++    publish_irql(DISPATCH_LEVEL);
+     return old;
+ }
+ 
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -1851,12 +1851,16 @@
+     BRIDGE_MEM32(dpc_va + 20) = arg1;
+     BRIDGE_MEM32(dpc_va + 24) = arg2;
+ 
++    uint32_t saved_stack=g_esp;
++    KIRQL old_irql=xbox_KfRaiseIrql(DISPATCH_LEVEL);
+     g_esp -= 4; BRIDGE_MEM32(g_esp) = arg2;
+     g_esp -= 4; BRIDGE_MEM32(g_esp) = arg1;
+     g_esp -= 4; BRIDGE_MEM32(g_esp) = context;
+     g_esp -= 4; BRIDGE_MEM32(g_esp) = dpc_va;
+     g_esp -= 4; BRIDGE_MEM32(g_esp) = 0;
+     fn();
++    xbox_KfLowerIrql(old_irql);
++    if(g_esp!=saved_stack) { fprintf(stderr,"[FATAL DPC] stack=%08X expected=%08X\n",g_esp,saved_stack); abort(); }
+     return 1;
+ }
+ 
+@@ -2062,7 +2066,7 @@
+ 
+ /* Run whatever is queued. Called from the timer thread, which has the guest
+  * stack and TIB that a deferred routine needs. */
+-static void kernel_drain_dpcs(void)
++void xbox_DispatchQueuedDpcs(void)
+ {
+     while (g_dpc_head != g_dpc_tail) {
+         LONG head = g_dpc_head;
+@@ -2340,7 +2344,7 @@
+         Sleep(1);
+         xbox_DispatchDeviceInterrupts();
+         kernel_vblank_tick();  /* the GPU's frame clock */
+-        kernel_drain_dpcs();   /* deferred work, before due timers */
++        xbox_DispatchQueuedDpcs();   /* deferred work, before due timers */
+         now = (long long)GetTickCount64();
+ 
+         for (i = 0; i < XBOX_MAX_TIMERS; i++) {

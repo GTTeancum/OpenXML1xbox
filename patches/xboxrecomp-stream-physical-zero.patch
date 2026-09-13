@@ -1,0 +1,31 @@
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -813,7 +813,7 @@
+         hwaddr addr = d->regs[NV_PAPU_VPSSLADDR] + page * 8;
+         segment_offset = ldl_le_phys(address_space_memory, addr);
+         segment_length = ldl_le_phys(address_space_memory, addr + 4);
+-        if (!segment_offset || !segment_length) {
++        if (segment_offset>=0x04000000u || !segment_length) {
+             fprintf(stderr,"[APU INVALID SSL] voice=%u index=%d seg=%d page=%d count=%d table=%08X addr=%08X offset=%08X length=%08X cbo=%u state=%08X bases=%u/%u counts=%u/%u\n",
+                 v,ssl_index,ssl_seg,page,count,d->regs[NV_PAPU_VPSSLADDR],(uint32_t)addr,
+                 (uint32_t)segment_offset,segment_length,cbo,
+@@ -821,7 +821,8 @@
+                 d->vp.ssl[v].base[0],d->vp.ssl[v].base[1],d->vp.ssl[v].count[0],d->vp.ssl[v].count[1]);
+             fflush(stderr);
+         }
+-        assert(segment_offset != 0);
++        /* Physical page zero is a valid contiguous allocation in the port. */
++        assert(segment_offset < 0x04000000u);
+         assert(segment_length != 0);
+         seg_len = (segment_length >> 0) & 0xffff;
+         seg_cs = (segment_length >> 16) & 3;
+@@ -1069,6 +1070,9 @@
+ 
+ #ifdef RECOMP_APU_LIBSAMPLERATE
+ /* Process-local diagnostic entry exercises the same source fetch and SRC state. */
++int xml1_apu_stream_source_probe(MCPXAPUState *d,uint16_t voice,float (*samples)[2],int count) {
++    return voice_get_samples(d,voice,samples,count);
++}
+ int xml1_apu_resample_probe(MCPXAPUState *d,uint16_t voice,float (*samples)[2],int count,float rate) {
+     return voice_resample(d,voice,samples,count,rate);
+ }

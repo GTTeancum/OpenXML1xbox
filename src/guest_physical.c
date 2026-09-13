@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 extern ptrdiff_t g_xbox_mem_offset;
+extern RECOMP_TLS uint32_t g_xbox_kernel_caller;
 /* Existing arena bounds are private constants in xbox_memory_layout.c. */
 #define XBOX_CONTIG_BASE 0x80000000u
 #define XBOX_CONTIG_SIZE (64u*1024*1024)
@@ -14,6 +15,11 @@ static volatile LONG map_lock;
 static uint32_t guest_to_physical[65536];
 static volatile LONG physical_to_guest[16384];
 uint32_t xml1_guest_physical_address(uint32_t address) {
+    if(!address || address==XBOX_CONTIG_BASE) {
+        static LONG reports;
+        if(InterlockedIncrement(&reports)<=32)
+            fprintf(stderr,"[PHYSICAL ZERO] guest=%08X kernel_caller=%08X\n",address,g_xbox_kernel_caller);
+    }
     if(address>=XBOX_CONTIG_BASE && (uint64_t)address<XBOX_CONTIG_BASE+ (uint64_t)XBOX_CONTIG_SIZE)
         return address-XBOX_CONTIG_BASE;
     if(!address) return 0;

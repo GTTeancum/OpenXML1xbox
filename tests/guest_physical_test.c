@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 ptrdiff_t g_xbox_mem_offset;
+RECOMP_TLS uint32_t g_xbox_kernel_caller;
 static unsigned char guest[65536],ram[65536];
 static uint32_t next;
 size_t xbox_GetMappedSize(void) { return sizeof(guest); }

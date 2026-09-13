@@ -4,6 +4,7 @@
 void *recomp_lookup(ULONG address) { (void)address; return NULL; }
 void *recomp_lookup_manual(ULONG address) { (void)address; return NULL; }
 int xml1_apu_resample_probe(MCPXAPUState *,uint16_t,float (*)[2],int,float);
+int xml1_apu_stream_source_probe(MCPXAPUState *,uint16_t,float (*)[2],int);
 void mcpx_apu_vp_finalize(MCPXAPUState *);
 void mcpx_apu_vp_reset(MCPXAPUState *);
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d\n",__LINE__); return 1; } } while(0)
@@ -42,6 +43,29 @@ int main(void) {
     memset(pcm,0,65536*4); mcpx_apu_vp_reset(d);
     CHECK(xml1_apu_resample_probe(d,0,a,32,1.0f)==32);
     for(unsigned i=0;i<32;++i) CHECK(a[i][0]==0 && a[i][1]==0);
+    /* Exercise the actual SSL source path with physical address zero. */
+    voice(d,0);
+    uint32_t *vp=(uint32_t *)(d->ram_ptr+0x1000);
+    vp[NV_PAVS_VOICE_CFG_FMT/4]&=~NV_PAVS_VOICE_CFG_FMT_LOOP;
+    vp[NV_PAVS_VOICE_CFG_FMT/4]|=NV_PAVS_VOICE_CFG_FMT_DATA_TYPE|NV_PAVS_VOICE_CFG_FMT_PERSIST;
+    d->regs[NV_PAPU_VPSSLADDR]=0x12000;
+    d->vp.ssl[0].base[0]=0; d->vp.ssl[0].count[0]=1;
+    d->vp.ssl[0].ssl_index=0; d->vp.ssl[0].ssl_seg=0;
+    *(uint32_t *)(d->ram_ptr+0x12000)=0;
+    *(uint32_t *)(d->ram_ptr+0x12004)=0x00850100;
+    int16_t *zero_pcm=(int16_t *)d->ram_ptr;
+    for(unsigned i=0;i<256;++i) {zero_pcm[i*2]=2000;zero_pcm[i*2+1]=-2000;}
+    CHECK(xml1_apu_stream_source_probe(d,0,a,32)==32);
+    for(unsigned i=0;i<32;++i) CHECK(fabs(a[i][0]-2000.0/32768)<0.000001 && fabs(a[i][1]+2000.0/32768)<0.000001);
+    puts("PASS: actual streaming descriptor at physical address zero returns the original stereo PCM");
+    /* Xbox ADPCM: index0 and zero nibbles keep the initial predictors constant. */
+    vp[NV_PAVS_VOICE_PAR_OFFSET/4]=0;
+    *(uint32_t *)(d->ram_ptr+0x12004)=0x00860041;
+    memset(d->ram_ptr,0,72);
+    *(int16_t *)(d->ram_ptr+0)=2000; *(int16_t *)(d->ram_ptr+4)=-2000;
+    CHECK(xml1_apu_stream_source_probe(d,0,a,32)==32);
+    for(unsigned i=0;i<32;++i) CHECK(fabs(a[i][0]-2000.0/32768)<0.000001 && fabs(a[i][1]+2000.0/32768)<0.000001);
+    puts("PASS: actual stereo ADPCM stream decodes both predictors at physical address zero");
     mcpx_apu_vp_finalize(d); CHECK(!d->vp.filters[0].resampler && !d->vp.filters[1].resampler);
     free(d->ram_ptr);free(d);
     puts("PASS: actual VP source consumption, pitch, stereo, reset and chunk-independent continuity; no host audio device");

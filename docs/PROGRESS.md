@@ -795,3 +795,43 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   take0.038–0.101ms, but the first movie flush interval remains24.78ms overall.
   Queue and submission timings are now recorded separately. Playback speed is
   still unresolved; removing redundant readbacks alone does not solve it.
+
+
+## Guest-visible IRQL and deferred callbacks
+
+- DirectSound helper0036F535 reads fs:[0x24] before acquiring guest lock0037A70C.
+  The runtime updated a host TLS IRQL value but left the guest KPCR byte at zero.
+  kernel_run_dpc also invoked deferred routines without raising their IRQL.
+- Ordered patch18 publishes raise/lower changes to the calling thread's guest
+  KPCR and runs queued/timer DPC callbacks at DISPATCH_LEVEL, restoring the prior
+  level and checking stack cleanup. This corrects visible execution context; it
+  does not by itself implement single-CPU preemption or interrupt spinlocks.
+- Native interrupt regression checks the actual guest byte and kernel API during
+  ISR execution; then queues a synthetic DPC through ordinal119, verifies all
+  callback arguments and level2, and verifies return to prior level1. The DPC-level
+  convenience API and lowering to0 are covered. Test passes;18-patch stack validates.
+- KPCR layout cross-check: Cxbx-Reloaded src/core/kernel/common/types.h defines
+  Irql at0x24 (https://github.com/Cxbx-Reloaded/Cxbx-Reloaded/blob/master/src/core/kernel/common/types.h).
+  Original game instructions independently demonstrate the direct byte read.
+
+- boot126 with corrected IRQL reproduces the stream assertion: voice68, listA
+  segment0, descriptor00860400, offset0, length00868000. IRQL correction alone
+  does not resolve it.
+- boot127 correlates the descriptor with an actual MmGetPhysicalAddress request:
+  guest80000000 from call0037800F returns physical0 immediately before the
+  assertion. This is a valid contiguous buffer, not an empty descriptor. The
+  earlier zero-offset diagnostic interpretation was incorrect for this case.
+- Ordered patch19 accepts physical0 while retaining the64MB range, nonzero length
+  and nonzero sample-count checks. A native regression invokes the actual stream
+  reader with a descriptor at physical0 and verifies32 original stereo PCM
+  samples exactly (normalized16-bit values); existing resampling tests pass.
+  The game's failing descriptor is ADPCM, whose physical read uses the same
+  zero-capable memory path. Game-level verification remains necessary.
+
+- A second source-reader regression uses a known stereo Xbox ADPCM block at
+  physical0 (index0, zero nibbles, predictors+2000/-2000). All32 returned stereo
+  samples match the expected constant predictors. Both PCM and ADPCM cases pass.
+- boot128 passes the previous zero-address failure and reaches the main menu
+  with its background visible (native frame1560). This is new visual evidence
+  compared with the previous menu over black; saved as the main-menu-background
+  deliverable. Current level1 still requires a process-local Begin Story run.

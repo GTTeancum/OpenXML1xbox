@@ -240,3 +240,11 @@ patch17 records descriptor context without bypassing the assertion. boot124
 instead completes the intro sequence and then blocks the main thread entering
 DirectSound critical section0037A70C. Lock ownership/recursion and guest IRQ/DPC
 interaction are the next investigation. Correct sustained audio is not verified.
+
+
+The zero-offset failure is now explained: boot127 records guest80000000 passed
+to MmGetPhysicalAddress at0037800F and returned as physical0 immediately before
+the assertion. Patch19 accepts valid physical0; actual stream-reader regressions
+verify both16-bit PCM and known stereo ADPCM at that address. Patch18 separately
+publishes IRQL to guest fs:[0x24] and runs DPCs at dispatch level. boot128 reaches
+the main menu with both fixes. Full audio fidelity and level1 remain unverified.

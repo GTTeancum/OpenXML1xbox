@@ -67,3 +67,9 @@ Longer runs expose audio synchronization failures: boot122 invalid streaming
 segment descriptor; boot124 blocks entering DirectSound critical section0037A70C
 after the final intro. Native empty-flush regression tests pass, but the first
 movie GPU flush still spans about25ms. Completion remains unproven.
+
+
+boot128 now reaches the main menu with its background visible after correcting
+guest-visible IRQL/DPC level and accepting valid physical0 audio buffers.
+Native menu frame1560 is saved as new evidence. Level1 on this build, sustained
+playability and graphics/audio correctness remain required work.
