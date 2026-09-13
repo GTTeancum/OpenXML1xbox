@@ -23,7 +23,9 @@ marking an unfinished goal complete.
 
 Current milestone: native Windows DX8 splash, menu logo/background and a first
 level1 frame with Wolverine in NYC have been captured. A process-local A press
-selects Begin Story. Sustained gameplay and full visual correctness remain
+selects Begin Story; a process-local stick probe demonstrates movement and camera
+response in level1, with a60-second run ending at the diagnostic bound. Combat,
+complete traversal, sustained gameplay and full visual correctness remain
 unverified; mipmap chains still need implementation. The movie converter's
 INC/DEC carry bug is fixed and now writes all
 480 rows, but the intros advance too quickly and stream lifetime is unstable.

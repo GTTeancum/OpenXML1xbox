@@ -499,3 +499,11 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Added opt-in XML1_TEST_MOVE_FRAME, after the A-release interval, to hold the
   left stick right for60 presented frames within the process-local test pad.
   Synthetic test verifies its wire press/release and zero host input/output calls.
+
+- boot078 uses A600–612 and left-stick-right750–810. Native captures780/840
+  visibly show the character and camera displaced to the taxi/tree area; HUD
+  remains rendered. Capture840 copied to outputs/xml1-dx8-level1-movement.bmp
+  for evidence (not posted as an additional screenshot). The run ends at the
+ 60-second diagnostic bound3 without another crash or graphics guard. Movement
+  and camera response are demonstrated, but combat, complete level traversal,
+  timing/performance, texture mip chains, FMVs and audio correctness remain open.
