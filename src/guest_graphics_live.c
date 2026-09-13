@@ -4,6 +4,7 @@
 #include "fair_gate.h"
 #include "light_state.h"
 #include "shared_completion.h"
+#include "worker_lifetime.h"
 #include "../external/xboxrecomp/src/d3d/d3d8_swizzle.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -120,11 +121,23 @@ static void connect_worker_channel(HANDLE *channel,HANDLE *job,const char *suffi
     if (!AssignProcessToJobObject(*job,process.hProcess)) {
         TerminateProcess(process.hProcess,4); fatal("cannot contain graphics worker lifetime");
     }
-    ResumeThread(process.hThread); CloseHandle(process.hThread); CloseHandle(process.hProcess);
+    if(!xml1_monitor_worker_exit(process.hProcess)) {
+        TerminateProcess(process.hProcess,4); fatal("cannot monitor graphics worker lifetime");
+    }
+    ResumeThread(process.hThread); CloseHandle(process.hThread);
     if (!ConnectNamedPipe(*channel,NULL)&&GetLastError()!=ERROR_PIPE_CONNECTED) fatal("graphics worker connection failed");
     fprintf(stderr,"[DX8 LIVE] connected native DX8 %s worker\n",suffix);
 }
 static void connect_worker(void) { connect_worker_channel(&pipe,&worker_job,"graphics","--stream"); }
+
+int xml1_graphics_fence_complete(uint32_t device,uint32_t target) {
+    if(!live() || !frames) return 0;
+    const uint32_t *d=guest(device,0x34);
+    uint32_t latest=d[0x2c/4],completed=*(uint32_t*)guest(d[0x30/4],4);
+    /* Match the XDK's unsigned, wrap-aware completion comparison. Reading this
+     * does not issue a fence, submit work, or manufacture an event signal. */
+    return (uint32_t)(latest-target)>=(uint32_t)(latest-completed);
+}
 
 void xml1_graphics_live_observe(uint32_t va) {
     if (!live()||va<0x35ADA0||va>=0x36F300) return;
@@ -147,7 +160,9 @@ void xml1_graphics_live_observe(uint32_t va) {
          * all recorded preceding native work before the guest chooses its
          * interrupt/event wait path. Only issued fences (latest-2) are published,
          * and only after the worker's actual GPU-completion acknowledgement. */
-        if((uint32_t)(latest-a[0]) < (uint32_t)(latest-complete)) {
+        /* For the current, unissued fence, BlockOnTime itself calls InsertFence
+         * and kickoff. Its post-insert check observes that acknowledgement. */
+        if(a[0]!=latest && (uint32_t)(latest-a[0]) < (uint32_t)(latest-complete)) {
             flush_completed_work(device);
             static unsigned pending_reports;
             if(pending_reports++<12) fprintf(stderr,"[DX8 WAIT SUBMIT] target=%08X complete=%08X latest=%08X\n",

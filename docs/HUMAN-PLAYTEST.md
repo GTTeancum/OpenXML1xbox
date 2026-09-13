@@ -4,8 +4,10 @@ Connect an XInput-compatible controller, then double-click `Play XML1.cmd` in
 the repository root. This opens the optimized build in a native 640x480 DX8
 window with audio and real controller input. No automated input is enabled.
 The default session limit is 30 minutes; `scripts/playtest.ps1 -Minutes 60`
-allows a longer session. Close the game window to stop early. The renderer's
-pipe-disconnect diagnostic when closing is currently expected.
+allows a longer session. Close the game window to stop early, including audio.
+An independent process monitor handles this even if the game thread is blocked.
+See [combat freeze correction](COMBAT-FREEZE.md) for the latest regression
+evidence and remaining human checks.
 
 Use A to select Begin Story. Start skips the intro movies or pauses gameplay.
 Left stick moves; A is light attack, B heavy attack, X grab/use, Y jump.

@@ -36,7 +36,7 @@ Write-Host 'OpenXML1 human playtest: connect an XInput controller before startin
 Write-Host 'A: light attack/select | B: heavy attack/back | X: grab/use | Y: jump'
 Write-Host 'LB: health potion | RB: energy potion | RT + face button: power'
 Write-Host "Start: pause. Session limit: $Minutes minutes. Log: $log"
-Write-Host 'Close the game window to stop. A pipe-disconnect diagnostic on close is currently expected.'
+Write-Host 'Close the game window to stop the game and its audio.'
 Push-Location $projectRoot
 try {
     # Native stderr is diagnostic output, not a PowerShell terminating error.

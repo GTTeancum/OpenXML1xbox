@@ -22,6 +22,23 @@ for path in root.glob('*.c'):
         path.write_text(result, encoding='utf-8')
 print(f'Installed {count} fail-fast missing-function guards')
 
+# BlockOnTime can insert the current fence itself. Its native kickoff completes
+# synchronously, after the entry observer's completion check. Recheck before
+# entering the Xbox-only interrupt wait, preserving the original insert and ABI.
+fence_path = root / 'recomp_0095.c'
+text = fence_path.read_text(encoding='utf-8')
+fence_hook = '''loc_0035FE0F: ;
+    /* Native DX8 may have completed the fence inserted just above. */
+    if (xml1_graphics_fence_complete(esi, edi)) goto loc_0035FF23;'''
+if fence_hook not in text:
+    if text.count('loc_0035FE0F: ;') != 1 or text.count('void sub_0035FDE0(void)') != 1:
+        raise SystemExit('Cannot locate the verified XML1 BlockOnTime boundary')
+    text = text.replace('void sub_0035FDE0(void)',
+                        'int xml1_graphics_fence_complete(uint32_t device, uint32_t target);\n'
+                        'void sub_0035FDE0(void)', 1)
+    text = text.replace('loc_0035FE0F: ;', fence_hook, 1)
+    fence_path.write_text(text, encoding='utf-8')
+
 types = root / 'recomp_types.h'
 original = types.read_text(encoding='utf-8')
 macro = '#define RECOMP_ABI_CALL(va, fn) (fn)()'

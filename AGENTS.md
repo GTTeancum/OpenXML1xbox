@@ -4,6 +4,7 @@
 - XboxRecomp's existing D3D11 backend is an upstream baseline only. Building its libraries does not establish a game port or the required DX8 renderer.
 - Prioritize measured progress toward playable XML1 and mod support. Record blockers and evidence; do not promise delivery dates from architecture alone.
 - Keep the GameCube project untouched. This is an independent feasibility project.
+- Preserve a future original-Xbox build path. The current64-bit Windows target is interim; keep host-specific backends separate and retain Xbox-compatible game data and mod formats. See docs/XBOX-RETURN.md. An Xbox hardware build is not implemented yet.
 - Never use Computer Use, desktop capture, screen takeover, UI automation, or host input injection. Use files, logs, non-interactive terminal commands, and process-local test harnesses only. Use the game's native capture for visual evidence.
 - Keep original ISO files unchanged. Inputs, extracted assets, generated game code, saves, captures, and build products stay local and excluded from Git.
 - Pin XboxRecomp as a submodule. Record any required upstream changes rather than silently updating the pinned revision.

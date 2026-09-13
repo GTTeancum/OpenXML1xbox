@@ -110,3 +110,12 @@ target_include_directories(kernel-directory-test PRIVATE external/xboxrecomp/src
 target_link_libraries(kernel-directory-test PRIVATE xboxrecomp)
 
 add_executable(xaudio2-dsp-queue-test tests/xaudio2_dsp_queue_test.c)
+add_executable(worker-lifetime-test tests/worker_lifetime_test.c)
+target_include_directories(worker-lifetime-test PRIVATE src)
+if(OPENXML1_BUILD_BOOT_PROBE)
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/fence-wait-fixture.inc"
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-fence-wait-test.py"
+        DEPENDS scripts/generate-fence-wait-test.py src/recomp/gen/recomp_0095.c)
+    add_executable(graphics-fence-wait-test tests/graphics_fence_wait_test.c "${CMAKE_CURRENT_SOURCE_DIR}/build/fence-wait-fixture.inc")
+    target_include_directories(graphics-fence-wait-test PRIVATE src src/recomp/gen build external/xboxrecomp/src/kernel external/xboxrecomp/src/input external/xboxrecomp/src)
+endif()
