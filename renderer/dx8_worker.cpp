@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
                 std::ungetc(next,input);
                 char capture[128];
                 std::snprintf(capture,sizeof(capture),"build/dx8-live-frame-%06u.bmp",frame);
-                bool presented=replay_stream(device,input,(frame<=8||frame%60==0)?capture:nullptr,true);
+                bool presented=replay_stream(device,input,(std::getenv("XML1_DX8_CAPTURE_ALL")||frame<=8||frame%60==0)?capture:nullptr,true);
                 DWORD ack=sequence,written=0;
                 if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                 if (presented) {

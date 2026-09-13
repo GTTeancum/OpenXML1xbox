@@ -1,4 +1,5 @@
 #include "xbox_memory_layout.h"
+#include "../external/xboxrecomp/src/d3d/d3d8_swizzle.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,17 +92,22 @@ void xml1_graphics_live_observe(uint32_t va) {
             fatal("unimplemented clear sequence");
     }
     else if (va==0x367AF0) {
-        if (a[0]!=6||a[2]<3||fvf!=0x142||stride!=24||pixel_shader||!stream||!textures[0]||textures[1]||textures[2]||textures[3]) {
+        if (a[0]!=6||a[2]<3||!((fvf==0x142&&stride==24)||(fvf==0x102&&stride==20))||pixel_shader||!stream||!textures[0]||textures[1]||textures[2]||textures[3]) {
+            if (textures[0]) {
+                const uint32_t *t=guest(textures[0],20);
+                fprintf(stderr,"[DX8 RESOURCE] texture=%08X %08X %08X %08X %08X\n",t[0],t[1],t[2],t[3],t[4]);
+            }
             fprintf(stderr,"[DX8 LIVE] primitive=%u vertices=%u fvf=%X stride=%u pixel=%X texture=%X/%X/%X/%X\n",
                 a[0],a[2],fvf,stride,pixel_shader,textures[0],textures[1],textures[2],textures[3]);
             fatal("unimplemented draw path");
         }
         if ((matrix_mask&0x43)!=0x43||!viewport[2]||!viewport[3]) fatal("missing transform/viewport state");
         const uint32_t *tex=guest(textures[0],20), *vb=guest(stream,12);
-        if (((tex[3]>>8)&255)!=14||tex[4]) fatal("unimplemented texture format");
-        uint32_t header[3]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),a[2]};
+        uint32_t format=(tex[3]>>8)&255;
+        if ((format!=14&&format!=6)||tex[4]) fatal("unimplemented texture format");
+        uint32_t header[5]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),a[2],format,fvf};
         uint64_t offset=(uint64_t)vb[1]+(uint64_t)a[1]*stride, bytes=(uint64_t)a[2]*stride;
-        size_t tex_bytes=(size_t)((header[0]+3)/4)*((header[1]+3)/4)*16;
+        size_t tex_bytes=format==6?(size_t)header[0]*header[1]*4:(size_t)((header[0]+3)/4)*((header[1]+3)/4)*16;
         if (offset+bytes>64u*1024*1024||(uint64_t)tex[1]+tex_bytes>64u*1024*1024) fatal("resource bounds");
         uint32_t rs[168]; memcpy(rs,guest(0x36C860,sizeof(rs)),sizeof(rs));
         static const unsigned mapping[][2]={{0x300,60},{0x304,59},{0x33C,58},{0x340,61},{0x344,62},{0x348,63},
@@ -111,7 +117,13 @@ void xml1_graphics_live_observe(uint32_t va) {
         append(header,sizeof(header)); append(viewport,sizeof(viewport));
         append(matrices[6],64); append(matrices[0],64); append(matrices[1],64);
         append(rs,sizeof(rs)); append(guest(0x36C660,512),512);
-        append(guest(0x80000000+tex[1],tex_bytes),tex_bytes);
+        const void *pixels=guest(0x80000000+tex[1],tex_bytes);
+        if (format==6) {
+            void *linear=malloc(tex_bytes);
+            if (!linear) fatal("texture conversion allocation failed");
+            xbox_unswizzle_rect(linear,pixels,header[0],header[1],4);
+            append(linear,tex_bytes); free(linear);
+        } else append(pixels,tex_bytes);
         append(guest(0x80000000+(uint32_t)offset,(size_t)bytes),(size_t)bytes);
         ++draws;
         frame_geometry=1;
@@ -135,7 +147,7 @@ static void flush_completed_work(void) {
     uint32_t *d=guest(device,0x40);
     if (g_ecx!=device) fatal("unexpected push-buffer flush device");
     uint32_t fence=d[0x2c/4]-2;
-    send_bytes("XMLDX8F1",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+    send_bytes("XMLDX8F2",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
     draws=0; used=0;
     /* InsertFence records this counter before incrementing by two. Signal only
      * after all preceding native submissions have completed; no Present here. */
@@ -154,7 +166,7 @@ void xml1_graphics_swap(void) {
             frames+1,d[0x2c/4],*(uint32_t*)guest(d[0x30/4],4),draws);
     }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
-    send_bytes("XMLDX8R1",8); send_bytes(&draws,4); send_bytes(packet,used);
+    send_bytes("XMLDX8R2",8); send_bytes(&draws,4); send_bytes(packet,used);
     receive_ack();
     ++frames;
     if (frames==1||frames%60==0) fprintf(stderr,"[DX8 LIVE] presented frame=%u draws=%u bytes=%zu\n",frames,draws,used);

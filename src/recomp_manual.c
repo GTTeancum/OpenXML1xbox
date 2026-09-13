@@ -20,6 +20,13 @@ recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
 /* Stop at the first unresolved call; skipped initialization is not success. */
 static void stop_at_call(uint32_t va)
 {
+    if (va < xbox_GetMappedSize()-4096) {
+        FILE *code=fopen("build/unresolved-target.bin","wb");
+        if (code) {
+            fwrite((const void *)((uintptr_t)g_xbox_mem_offset+va),1,4096,code);
+            fclose(code);
+        }
+    }
     fprintf(stderr, "[FATAL ICALL] target=%08X call=%llu eax=%08X ecx=%08X edx=%08X ebx=%08X esi=%08X edi=%08X ebp=%08X esp=%08X\n",
         va, (unsigned long long)g_icall_count, g_eax, g_ecx, g_edx,
         g_ebx, g_esi, g_edi, g_ebp, g_esp);

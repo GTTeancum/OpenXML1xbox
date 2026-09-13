@@ -58,8 +58,9 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         if (std::fread(dst,1,bytes,file) != bytes) throw std::runtime_error("Truncated replay");
     };
     char magic[8]; read(magic,8);
-    const bool flush=!std::memcmp(magic,"XMLDX8F1",8);
-    if (!flush && std::memcmp(magic,"XMLDX8R1",8)) throw std::runtime_error("Invalid replay version");
+    const bool version2=magic[7]=='2';
+    const bool flush=!std::memcmp(magic,"XMLDX8F",7);
+    if ((!flush && std::memcmp(magic,"XMLDX8R",7)) || (!version2 && magic[7]!='1')) throw std::runtime_error("Invalid replay version");
     uint32_t count; read(&count,4);
     if (flush && !count) { complete_rendering(device); return false; }
     if ((!live && !count) || count>10000) throw std::runtime_error("Invalid draw count");
@@ -68,27 +69,32 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
     frame_open=true;
     checked(device->BeginScene());
     for (uint32_t n=0;n<count;++n) {
-        uint32_t header[3],rs[168],ts[128];
+        uint32_t header[5]={0,0,0,14,0x142},rs[168],ts[128];
         D3DVIEWPORT8 viewport; D3DMATRIX matrices[3];
-        read(header,sizeof(header)); read(&viewport,sizeof(viewport));
+        read(header,version2?sizeof(header):12); read(&viewport,sizeof(viewport));
         read(matrices,sizeof(matrices)); read(rs,sizeof(rs)); read(ts,sizeof(ts));
         auto width=header[0],height=header[1],vertices=header[2];
         if (!width||!height||width>4096||height>4096||vertices<3||vertices>1000000)
             throw std::runtime_error("Invalid replay geometry");
-        size_t texBytes=((width+3)/4)*((height+3)/4)*16;
-        std::vector<unsigned char> tex(texBytes), vb(vertices*24);
+        if ((header[3]!=14&&header[3]!=6)||(header[4]!=0x142&&header[4]!=0x102))
+            throw std::runtime_error("Unsupported replay format");
+        const unsigned stride=header[4]==0x142?24:20;
+        const unsigned rows=header[3]==6?height:(height+3)/4;
+        const unsigned rowBytes=header[3]==6?width*4:((width+3)/4)*16;
+        size_t texBytes=(size_t)rows*rowBytes;
+        std::vector<unsigned char> tex(texBytes), vb(vertices*stride);
         read(tex.data(),tex.size()); read(vb.data(),vb.size());
         IDirect3DTexture8* texture=nullptr;
-        checked(device->CreateTexture(width,height,1,0,D3DFMT_DXT3,D3DPOOL_MANAGED,&texture));
+        checked(device->CreateTexture(width,height,1,0,header[3]==6?D3DFMT_A8R8G8B8:D3DFMT_DXT3,D3DPOOL_MANAGED,&texture));
         D3DLOCKED_RECT lock={}; checked(texture->LockRect(0,&lock,nullptr,0));
-        for (unsigned y=0;y<(height+3)/4;++y)
-            std::memcpy((char*)lock.pBits+y*lock.Pitch,tex.data()+y*((width+3)/4)*16,((width+3)/4)*16);
+        for (unsigned y=0;y<rows;++y)
+            std::memcpy((char*)lock.pBits+y*lock.Pitch,tex.data()+y*rowBytes,rowBytes);
         checked(texture->UnlockRect(0));
         checked(device->SetViewport(&viewport));
         checked(device->SetTransform(D3DTS_WORLD,&matrices[0]));
         checked(device->SetTransform(D3DTS_VIEW,&matrices[1]));
         checked(device->SetTransform(D3DTS_PROJECTION,&matrices[2]));
-        checked(device->SetVertexShader(0x142)); checked(device->SetPixelShader(0));
+        checked(device->SetVertexShader(header[4])); checked(device->SetPixelShader(0));
         auto state=[&](D3DRENDERSTATETYPE type,DWORD value){ checked(device->SetRenderState(type,value)); };
         state(D3DRS_LIGHTING,rs[102]); state(D3DRS_SPECULARENABLE,rs[103]);
         state(D3DRS_FOGENABLE,rs[92]); state(D3DRS_ZENABLE,rs[143]);
@@ -114,9 +120,9 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
             checked(device->SetTextureStageState(stage,D3DTSS_TEXCOORDINDEX,ts[stage*32+28]));
             checked(device->SetTexture(stage,stage?nullptr:texture));
         }
-        checked(device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,vertices-2,vb.data(),24));
+        checked(device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,vertices-2,vb.data(),stride));
         texture->Release();
-        if (!live) std::printf("Replayed game draw %u: %u vertices, %ux%u DXT3\n",n+1,vertices,width,height);
+        if (!live) std::printf("Replayed game draw %u: %u vertices, %ux%u format %u\n",n+1,vertices,width,height,header[3]);
     }
     checked(device->EndScene());
     if (flush) { complete_rendering(device); return false; }

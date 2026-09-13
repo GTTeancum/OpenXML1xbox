@@ -332,3 +332,37 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   (return0030FFA4). Inspect nested stack/callee-save behavior before any workaround.
   No FMV frame or audible-output milestone. Another upstream PR retry still
   returned a GitHub server error; the tested fork branch remains ready.
+
+
+## Kernel dispatch race and movie graphics formats (2026-09-13)
+
+- Deterministic interleaving of two actual kernel lookups reproduced the movie
+  worker stack corruption: thread A selected KfRaiseIrql, thread B selected
+  MmGetPhysicalAddress, then A invoked the wrong service and popped an extra
+  stack word. build/kernel-thread-before.log records ESP+8 instead of+4.
+- Made g_kernel_dispatch_slot thread-local, matching guest register storage.
+  The same test now passes with the correct service, IRQL, return and cleanup
+  (build/kernel-thread-after.log). Saved as the seventh ordered toolkit patch;
+  all seven reverse-application/idempotence checks pass. Nested ABI diagnostics
+  remain enabled; boot-043/044 no longer fail on the prior callback contract.
+- boot-043/044 reach decoder callback00395C20. The runtime bytes match the
+  original PSFD_I section at raw384000; a preliminary inspection crossed the
+  preceding section boundary and incorrectly read disk padding. Added the
+  verified entry, regenerated and built; boot-045 passes it and next reaches
+  callback00396920, the original PSFD_P entry (raw386000). Its runtime prefix
+  also matches; the tenth seed regenerated and built successfully.
+- Extended native DX8 packets to v2 for FVF102/stride20 and swizzled ARGB8888
+  textures, retaining v1 replay compatibility and the existing DXT3/FVF142 path.
+  Uses the toolkit's CPU unswizzle helper, then native D3D8 ARGB upload.
+  Whole-frame, split-batch and v2 splash captures match exactly. Known-color
+  ARGB replay produces identical pixels with FVF142 and102. boot-045 passes the
+  new draw path; no FMV, menu, level1 or audio-fidelity milestone yet.
+- Upstream boundary PR creation succeeded: sp00nznet/xboxrecomp#42. No duplicate
+  PR was present before the successful retry. Comparison-join PR remains#41.
+
+- boot-046 passes both recovered PSFD entries and the added draw path, stopping
+  at callback00336970. Native capture of every presented frame reached frame225;
+  the final capture was visually inspected and is black, not an FMV milestone.
+  No duplicate splash or black screenshot posted. The cross-thread kernel test
+  still passes after the final regeneration/build. Next: verify00336970 against
+  original bytes and diagnose this worker callback before another seed.
