@@ -18,6 +18,7 @@ $settings = @{
     XML1_TEST_GAME_DIR = $null
     XML1_LIVE_DX8 = '1'
     XML1_DX8_VISIBLE = '1'
+    XML1_DX8_NO_CAPTURE = '1'
     XML1_APU = '1'
     XML1_DSP_JIT = $null
     RECOMP_WATCHDOG_SECS = [string]($Minutes * 60)

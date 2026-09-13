@@ -1,0 +1,129 @@
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -78,6 +78,9 @@
+ #endif
+ #ifndef STATUS_INVALID_HANDLE
+ #define STATUS_INVALID_HANDLE           ((NTSTATUS)0xC0000008L)
++#endif
++#ifndef STATUS_INVALID_INFO_CLASS
++#define STATUS_INVALID_INFO_CLASS       ((NTSTATUS)0xC0000003L)
+ #endif
+ #ifndef STATUS_INVALID_PARAMETER
+ #define STATUS_INVALID_PARAMETER        ((NTSTATUS)0xC000000DL)
+@@ -671,6 +674,7 @@
+ NTSTATUS __stdcall xbox_NtQueryDirectoryFile(
+     HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext,
+     PXBOX_IO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation, ULONG Length,
++    XBOX_FILE_INFORMATION_CLASS FileInformationClass,
+     PXBOX_ANSI_STRING FileName, BOOLEAN RestartScan);
+ 
+ NTSTATUS __stdcall xbox_NtFsControlFile(
+--- a/src/kernel/kernel_file.c
++++ b/src/kernel/kernel_file.c
+@@ -599,6 +599,7 @@
+ NTSTATUS __stdcall xbox_NtQueryDirectoryFile(
+     HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext,
+     PXBOX_IO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation, ULONG Length,
++    XBOX_FILE_INFORMATION_CLASS FileInformationClass,
+     PXBOX_ANSI_STRING FileName, BOOLEAN RestartScan)
+ {
+     DIR_CONTEXT* ctx;
+@@ -607,6 +608,11 @@
+ 
+     if (!IoStatusBlock || !FileInformation)
+         return STATUS_INVALID_PARAMETER;
++    IoStatusBlock->Information = 0;
++    if (FileInformationClass != XboxFileDirectoryInformation) {
++        IoStatusBlock->Status = STATUS_INVALID_INFO_CLASS;
++        return STATUS_INVALID_INFO_CLASS;
++    }
+ 
+     ctx = find_or_create_dir_context(FileHandle, TRUE);
+     if (!ctx)
+@@ -645,6 +651,18 @@
+         }
+         ctx->first_done = TRUE;
+     } else {
++        if (!FindNextFileW(ctx->find_handle, &ctx->find_data)) {
++            FindClose(ctx->find_handle);
++            ctx->find_handle = NULL;
++            ctx->file_handle = NULL;
++            IoStatusBlock->Status = STATUS_NO_MORE_FILES;
++            return STATUS_NO_MORE_FILES;
++        }
++    }
++
++    /* FATX enumeration never exposes the host's dot directories. */
++    while (!wcscmp(ctx->find_data.cFileName, L".") ||
++           !wcscmp(ctx->find_data.cFileName, L"..")) {
+         if (!FindNextFileW(ctx->find_handle, &ctx->find_data)) {
+             FindClose(ctx->find_handle);
+             ctx->find_handle = NULL;
+@@ -1096,11 +1114,17 @@
+ NTSTATUS __stdcall xbox_NtQueryDirectoryFile(
+     HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext,
+     PXBOX_IO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation, ULONG Length,
++    XBOX_FILE_INFORMATION_CLASS FileInformationClass,
+     PXBOX_ANSI_STRING FileName, BOOLEAN RestartScan)
+ {
+     (void)Event; (void)ApcRoutine; (void)ApcContext;
+     if (!IoStatusBlock || !FileInformation)
+         return STATUS_INVALID_PARAMETER;
++    IoStatusBlock->Information = 0;
++    if (FileInformationClass != XboxFileDirectoryInformation) {
++        IoStatusBlock->Status = STATUS_INVALID_INFO_CLASS;
++        return STATUS_INVALID_INFO_CLASS;
++    }
+ 
+     if (!s_dir_cs_init) { InitializeCriticalSection(&s_dir_cs); s_dir_cs_init = TRUE; }
+     EnterCriticalSection(&s_dir_cs);
+@@ -1151,6 +1175,8 @@
+             IoStatusBlock->Status = STATUS_NO_MORE_FILES;
+             return STATUS_NO_MORE_FILES;
+         }
++        if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, ".."))
++            continue;
+         if (fnmatch(ctx->pattern, de->d_name, FNM_CASEFOLD) == 0)
+             break;
+     }
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -3196,15 +3196,16 @@
+     g_eax = (uint32_t)xbox_NtDeleteFile(&oa);
+ }
+ 
+-/* ── NtQueryDirectoryFile (ordinal 207, 9 args = 36 bytes) ─ */
++/* ── NtQueryDirectoryFile (ordinal 207, 10 args = 40 bytes) ─ */
+ static void bridge_NtQueryDirectoryFile(void)
+ {
+     HANDLE   handle      = bridge_resolve_handle(STACK_ARG(0));
+     uint32_t ios_va      = STACK_ARG(4);
+     uint32_t info_va     = STACK_ARG(5);
+     uint32_t length      = STACK_ARG(6);
+-    uint32_t filename_va = STACK_ARG(7);  /* PXBOX_ANSI_STRING */
+-    uint32_t restart     = STACK_ARG(8);  /* BOOLEAN */
++    uint32_t info_class  = STACK_ARG(7);
++    uint32_t filename_va = STACK_ARG(8);  /* PXBOX_ANSI_STRING */
++    uint32_t restart     = STACK_ARG(9);  /* BOOLEAN */
+     XBOX_IO_STATUS_BLOCK ios;
+     XBOX_ANSI_STRING     fn;
+     PXBOX_ANSI_STRING    pfn = NULL;
+@@ -3219,7 +3220,8 @@
+         if (fn.Buffer) pfn = &fn;
+     }
+     g_eax = (uint32_t)xbox_NtQueryDirectoryFile(handle, NULL, NULL, NULL, &ios,
+-                XBOX_TO_NATIVE(info_va), length, pfn, (BOOLEAN)restart);
++                XBOX_TO_NATIVE(info_va), length, (XBOX_FILE_INFORMATION_CLASS)info_class,
++                pfn, (BOOLEAN)restart);
+     bridge_write_iostatus(ios_va, ios.Status, (uint32_t)ios.Information);
+ }
+ 
+@@ -7851,7 +7853,7 @@
+     case 204: return 16;  /* NtProtectVirtualMemory (4) */
+     case 205: return  8;  /* NtPulseEvent (2) */
+     case 206: return 20;  /* NtQueueApcThread (5) */
+-    case 207: return 36;  /* NtQueryDirectoryFile (9) */
++    case 207: return 40;  /* NtQueryDirectoryFile (10) */
+     case 210: return  8;  /* NtQueryFullAttributesFile (2) */
+     case 211: return 20;  /* NtQueryInformationFile (5) */
+     case 215: return 12;  /* NtQuerySymbolicLinkObject (3) */

@@ -1,0 +1,44 @@
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -1217,7 +1217,9 @@
+         static unsigned reports[256],seen_nonzero[256],last_volume[256];
+         unsigned nonzero=0;
+         for(unsigned i=0;i<NUM_SAMPLES_PER_FRAME;++i) nonzero+=(samples[i][0]!=0)+(samples[i][1]!=0);
+-        if(reports[v]++<3||(nonzero&&!seen_nonzero[v])||vol[0]!=last_volume[v]) {
++        static int trace_volume=-1;
++        if(trace_volume<0) trace_volume=getenv("XML1_TRACE_VOICE_MIX")!=NULL;
++        if(reports[v]++<3||(nonzero&&!seen_nonzero[v])||(trace_volume && vol[0]!=last_volume[v])) {
+             fprintf(stderr,"[VP MIX] voice=%u samples=%u EA=%g rate=%g mute=%u volumes=%u/%u/%u/%u/%u/%u/%u/%u bins=%u/%u/%u/%u/%u/%u/%u/%u\n",v,nonzero,ea_value,rate,voice_should_mute(v),vol[0],vol[1],vol[2],vol[3],vol[4],vol[5],vol[6],vol[7],bin[0],bin[1],bin[2],bin[3],bin[4],bin[5],bin[6],bin[7]);
+             seen_nonzero[v]|=nonzero!=0;
+             last_volume[v]=vol[0];
+--- a/src/apu/apu_xaudio2.c
++++ b/src/apu/apu_xaudio2.c
+@@ -162,6 +162,28 @@
+     IXAudio2SourceVoice_GetState(g_xa2_source, &state, XAUDIO2_VOICE_NOSAMPLESPLAYED);
+     if ((int)state.BuffersQueued >= XA2_NUM_BUFS) return 0;
+ 
++    /* Observe producer starvation without modifying samples or queue depth.
++     * An empty queue at submission is evidence of depletion, not a count of
++     * individual audible glitches. Startup is excluded. */
++    {
++        static LARGE_INTEGER frequency, previous;
++        static unsigned submissions, empty_observations;
++        static double maximum_gap_ms;
++        LARGE_INTEGER now;
++        if(!frequency.QuadPart) QueryPerformanceFrequency(&frequency);
++        QueryPerformanceCounter(&now);
++        if(submissions) {
++            double gap=1000.0*(now.QuadPart-previous.QuadPart)/frequency.QuadPart;
++            if(gap>maximum_gap_ms) maximum_gap_ms=gap;
++            if(!state.BuffersQueued) ++empty_observations;
++        }
++        previous=now;
++        if(++submissions%375==0) {
++            fprintf(stderr,"[XA2 QUEUE] submissions=%u empty_observations=%u max_submit_gap_ms=%.3f queued=%u\n",
++                    submissions,empty_observations,maximum_gap_ms,state.BuffersQueued);
++            empty_observations=0; maximum_gap_ms=0;
++        }
++    }
+     idx = g_xa2_next_buf;
+     copy_samples = (num_samples > XA2_BUF_SAMPLES) ? XA2_BUF_SAMPLES : num_samples;
+     memcpy(g_xa2_bufs[idx], samples, copy_samples * XA2_CHANNELS * sizeof(int16_t));

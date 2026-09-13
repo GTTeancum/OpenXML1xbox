@@ -135,7 +135,9 @@ int main(int argc, char** argv) {
                     if(!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                     continue;
                 }
-                bool presented=replay_stream(device,input,(std::getenv("XML1_DX8_CAPTURE_ALL")||frame<=8||frame%60==0)?capture:nullptr,true);
+                // Human sessions opt out of synchronous GPU readback and BMP writes.
+                const bool capture_enabled = !std::getenv("XML1_DX8_NO_CAPTURE");
+                bool presented=replay_stream(device,input,(capture_enabled && (std::getenv("XML1_DX8_CAPTURE_ALL")||frame<=8||frame%60==0))?capture:nullptr,true);
                 ULONGLONG command_ms=GetTickCount64()-command_start;
                 if(command_ms>=50) std::printf("[DX8 COMMAND] seq=%u frame=%u presented=%u ms=%llu\n",sequence,frame,presented,command_ms);
                 DWORD ack=sequence,written=0;
