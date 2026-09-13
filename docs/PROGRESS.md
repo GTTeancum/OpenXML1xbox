@@ -1043,3 +1043,14 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   needs a fuller scheduler rather than a forced completion or skipped wait.
   No new screenshots or claim of overall graphics/audio correctness.
 - boot160 subsequently completes90-second bound3 without a fatal guard.
+
+## Combined input and measured frame rate (boot161, ongoing)
+
+- The process-local file harness accepts plus-separated combinations such as
+  up+left+a+rt. Direction-only commands retain1000ms; combinations containing
+  a button use300ms. Neutral clears all components. Guest polling tests check
+  simultaneous axis/button bytes and clearing, with zero host input calls.
+- Optimized native DX8/APU combat measures11.05 FPS across frame2340..2460
+  (10.855s); a paused level interval measures13.60 FPS at2580..2640. These are
+  capture timestamp measurements, not an instrumentation-free benchmark.
+  Current performance is inadequate; this is still part of the active goal.
