@@ -407,7 +407,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     /* Step 4: Set game directory for file I/O path translation */
     {
         extern void xbox_path_init(const char *game_dir, const char *save_dir);
-        xbox_path_init(YOUR_GAME_DIR, NULL);
+        const char *test_game_dir=getenv("XML1_TEST_GAME_DIR");
+        if(test_game_dir) {
+            const char *test_pad=getenv("XML1_TEST_PAD");
+            if(!*test_game_dir || !test_pad || strcmp(test_pad,"1")) {
+                fprintf(stderr,"XML1_TEST_GAME_DIR requires process-local test mode\n");
+                return 4;
+            }
+            fprintf(stderr,"[DIAGNOSTIC DATA ROOT] %s\n",test_game_dir);
+        }
+        xbox_path_init(test_game_dir ? test_game_dir : YOUR_GAME_DIR, NULL);
     }
 
     /* Step 5: Initialize kernel bridge (thunk table in Xbox memory) */

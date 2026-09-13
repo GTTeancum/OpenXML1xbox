@@ -15,6 +15,7 @@ $settings = @{
     XML1_TEST_INPUT_FILE = $null
     XML1_TEST_A_FRAME = $null
     XML1_TEST_MOVE_FRAME = $null
+    XML1_TEST_GAME_DIR = $null
     XML1_LIVE_DX8 = '1'
     XML1_DX8_VISIBLE = '1'
     XML1_APU = '1'

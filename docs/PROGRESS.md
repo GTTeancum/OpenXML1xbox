@@ -1371,3 +1371,34 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Work remains: reproduce the exit (a targeted original-script test can first
   isolate camera/visibility behavior), then validate the full combat/subway
   route normally. Scratchy audio and full level1 fidelity remain unresolved.
+
+## 2026-09-13: reliable subway reproduction; camera reapply restores world
+
+- Previous turn advanced state/evidence. Clock17:10:54 UTC was about10h56
+  elapsed. Added XML1_TEST_GAME_DIR gated on XML1_TEST_PAD=1; normal launcher
+  explicitly clears the diagnostic root. Original ISO/game data unchanged.
+- scripts/make-subway-fixture.py validates the100-record FB stream and makes
+  a separate ZIP copy with only the map-start script extended. It executes
+  verbatim original subwaydowna and subwayupa commands after timed waits.
+  This deliberately bypasses fights/approach for isolation, not gameplay proof.
+- boot170 optimized180-second run reproduces the human black-world/HUD state.
+  Native underground frame1980 is preserved as work/boot170-underground.bmp;
+  black frame3120 as work/boot170-reproduced-black.bmp. Read-only RAM/state
+  preserved in work/boot170-black-ram.bin and work/boot170-black-state.txt.
+  Trace shows the entire up sequence through AI/control restoration, with
+  screenFade alpha0 and duration1. Hero is2280/2502.04/0.1. Bound exit3.
+- A second --camera-check fixture adds cameraToLocationAngles with the same
+  exit coordinates8s after returning, then cameraResetOldSchool8s later.
+  boot171 restores visible street geometry/player/enemy after reapply
+  (work/boot171-camera-reapply.bmp, frame2100). Reset at tick383507937 is
+  followed by black frame2400; defeat follows by frame2640. The character
+  was being attacked and near death, so that latter reset observation is
+  partly confounded; repeat with controlled survival before claiming causality.
+- Reapplying the original exit camera restores the world, strongly narrowing
+  investigation to the return to normal gameplay camera. This is a diagnostic
+  ablation, not a shipped workaround: neither script nor camera reset is bypassed
+  in ordinary game data. The prologue fix alone did not cure the transition.
+- Both bounded game processes are terminal. No additional screenshots posted;
+  no subway/level completion or audio-fidelity claim. Next: protected diagnostic
+  camera comparison, then repair the responsible original runtime behavior and
+  validate normal traversal after both fights.
