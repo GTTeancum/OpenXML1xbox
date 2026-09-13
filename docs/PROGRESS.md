@@ -1151,3 +1151,20 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   and broader frame-bridge correctness remain work to do.
 - No active human-playtest process was present at the checks this turn.
   Keep inspecting live process state before competing runs or binary updates.
+
+## 2026-09-13 16:00 UTC - Diagnostic runtime integration of PR48
+
+- Regenerated the supplied game's25,773 translated functions, retaining10
+  manual overrides and121 explicit missing-function guards. A total of1,251
+  generated functions now initialize EBP before a classic prologue saves it.
+- Rebuilt build/project/Release/xml1-boot-probe.exe successfully. The separate
+  optimized human-test executable was not rebuilt or replaced (SHA256
+  C28EAE19866B3FACE440574927F78F464C184C5DB8FA70479CB554C8D0621E04).
+- boot165, a20-second hidden native DX8/APU startup check, ends at bound3
+  without a fatal guard. It presents beyond420 frames and submits nonzero
+  audio. Its frame420 native capture was inspected; no duplicate is posted.
+  This proves startup execution only, not level traversal or audio fidelity.
+- The minimap observation still lacks an isolated replay of its disappearing
+  geometry. No unsupported inference or minimap fix is claimed this turn.
+- About9h46m of the30-hour goal allowance has elapsed. No game process remains
+  active after the bounded startup check; the human-test launcher is available.
