@@ -1278,3 +1278,29 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   comparisons) and discontinuities persist. Do not certify scratchiness
   resolved or silently bypass the original filter. Black-world transition
   remains separately unresolved, with prior human evidence preserved.
+
+## 2026-09-13: independent EP comparison after conditional decode fix
+
+- Revalidated clock16:42:46 UTC: about10h28 elapsed, below30-hour cutoff.
+  No game was running at turn start; previous turn made verified progress.
+- Built local work/ep-diff harness against both pinned DSP backends. It uses
+  strict recorded EP transfers, one-instruction stepping, and native register
+  snapshots, with no interactive input. JIT compiled-loop execution is not
+  used because of the separately established DO/DOR inlining defect.
+- Captured250000 early instruction states per engine, then250000 states
+  starting at EP frame1100. Data/accumulator/address registers agree after
+  aligning extra DMA polling iterations and normalizing16/24-bit address
+  representations. This comparison excludes full SR/OMR equality: initial
+  backend reset defaults differ, so it is not a complete CPU equivalence test.
+- More directly, both engines emit exactly identical1138296-byte FIFO record
+  streams through the latter capture, including nonzero audio. This replaces
+  the earlier inability to obtain a matching JIT replay prefix; that earlier
+  test predated the IFcc fix. Both engines can still share integration or
+  firmware-control problems; agreement is not proof of correct audio.
+- boot167 EP input/source correlations are0.66/0.47/0.60/0.61 in selected
+  source windows, below boot152. Final output is lower still. Do not describe
+  the conditional instruction correction as an audible improvement.
+- Preserved the previous human executable locally in
+  work/human-build-before-frame-fix/xml1-boot-probe.exe before starting an
+  optimized rebuild with the prologue and conditional-DSP corrections.
+  The missing-world transition still requires a fresh reproduction test.
