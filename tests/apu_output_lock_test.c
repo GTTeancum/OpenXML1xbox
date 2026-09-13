@@ -5,6 +5,12 @@ void *recomp_lookup_manual(ULONG address) { (void)address; return NULL; }
 void recomp_apu_irq_level(int level) { (void)level; }
 void xml1_apu_trace_frame(unsigned a,unsigned b,const float *c,unsigned n) { (void)a;(void)b;(void)c;(void)n; }
 void xml1_apu_trace_voices(const uint8_t *ram,unsigned base,unsigned a,unsigned b,unsigned c) { (void)ram;(void)base;(void)a;(void)b;(void)c; }
+/* Keep diagnostic capture hooks local to this device-lock test, so linking
+   the APU does not also pull in the production audio-output implementation. */
+int xml1_apu_wants_gp_capture(void) { return 0; }
+void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,unsigned bytes) { (void)kind;(void)address;(void)data;(void)bytes; }
+void xml1_apu_capture_gp(const uint32_t *samples) { (void)samples; }
+void xml1_apu_capture_source(unsigned voice,const float *samples,unsigned count,unsigned format,unsigned base,unsigned offset) { (void)voice;(void)samples;(void)count;(void)format;(void)base;(void)offset; }
 void mcpx_apu_monitor_frame(MCPXAPUState *);
 static MCPXAPUState *state;
 static int available,called;
