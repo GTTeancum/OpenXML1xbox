@@ -23,3 +23,16 @@ Logs are saved to `build/human-playtest-YYYYMMDD-HHMMSS.log`; native renderer
 captures remain in `build/dx8-live-frame-*.bmp`. Renderer logs and capture names
 are reused between runs. Full level completion and graphics/audio fidelity
 have not been established. This is a diagnostic playtest build.
+
+## Complete native frame capture
+
+For diagnostics, set `XML1_DX8_CAPTURE_REQUEST` to an absolute text-file path
+before launching the diagnostic build. Start that file with `0` and a newline.
+To capture, replace it with a larger positive integer and a newline. The next
+complete frame is saved as `build/dx8-request-ID-frame-N.bin`. Completion is
+logged only after the native worker acknowledgement and successful file close.
+All ordered clears, intermediate flushes and final draws are included. Captures
+use exclusive creation and a512MiB limit per frame. Partial request lines are
+ignored. This captures rendering commands only and does not simulate input.
+Replay locally with `xml1-dx8-worker --replay packet.bin output.bmp`; packets
+contain original game assets and must remain private/untracked.

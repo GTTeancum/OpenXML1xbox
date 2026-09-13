@@ -1221,3 +1221,30 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Scratchy audio still needs discrimination between PCM/DSP distortion and
   output starvation. Existing clipped-sample counts alone cannot establish
   the cause or certify fidelity; no speculative audio fix was applied.
+
+## 2026-09-13 - Working transition comparison and complete frame capture
+
+- Stopped the preserved black-world human session for an instrumented
+  reproduction. Its full log was retained in work/human-transition-evidence.
+  No attempt was made to repair or force the live game's scene state.
+- Added opt-in next-complete-frame command capture to the diagnostic build.
+  It mirrors the ordered native transport, including intermediate flushes
+  and clears, and closes only after the final native acknowledgement. Exclusive
+  file creation prevents overwriting evidence; per-frame data is capped512MiB.
+- boot166 uses the /Od diagnostic build with the prologue fix, neutral/process-
+  local input, hidden native DX8 and audio, and records DSP PCM. It reaches a
+  visible level1 scene and ends at the180-second bound3 without a fatal guard.
+  It is a working comparison, not a reproduction of the human failure: build,
+  timing and input differ. The optimized human-test executable is unchanged.
+- Native captures1661/frame2422 (8,338,440 bytes) and1662/frame4429 (8,487,804)
+  complete successfully. The second replays offline through native DX8 with
+  146 texture requests and visible scene plus pause menu, preserving geometry
+  flushed before the final20-draw batch. The attempt to select the minimap
+  actually selected Load Game and returned to pause; no map-mode test passed.
+- A700-sample matrix/FVF comparison from working frames2907..3297 includes
+  FVF112/152 and35 distinct world matrices. The failed run's earlier samples
+  showed only102/142 and7 world matrices. This supports investigating scene
+  submission/game state but sampling alone does not prove a root cause.
+- Saved actual submitted PCM/timeline as work/boot166-dsp.pcm and .csv for
+  subsequent audio diagnosis. Scratchiness is not fixed or certified absent.
+  Full traversal and the black-world human transition remain unresolved.

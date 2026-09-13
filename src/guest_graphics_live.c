@@ -24,6 +24,28 @@ static uint32_t draws, frames;
 unsigned xml1_graphics_frame_number(void) { return frames; }
 static uint32_t sequence;
 static int frame_geometry;
+static void fatal(const char* message);
+static FILE *capture_stream;
+static unsigned capture_request_id;
+static size_t capture_stream_bytes;
+static void capture_next_frame(void) {
+    const char *path=getenv("XML1_DX8_CAPTURE_REQUEST");
+    if(!path||!*path) return;
+    FILE *request=fopen(path,"rb");
+    if(!request) return;
+    char line[64]={0},extra; unsigned id=0;
+    int complete=fgets(line,sizeof(line),request)!=NULL && strchr(line,'\n')!=NULL;
+    fclose(request);
+    if(!complete) return;
+    if(sscanf(line,"%u %c",&id,&extra)!=1) fatal("invalid DX8 capture request");
+    if(id<=capture_request_id) return;
+    char output[128];
+    snprintf(output,sizeof(output),"build/dx8-request-%u-frame-%u.bin",id,frames+1);
+    capture_stream=fopen(output,"wbx");
+    if(!capture_stream) fatal("cannot create exclusive DX8 frame capture");
+    capture_request_id=id; capture_stream_bytes=0;
+    fprintf(stderr,"[DX8 FRAME CAPTURE] begin id=%u frame=%u path=%s\n",id,frames+1,output);
+}
 static void flush_completed_work(uint32_t device);
 static void ordered_clear(const uint32_t *args);
 static HANDLE pipe=INVALID_HANDLE_VALUE, worker_job;
@@ -261,6 +283,11 @@ void xml1_graphics_live_observe(uint32_t va) {
     }
 }
 static void send_bytes(const void* data,size_t bytes) {
+    if(capture_stream && bytes) {
+        if(bytes>512u*1024*1024-capture_stream_bytes ||
+           fwrite(data,1,bytes,capture_stream)!=bytes) fatal("DX8 frame capture write failed or exceeds 512MiB");
+        capture_stream_bytes+=bytes;
+    }
     while (bytes) {
         DWORD written=0,part=(DWORD)(bytes>1024*1024?1024*1024:bytes);
         if (!WriteFile(pipe,data,part,&written,NULL)||!written) fatal("graphics worker write failed");
@@ -353,7 +380,13 @@ void xml1_graphics_swap(void) {
         fwrite("XMLDX8R6",1,8,out); fwrite(&draws,4,1,out); fwrite(packet,1,used,out); fclose(out);
     }
     receive_ack();
+    if(capture_stream) {
+        if(fclose(capture_stream)) fatal("DX8 frame capture close failed");
+        capture_stream=NULL;
+        fprintf(stderr,"[DX8 FRAME CAPTURE] complete id=%u frame=%u bytes=%zu\n",capture_request_id,frames+1,capture_stream_bytes);
+    }
     ++frames;
+    capture_next_frame();
     xml1_input_test_frame(frames);
     if (frames==1||frames%60==0) fprintf(stderr,"[DX8 LIVE] presented frame=%u draws=%u bytes=%zu\n",frames,draws,used);
     draws=0; used=0; frame_geometry=0;
