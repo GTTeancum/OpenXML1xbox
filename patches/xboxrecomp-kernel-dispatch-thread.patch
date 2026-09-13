@@ -1,0 +1,10 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -8686,6 +8686,6 @@
+ 
+ /* Current dispatching slot */
+-static int g_kernel_dispatch_slot = -1;
++static RECOMP_TLS int g_kernel_dispatch_slot = -1;
+ 
+ static void kernel_thunk_dispatch(void)
+ {

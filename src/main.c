@@ -265,6 +265,15 @@ static int memory_query_bridge_test(void)
     return 0;
 }
 
+static DWORD WINAPI interleave_kernel_lookup(LPVOID unused)
+{
+    typedef void (*guest_fn)(void);
+    extern guest_fn recomp_lookup_kernel(uint32_t);
+    uint8_t *memory=(uint8_t *)g_xbox_mem_offset;
+    (void)unused;
+    return recomp_lookup_kernel(*(uint32_t *)(memory+0x003C6D6C)) ? 0 : 1;
+}
+
 static int irql_bridge_test(void)
 {
     typedef void (*guest_fn)(void);
@@ -306,6 +315,27 @@ static int irql_bridge_test(void)
         }
     }
     puts("[TEST] Physical-address bridge: contiguous mirror translation, low identity and stack cleanup passed.");
+    /* Force another thread's lookup between this lookup and invocation. */
+    xbox_KfLowerIrql(0);
+    guest_fn raise=recomp_lookup_kernel(*(uint32_t *)(memory+slots[0]));
+    HANDLE thread=CreateThread(NULL,0,interleave_kernel_lookup,NULL,0,NULL);
+    if (!raise || !thread) return 26;
+    if (WaitForSingleObject(thread,5000)!=WAIT_OBJECT_0) return 27;
+    DWORD result=1;
+    GetExitCodeThread(thread,&result);
+    CloseHandle(thread);
+    if (result) return 28;
+    g_esp=sp; *(uint32_t *)(memory+sp)=0xBEEF0001;
+    *(uint32_t *)(memory+sp+4)=0x80001000;
+    g_ecx=2;
+    raise();
+    unsigned actual=xbox_KfRaiseIrql(2);
+    xbox_KfLowerIrql(0);
+    if (g_esp!=sp+4 || g_eax!=0 || actual!=2) {
+        fprintf(stderr,"[TEST] Interleaved kernel lookup failed: ESP=%08X expected=%08X EAX=%08X IRQL=%u\n",g_esp,sp+4,g_eax,actual);
+        return 29;
+    }
+    puts("[TEST] Cross-thread kernel lookup preserves selected service and stack cleanup.");
     return 0;
 }
 

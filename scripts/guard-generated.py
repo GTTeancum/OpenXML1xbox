@@ -56,3 +56,18 @@ for path in root.glob('recomp_*.c'):
     }
     }'''
     path.write_text(text[:start]+checked+text[end:], encoding='utf-8')
+
+for path in root.glob('recomp_*.c'):
+    text = path.read_text(encoding='utf-8')
+    original = text
+    for name in ('0030FF50', '003072A0', '0030BDA0'):
+        marker = 'void sub_' + name + '(void)'
+        if marker not in text:
+            continue
+        start = text.index(marker)
+        end = text.index('\nvoid sub_', start+len(marker))
+        block = text[start:end]
+        # 00307210 has a caller-cleaned argument; it obeys the same return rule.
+        text = text[:start] + block.replace('RECOMP_ABI_CALL(', 'XML1_CHECK_CDECL0(') + text[end:]
+    if text != original:
+        path.write_text(text, encoding='utf-8')
