@@ -532,3 +532,18 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   VP mixbins are also zero before that trap. Next: trace and implement guest ISR
   delivery, followed by silent voice/physical-memory and pacing investigation.
   Audio is still incorrect; no recognizable FMV milestone claimed. See AUDIO.md.
+
+## Guest APU interrupt delivery (boot083–084)
+
+- Implemented level-triggered device IRQ publication and guest dispatch on the
+  kernel worker stack/TIB, with registered IRQL and stack checks. KeGetCurrentIrql
+  now returns the tracked value. Dispatcher startup is synchronized with timers.
+  Saved as ordered patch11; eleven-patch idempotence and adapter regeneration pass.
+- The guest APU handler claims vector5 and clears its own trap: FECTL1FEF returns
+  to1F0F and DSP execution continues past20480 frames. Synthetic IRQ context,
+  IRQL/stack, acknowledgement/reassertion test passes, as do dispatch-thread and
+  PCM output payload/backpressure tests.
+- Samples remain zero. VP traces show4–6 active voices at physical table00848000;
+  next inspect each actual source/SG/stream segment and pre-mix sample data.
+  Voice resampling currently ignores pitch ratio and is also required fidelity
+  work. No new meaningful screenshot posted; no audible/FMVs claim. See AUDIO.md.

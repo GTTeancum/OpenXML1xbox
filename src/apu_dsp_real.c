@@ -422,6 +422,11 @@ void mcpx_apu_dsp_frame(MCPXAPUState *d, float mixbins[NUM_MIXBINS][NUM_SAMPLES_
 {
     extern void xml1_apu_trace_frame(unsigned gp,unsigned ep,const float *mix,unsigned count);
     xml1_apu_trace_frame(d->gp.regs[NV_PAPU_GPRST],d->ep.regs[NV_PAPU_EPRST],&mixbins[0][0],NUM_MIXBINS*NUM_SAMPLES_PER_FRAME);
+    static unsigned voice_reports;
+    if(++voice_reports<=4 || voice_reports%4096==0) {
+        extern void xml1_apu_trace_voices(const uint8_t *ram,unsigned base,unsigned a,unsigned b,unsigned c);
+        xml1_apu_trace_voices(d->ram_ptr,d->regs[NV_PAPU_VPVADDR],d->regs[NV_PAPU_TVL2D],d->regs[NV_PAPU_TVL3D],d->regs[NV_PAPU_TVLMP]);
+    }
     /* Write VP results to the GP DSP MIXBUF */
     for (int mixbin = 0; mixbin < NUM_MIXBINS; mixbin++) {
         uint32_t base = GP_DSP_MIXBUF_BASE + mixbin * NUM_SAMPLES_PER_FRAME;

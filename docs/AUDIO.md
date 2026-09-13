@@ -106,3 +106,29 @@ plus the earlier silent voice/memory path. Do not bypass the trap or pretend
 completion. No audible fidelity milestone is established. Sample production is
 also slower than48kHz wall time (192000 frames in about4.96s), requiring timing
 validation after interrupt/voice processing works. FMV timing remains open.
+
+## APU interrupt delivery (boot083–084)
+
+Ordered patch11 publishes the APU interrupt level to the connected guest vector5
+handler0037342F (context010810F4). The kernel dispatcher invokes it on its guest
+stack/TIB, at the registered IRQL, and checks stack cleanup. The guest handler
+acknowledges the APU registers; the implementation does not clear the trap on its
+behalf. KeGetCurrentIrql now returns the actual thread-local tracked IRQL rather
+than constant0. Dispatcher creation is shared/synchronized with timer startup.
+
+boot083/084 show claimed interrupts and transitions from trappedFECTL1FEF back
+to active1F0F, with DSP execution continuing past20480 frames. The synthetic
+device IRQ regression verifies context, device IRQL, acknowledgement, no repeat
+after deassertion, reassertion, stack cleanup and restored IRQL. Prior thread
+dispatch and PCM payload/backpressure regressions still pass. All11 ordered
+patch checks and DSP adapter regeneration pass.
+
+Audio remains silent. boot084 reports VP voice table base00848000,4–6 active
+voices, and heads0043/004C, so voice activation occurs. First activevoice64 is a
+looping16-bit mono voice (format5200E0E6); it may be a persistent silent helper.
+Do not infer the contents of the other active voices from this first voice.
+Next: trace all active voice source/SG or stream segments and samples before
+mixing, and verify low guest RAM versus contiguous physical backing. The current
+voice_resample ignores pitch ratio and will also need real resampling for audio
+fidelity; its separate libsamplerate shim is stubbed but is not used by that path.
+No recognizable FMV or audible correctness milestone has been established.

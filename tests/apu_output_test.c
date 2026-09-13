@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 void recomp_apu_dsp_output(const int16_t *,unsigned);
+void xbox_SetDeviceInterruptLine(uint32_t vector,int asserted) { (void)vector; (void)asserted; }
 static int attempts,accepted;
 static int16_t expected[512],received[512];
 int xa2_is_active(void) { return 1; }

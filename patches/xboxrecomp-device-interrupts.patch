@@ -1,0 +1,159 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -1962,6 +1962,12 @@
+  * interrupt returns FALSE, and that is worth seeing rather than assuming.
+  */
+ uint32_t xbox_GetConnectedInterrupt(uint32_t vector);   /* defined below */
++static void kernel_start_dispatcher(void);
++static volatile LONG g_device_irq_lines[32];
++void xbox_SetDeviceInterruptLine(uint32_t vector,int asserted) {
++    if(vector>=32) { fprintf(stderr,"Invalid device interrupt vector %u\n",vector); abort(); }
++    InterlockedExchange(&g_device_irq_lines[vector],asserted!=0);
++}
+ 
+ static int kernel_raise_interrupt(uint32_t vector)
+ {
+@@ -2057,6 +2063,20 @@
+         kernel_run_dpc(d.dpc, d.arg1, d.arg2);
+     }
+ }
++void xbox_DispatchDeviceInterrupts(void) {
++    for(uint32_t vector=0;vector<32;++vector) {
++        if(!InterlockedCompareExchange(&g_device_irq_lines[vector],0,0)) continue;
++        uint32_t kint=xbox_GetConnectedInterrupt(vector);
++        if(!kint) continue;
++        uint32_t stack=g_esp;
++        KIRQL old=xbox_KfRaiseIrql((KIRQL)BRIDGE_MEM32(kint+12));
++        int claimed=kernel_raise_interrupt(vector);
++        xbox_KfLowerIrql(old);
++        if(g_esp!=stack) { fprintf(stderr,"[FATAL IRQ] vector=%u stack=%08X expected=%08X\n",vector,g_esp,stack); abort(); }
++        static unsigned reports;
++        if(reports++<12) fprintf(stderr,"[DEVICE IRQ] vector=%u claimed=%d\n",vector,claimed);
++    }
++}
+ 
+ /* ── KeInitializeDpc (ordinal 107) ────────────────────────
+  * VOID KeInitializeDpc(PKDPC Dpc, PKDEFERRED_ROUTINE DeferredRoutine,
+@@ -2124,6 +2144,7 @@
+     BRIDGE_MEM32(interrupt_va + 0)  = routine;
+     BRIDGE_MEM32(interrupt_va + 4)  = context;
+     BRIDGE_MEM32(interrupt_va + 8)  = vector;
++    BRIDGE_MEM32(interrupt_va + 12) = STACK_ARG(4);
+     g_eax = 0;
+ }
+ 
+@@ -2150,6 +2171,7 @@
+         uint32_t vector = BRIDGE_MEM32(interrupt_va + 8);
+         if (vector < XBOX_MAX_VECTORS) {
+             g_connected_isr[vector] = interrupt_va;
++            kernel_start_dispatcher();
+             fprintf(stderr, "  [KERNEL] KeConnectInterrupt: vector %u -> "
+                             "routine 0x%08X context 0x%08X\n",
+                     vector, BRIDGE_MEM32(interrupt_va + 0),
+@@ -2307,7 +2329,8 @@
+         long long now;
+         int i;
+ 
+-        Sleep(10);
++        Sleep(1);
++        xbox_DispatchDeviceInterrupts();
+         kernel_vblank_tick();  /* the GPU's frame clock */
+         kernel_drain_dpcs();   /* deferred work, before due timers */
+         now = (long long)GetTickCount64();
+@@ -2345,6 +2368,18 @@
+     }
+ }
+ 
++static void kernel_start_dispatcher(void) {
++    static volatile LONG state;
++    if(InterlockedCompareExchange(&state,1,0)==0) {
++        InitializeCriticalSection(&g_timer_lock);
++        g_timer_started=1;
++        HANDLE thread=CreateThread(NULL,0,kernel_timer_thread,NULL,0,NULL);
++        if(!thread) { fprintf(stderr,"[FATAL IRQ] dispatcher creation failed\n"); abort(); }
++        CloseHandle(thread);
++        InterlockedExchange(&state,2);
++    } else while(InterlockedCompareExchange(&state,0,0)!=2) Sleep(0);
++}
++
+ /* Shared by KeSetTimer and KeSetTimerEx; period is 0 for the former. */
+ static void kernel_set_timer(uint32_t timer_va, long long due_100ns,
+                              long period_ms, uint32_t dpc_va)
+@@ -2353,11 +2388,7 @@
+     int i, free_slot = -1;
+     uint32_t was_set = 0;
+ 
+-    if (!g_timer_started) {
+-        InitializeCriticalSection(&g_timer_lock);
+-        g_timer_started = 1;
+-        CloseHandle(CreateThread(NULL, 0, kernel_timer_thread, NULL, 0, NULL));
+-    }
++    kernel_start_dispatcher();
+ 
+     EnterCriticalSection(&g_timer_lock);
+     for (i = 0; i < XBOX_MAX_TIMERS; i++) {
+@@ -6740,7 +6771,7 @@
+  * report PASSIVE_LEVEL. */
+ static void bridge_KeGetCurrentIrql(void)
+ {
+-    g_eax = 0;  /* PASSIVE_LEVEL */
++    g_eax = xbox_KeGetCurrentIrql();
+ }
+ 
+ /* --- KeGetCurrentThread (ordinal 104, 0 args = 0 bytes) --- */
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -69,10 +69,20 @@
+         qatomic_or(&d->regs[NV_PAPU_ISTS], NV_PAPU_ISTS_GINTSTS);
+         /* In standalone mode we don't raise a PCI IRQ; the game's kernel
+          * stub will poll ISTS directly or we'll signal via a flag. */
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++        extern void recomp_apu_irq_level(int asserted);
++        recomp_apu_irq_level(1);
++#else
+         pci_irq_assert(PCI_DEVICE(d));
++#endif
+     } else {
+         qatomic_and(&d->regs[NV_PAPU_ISTS], ~NV_PAPU_ISTS_GINTSTS);
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++        extern void recomp_apu_irq_level(int asserted);
++        recomp_apu_irq_level(0);
++#else
+         pci_irq_deassert(PCI_DEVICE(d));
++#endif
+     }
+ }
+ 
+@@ -484,6 +494,8 @@
+             mcpx_apu_monitor_frame(d);
+             d->ep_frame_div++;
+         }
++        update_irq(d);
++        d->set_irq=false;
+     }
+ 
+     qemu_mutex_unlock(&d->lock);
+--- a/src/kernel/kernel_hal.c
++++ b/src/kernel/kernel_hal.c
+@@ -30,6 +30,7 @@
+  * ============================================================================ */
+ 
+ static XBOX_THREAD_LOCAL KIRQL g_current_irql = PASSIVE_LEVEL;
++KIRQL __stdcall xbox_KeGetCurrentIrql(void) { return g_current_irql; }
+ 
+ /*
+  * KfRaiseIrql - Raises IRQL to the specified level.
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -776,6 +776,11 @@
+ 
+ VOID    __stdcall xbox_KeInitializeInterrupt(PXBOX_KINTERRUPT Interrupt, PVOID ServiceRoutine, PVOID ServiceContext, ULONG Vector, KIRQL Irql, ULONG InterruptMode, BOOLEAN ShareVector);
+ BOOLEAN __stdcall xbox_KeConnectInterrupt(PXBOX_KINTERRUPT Interrupt);
++KIRQL __stdcall xbox_KeGetCurrentIrql(void);
++/* Device models publish level-triggered IRQs; dispatch requires a guest stack
++ * and TIB and is normally performed by the kernel dispatcher thread. */
++void xbox_SetDeviceInterruptLine(uint32_t vector,int asserted);
++void xbox_DispatchDeviceInterrupts(void);
+ 
+ /* KeTickCount - exported as a data pointer, not a function */
+ extern volatile ULONG xbox_KeTickCount;

@@ -6,6 +6,17 @@
 #include <string.h>
 #include <windows.h>
 #include "apu_xaudio2.h"
+extern void xbox_SetDeviceInterruptLine(uint32_t vector,int asserted);
+void recomp_apu_irq_level(int asserted) { xbox_SetDeviceInterruptLine(5,asserted); }
+void xml1_apu_trace_voices(const uint8_t *ram,unsigned base,unsigned a,unsigned b,unsigned c) {
+    if(base>64u*1024*1024-256*128) { fprintf(stderr,"[APU VOICES] invalid base=%08X\n",base); return; }
+    unsigned active=0,first=0xffff,state=0,format=0;
+    for(unsigned i=0;i<256;++i) {
+        uint32_t value; memcpy(&value,ram+base+i*128+0x54,4);
+        if(value&(1u<<21)) { ++active; if(first==0xffff) { first=i;state=value;memcpy(&format,ram+base+i*128+4,4); } }
+    }
+    fprintf(stderr,"[APU VOICES] base=%08X heads=%04X/%04X/%04X active=%u first=%u state=%08X format=%08X\n",base,a,b,c,active,first,state,format);
+}
 void xml1_apu_trace_frame(unsigned gp,unsigned ep,const float *mix,unsigned count) {
     static unsigned frames,reported_nonzero;
     unsigned nonzero=0;
