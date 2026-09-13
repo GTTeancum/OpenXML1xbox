@@ -1192,3 +1192,32 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - User retains interactive control. No host input or desktop capture was used.
   The optimized game executable remains unchanged; only its native worker was
   replaced. The older session logs remain preserved under their own names.
+
+## 2026-09-13 - Human reports scratchy audio and black transition
+
+- User reports scratchy audio and a transition that fades to black and does
+  not return. The session was left running for diagnosis. These are observed
+  playtest defects; neither overall graphics nor audio correctness is met.
+- Game PID35668 and both native renderer helpers remain alive. Frames continue
+  advancing (past22000 at the later check); no fatal guard is logged. Native
+  frames3600 and5520 show Wolverine's HUD, potion counters and a map arrow
+  over a black world view. This is not a complete process/renderer hang.
+- Saved read-only native thread stacks and a256MiB live guest-memory snapshot
+  locally (work/human-black-transition-stacks.txt, human-black-guest-ram.bin).
+  The memory snapshot is non-atomic and must not be treated as a synchronized
+  emulator save state. Helpers verify the target executable name and never
+  send desktop input. Stack inspection briefly suspends/resumes individual
+  target threads; symbol processing happens after resumption.
+- Sampled cached rendering transforms:2000 samples over frames15435..16955,
+  followed by700 full ten-matrix samples over21253..21786. No non-finite values
+  were found. The samples mostly show HUD transforms; intermittent perspective
+  and other world transforms exist. Sampling does not prove that all world
+  geometry or all camera states are correct, or isolate the failure's cause.
+- Movie/path logs show r102 story startup followed by NYC sound-bank loading.
+  The exact user action leading to the transition is still awaiting clarification.
+- Saved native black-view captures and a log snapshot in the local
+  work/human-transition-evidence directory. No duplicate/black screenshot is
+  posted as a milestone. The session remains running, with user control intact.
+- Scratchy audio still needs discrimination between PCM/DSP distortion and
+  output starvation. Existing clipped-sample counts alone cannot establish
+  the cause or certify fidelity; no speculative audio fix was applied.
