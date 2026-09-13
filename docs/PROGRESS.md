@@ -1086,3 +1086,29 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - FPS comes from consecutive native capture timestamps. Starting area versus
   combat are different scenes; these are not universal minimum/average figures.
   Overall visual/audio correctness and all synchronization paths remain open.
+
+## 2026-09-13 15:45 UTC - Directed combat and navigation, boot164
+
+- A 600-second optimized native DX8/APU run ends at diagnostic bound3 with
+  26340 presented frames and no fatal guard. It reaches the normal elimination
+  menu after the player loses health near the burning street wreckage.
+- Direction-only input followed by neutral and then attacks visibly reduces
+  an Anti-Mutant Troop health bar (frame6840); frame8580 retains a damaged
+  target. This is direct evidence that player attacks can damage an enemy,
+  not proof that the encounter or level is complete.
+- Frame13620 shows a fallen troop at the curb; frame14520 shows the energy
+  potion collection increment, followed by the increased inventory. Enemy
+  defeat is suggested by the body and drops, but no death-event trace or
+  complete encounter-clear condition was captured.
+- Frame18120 shows a20-point hit beside glowing wreckage. Health stays stable
+  away from the hazards in later paused/resumed checks. Earlier health loss
+  with no visible attacker must not be diagnosed as an invisible-enemy bug
+  from screenshots alone; environmental damage is an observed explanation.
+- The ordinary pause-menu map toggle works, but frame21360 shows white map
+  boundaries while frame22320 shows only the green player arrow. Correct
+  minimap geometry/clipping remains unverified and merits a renderer check.
+- Native evidence frames are preserved locally in work/boot164-evidence.
+  No screenshots are reposted because these are additional observations of
+  the existing combat/location, not a new verified progression milestone.
+- About9h31m of the30-hour goal allowance has elapsed. Full level traversal,
+  overall rendering fidelity and audio correctness remain unfinished.
