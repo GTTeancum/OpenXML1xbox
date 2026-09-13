@@ -6,6 +6,9 @@
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
 extern ptrdiff_t g_xbox_mem_offset;
 void xml1_graphics_live_observe(uint32_t va);
+void xml1_movie_watch_arm(uint32_t va);
+void xml1_movie_watch_report(void);
+static uint32_t movie_source_to_watch;
 
 static void dump_region(const char *path, uint32_t va, size_t bytes)
 {
@@ -24,6 +27,48 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    if(va==0x367AF0) xml1_movie_watch_report();
+    if(va==0x39A7D1 && g_esp<xbox_GetMappedSize()-16) {
+        static LONG reports;
+        const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
+        const uint32_t *a=(const uint32_t *)(memory+g_esp+4);
+        if(a[0]<xbox_GetMappedSize()-68 && *(const uint32_t *)(memory+a[0]+4)==6 && InterlockedIncrement(&reports)<=4) {
+            if(a[1]<xbox_GetMappedSize()-68) movie_source_to_watch=*(const uint32_t *)(memory+a[1]);
+            for(unsigned j=0;j<2;++j) if(a[j]<xbox_GetMappedSize()-68) {
+                const uint32_t *s=(const uint32_t *)(memory+a[j]);
+                fprintf(stderr,"[MOVIE BLIT] %s",j?"source":"destination");
+                for(unsigned k=0;k<17;++k) fprintf(stderr," %08X",s[k]);
+                fputc('\n',stderr);
+            }
+        }
+    }
+    if (va==0x3A6D39 && g_esp<xbox_GetMappedSize()-40) {
+        if(movie_source_to_watch) { xml1_movie_watch_arm(movie_source_to_watch+4096); movie_source_to_watch=0; }
+        static LONG reports;
+        if (InterlockedIncrement(&reports)<=12) {
+            const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
+            const uint32_t *a=(const uint32_t *)(memory+g_esp+4);
+            fprintf(stderr,"[MOVIE SWIZZLE] source=%08X pitch=%u rect=%08X dest=%08X size=%ux%u point=%08X bpp=%u\n",a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7]);
+            if (a[2] && a[2]<xbox_GetMappedSize()-16) {
+                const uint32_t *r=(const uint32_t *)(memory+a[2]);
+                fprintf(stderr,"  rect=%u,%u,%u,%u\n",r[0],r[1],r[2],r[3]);
+            }
+            if (a[6] && a[6]<xbox_GetMappedSize()-8) {
+                const uint32_t *p=(const uint32_t *)(memory+a[6]);
+                fprintf(stderr,"  point=%u,%u\n",p[0],p[1]);
+            }
+            if (a[7]==4 && a[0] && (uint64_t)a[0]+(uint64_t)a[1]*a[5]<xbox_GetMappedSize()) {
+                unsigned rows=0;size_t alpha=0,rgb=0;
+                for(unsigned y=0;y<a[5];++y) {
+                    const uint32_t *row=(const uint32_t *)(memory+a[0]+y*a[1]);
+                    unsigned active=0;
+                    for(unsigned x=0;x<a[4];++x) {alpha+=(row[x]>>24)!=0;rgb+=(row[x]&0xFFFFFF)!=0;active|=row[x];}
+                    rows+=active!=0;
+                }
+                fprintf(stderr,"  source rows=%u alpha=%zu rgb=%zu caller=%08X\n",rows,alpha,rgb,*(const uint32_t *)(memory+g_esp));
+            }
+        }
+    }
     if ((va==0x30EF30||va==0x30EF60||va==0x30EF90) && g_esp<xbox_GetMappedSize()-64) {
         const uint8_t *memory=(const uint8_t *)(uintptr_t)g_xbox_mem_offset;
         const uint32_t *stack=(const uint32_t *)(memory+g_esp);

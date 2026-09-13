@@ -53,3 +53,9 @@ Do not blindly merge branches or replace the pin during an experiment.
   Includes a Windows synthetic-memory regression requiring no game assets;
   before-fix wrong-service/stack failure and after-fix pass verified locally.
   Isolated upstream CMake/CTest build passes. No game bytes are included.
+
+- Submitted INC/DEC unsigned carry conditions as
+  https://github.com/sp00nznet/xboxrecomp/pull/44, isolated commit6f7689c.
+  Eight synthetic translation regressions; isolated168 tests/10 subtests pass.
+  Native local2744 instruction cases fail before and pass after, and original
+  movie conversion now writes480 rows instead of2. No game bytes in the PR.

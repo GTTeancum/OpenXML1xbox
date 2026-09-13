@@ -5,6 +5,36 @@
 #include <stdlib.h>
 #include <string.h>
 static HANDLE guest_thread;
+extern ptrdiff_t g_xbox_mem_offset;
+extern __declspec(thread) uint32_t g_esp;
+static volatile LONG movie_watch_state;
+static uintptr_t movie_watch_page;
+static uint64_t movie_watch_rip;
+static uint32_t movie_watch_sp,movie_watch_access,movie_watch_words[12];
+static LONG CALLBACK movie_watch_handler(EXCEPTION_POINTERS *exception) {
+    if(exception->ExceptionRecord->ExceptionCode!=STATUS_GUARD_PAGE_VIOLATION || movie_watch_state!=1)
+        return EXCEPTION_CONTINUE_SEARCH;
+    uintptr_t address=exception->ExceptionRecord->ExceptionInformation[1];
+    if(address<movie_watch_page||address>=movie_watch_page+4096) return EXCEPTION_CONTINUE_SEARCH;
+    movie_watch_rip=exception->ContextRecord->Rip;
+    movie_watch_sp=g_esp;
+    movie_watch_access=(uint32_t)exception->ExceptionRecord->ExceptionInformation[0];
+    if(g_esp<0x10000000-48) memcpy(movie_watch_words,(const void *)((uintptr_t)g_xbox_mem_offset+g_esp),48);
+    InterlockedExchange(&movie_watch_state,2);
+    return EXCEPTION_CONTINUE_EXECUTION;
+}
+void xml1_movie_watch_arm(uint32_t va) {
+    if(!getenv("XML1_MOVIE_WATCH")||movie_watch_state) return;
+    movie_watch_page=((uintptr_t)g_xbox_mem_offset+va)&~(uintptr_t)4095;
+    MEMORY_BASIC_INFORMATION info;
+    if(!VirtualQuery((void *)movie_watch_page,&info,sizeof(info))||info.State!=MEM_COMMIT||info.Protect!=PAGE_READWRITE) return;
+    if(!AddVectoredExceptionHandler(1,movie_watch_handler)) return;
+    DWORD previous;
+    InterlockedExchange(&movie_watch_state,1);
+    if(!VirtualProtect((void *)movie_watch_page,4096,PAGE_READWRITE|PAGE_GUARD,&previous)) {InterlockedExchange(&movie_watch_state,0);return;}
+    fprintf(stderr,"[MOVIE WATCH] armed one-shot process-local page at guest %08X\n",va);
+}
+void xml1_movie_watch_report(void);
 static unsigned delay_ms;
 static void symbol(uint64_t address) {
     char storage[sizeof(SYMBOL_INFO)+256]={0};
@@ -13,6 +43,12 @@ static void symbol(uint64_t address) {
     DWORD64 displacement=0;
     if (SymFromAddr(GetCurrentProcess(),address,&displacement,info))
         fprintf(stderr,"[NATIVE PROBE] %016llX %s+%llX\n",(unsigned long long)address,info->Name,(unsigned long long)displacement);
+}
+void xml1_movie_watch_report(void) {
+    if(InterlockedCompareExchange(&movie_watch_state,3,2)!=2) return;
+    fprintf(stderr,"[MOVIE WATCH] access=%u guest_sp=%08X\n",movie_watch_access,movie_watch_sp);
+    symbol(movie_watch_rip);
+    for(unsigned i=0;i<12;++i) fprintf(stderr,"  watch_stack[%u]=%08X\n",i,movie_watch_words[i]);
 }
 static DWORD WINAPI sample(LPVOID unused) {
     (void)unused; Sleep(delay_ms);

@@ -39,6 +39,8 @@
 
 static int s_memory_query_test;
 static int s_irql_test;
+static int s_swizzle_test;
+int xml1_swizzle_test(void);
 void xml1_native_probe_start(void);
 
 /* xboxrecomp runtime headers */
@@ -387,7 +389,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     g_xbox_mem_offset = xbox_GetMemoryOffset();
     printf("Xbox memory mapped. Offset: 0x%llX\n", (unsigned long long)g_xbox_mem_offset);
-    if (getenv("XML1_APU") && !s_memory_query_test && !s_irql_test) {
+    if (getenv("XML1_APU") && !s_memory_query_test && !s_irql_test && !s_swizzle_test) {
         /* DSP scratch buffers and scatter/gather tables currently observed in
          * XML1 use physical allocations backed by the contiguous window. */
         g_apu_state = mcpx_apu_init_standalone((uint8_t *)((uintptr_t)g_xbox_mem_offset + 0x80000000u));
@@ -415,8 +417,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     /* Step 6: Initialize stack */
     g_esp = XBOX_STACK_TOP;
 
-    if (s_memory_query_test || s_irql_test) {
-        int result = s_irql_test ? irql_bridge_test() : memory_query_bridge_test();
+    if (s_memory_query_test || s_irql_test || s_swizzle_test) {
+        int result = s_swizzle_test ? xml1_swizzle_test() : s_irql_test ? irql_bridge_test() : memory_query_bridge_test();
         xbox_kernel_shutdown();
         xbox_MemoryLayoutShutdown();
         free(xbe_data);
@@ -526,5 +528,6 @@ int main(int argc, char **argv)
 {
     s_memory_query_test = argc == 2 && strcmp(argv[1], "--memory-query-test") == 0;
     s_irql_test = argc == 2 && strcmp(argv[1], "--irql-test") == 0;
+    s_swizzle_test = argc == 2 && strcmp(argv[1], "--swizzle-test") == 0;
     return WinMain(GetModuleHandle(NULL), NULL, GetCommandLineA(), SW_SHOW);
 }

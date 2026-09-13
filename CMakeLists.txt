@@ -43,10 +43,11 @@ if(OPENXML1_BUILD_BOOT_PROBE)
     add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/flags-fixture.inc"
         COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-flags-test.py"
         DEPENDS scripts/generate-flags-test.py external/xboxrecomp/tools/recomp/translator.py
-                external/xboxrecomp/tools/recomp/test_flag_join.py)
+                external/xboxrecomp/tools/recomp/test_flag_join.py external/xboxrecomp/tools/recomp/lifter.py
+                external/xboxrecomp/tools/recomp/test_incdec_carry.py)
     add_executable(guest-flags-test tests/guest_flags_test.c "${CMAKE_CURRENT_SOURCE_DIR}/build/flags-fixture.inc")
     target_include_directories(guest-flags-test PRIVATE src/recomp/gen build)
-    add_executable(xml1-boot-probe src/main.c src/native_probe.c src/recomp_manual.c src/guest_crt.c src/guest_input.c src/guest_graphics_trace.c src/guest_graphics_live.c ${RECOMP_SOURCES})
+    add_executable(xml1-boot-probe src/main.c src/native_probe.c src/recomp_manual.c src/guest_crt.c src/guest_input.c src/guest_graphics_trace.c src/guest_graphics_live.c tests/guest_swizzle_test.c ${RECOMP_SOURCES})
     target_include_directories(xml1-boot-probe PRIVATE src src/recomp/gen external/xboxrecomp/include)
     target_link_libraries(xml1-boot-probe PRIVATE xboxrecomp dbghelp)
     target_compile_definitions(xml1-boot-probe PRIVATE _CRT_SECURE_NO_WARNINGS WIN32_LEAN_AND_MEAN NOMINMAX)

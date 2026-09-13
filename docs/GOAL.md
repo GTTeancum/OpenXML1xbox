@@ -21,16 +21,11 @@ Do not claim completion solely because the deadline is reached. Goal status tool
 do not expose a pause operation; report the deadline stop accurately rather than
 marking an unfinished goal complete.
 
-Current milestone: first legal splash presented from live guest execution through
-native Windows DX8. Audio initialization now starts the APU and loads sound banks,
-and voice banks with corrected stereo PCM settings. Native DX8 fence completion
-now advances beyond 180 splash frames. Regenerated vtable function0011F170 passes;
-startup passes saved-game enumeration and opens movies/ntsc/i/1/i102.sfd,
-the CRT worker entry00345453 now runs. A deterministic test reproduced and fixed
-a shared kernel-dispatch-slot race behind callback stack corruption. Movie startup
-passes PSFD entries00395C20/00396920 and decoder callback00336970. Startup can
-advance through all five intro movie files, but textures remain nearly empty and
-worker object lifetime is unstable. One run next stopped at callback00184FD0.
-Native DX8 also accepts the observed ARGB texture/FVF102 draw path.
-Encoded audio remains unsupported. FMV,
-menu, level 1, audio and visual correctness remain unverified; see PROGRESS.md.
+Current milestone: live native Windows DX8 legal splash and a partial main menu
+have been captured. Seed12 recovers00184FD0; the next stop is an unsupported
+second texture stage. Menu background, interaction and full rendering remain
+unverified. The movie converter's INC/DEC carry bug is fixed and now writes all
+480 rows, but the intros advance too quickly and stream lifetime is unstable.
+Only very dark early-fade FMV captures are verified; no recognizable FMV artwork
+has been posted. Audio fidelity and playable level1 remain unverified.
+All of these remain required work. See PROGRESS.md and UPSTREAM-REVIEW.md.

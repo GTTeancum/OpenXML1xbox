@@ -23,6 +23,21 @@ int main(void)
         }
         ++count;
     }
-    printf("PASS: %u executed translated CMP-join SETNE/CMOVNE cases, both paths and cdecl return.\n", count);
+    for(unsigned kind=0;kind<8;++kind)
+    for(unsigned i=0;i<7;++i)
+    for(unsigned j=0;j<7;++j)
+    for(unsigned k=0;k<7;++k) {
+        g_eax=values[i];g_edx=values[j];g_esi=values[k];g_esp=1024;
+        unsigned mask=kind&4?255:0xFFFFFFFFu;
+        unsigned result=(g_eax+(kind&1?1:0xFFFFFFFFu))&mask;
+        unsigned carry=(uint64_t)g_edx+g_esi>0xFFFFFFFFu;
+        unsigned expected=kind&2?(carry||result==0):(!carry&&result!=0);
+        incdec_fixtures[kind]();
+        if(g_eax!=expected||g_esp!=1028) {
+            fprintf(stderr,"FAIL INCDEC kind=%u i=%u j=%u k=%u result=%u expected=%u\n",kind,i,j,k,g_eax,expected);return 2;
+        }
+        ++count;
+    }
+    printf("PASS: %u executed translated comparison-join and INC/DEC carry cases.\n", count);
     return 0;
 }

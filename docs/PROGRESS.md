@@ -398,3 +398,40 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   ADX audio streams, duration10.403267s. Finishing multiple intros in a short
   probe is not a playback correctness claim. Next investigate incomplete image
   transfer and worker lifetime/timing alongside the new game callback.
+
+
+## Full-height movie conversion and first partial main menu (2026-09-13)
+
+- XbSymbolDatabase identifies XGSwizzleRect at003A6D39. Instrumented calls use
+  correct1024x512 destination and640x480 source rectangles. Added --swizzle-test
+  executing the original generated function against an independent Morton
+  address reference, full/partial rectangles and the F2000000 write-combined
+  alias read back through82000000. Tests pass before and after the next fix.
+- Source buffers before swizzling contain only2 populated rows; the incomplete
+  image is upstream of the swizzle. Added opt-in XML1_MOVIE_WATCH, a one-shot
+  PAGE_GUARD on this process's own pixel buffer (no UI/input/capture APIs).
+  Deferred symbol reporting identifies the writer without logging in the handler.
+  First-page watch caught a metadata read; the second-page watch in boot-056
+  caught a write in sub0032B8A0+19E4, the original MMX YUV-to-ARGB converter.
+- Its outer loop does ADD, MOV, DEC, MOV, JA. DEC preserves the carry from ADD;
+  the generated JA used uninitialized fallback_flags=0 and stopped after one
+  two-row iteration. Added INC/DEC unsigned conditions using retained carry and
+  new zero result, plus carry-demand detection in the translator.
+- Synthetic native regression fails before and passes after:2744 INC/DEC cases
+  plus196 prior join cases =2940. Local recompiler suite173 passed/10 subtests;
+  isolated upstream suite168 passed/10 subtests. Saved as ordered patch8, with
+  all patch idempotence checks passing. Submitted upstream PR44, commit6f7689c.
+- Regenerated/build successful. boot-057 reports480 populated rows and307200
+  nonzero-alpha pixels, with139295/198836 colored pixels in first movie buffers.
+  Native movie captures201/243 were visually inspected: very dark early fade
+  images, not recognizable FMV artwork to post. Playback advances far too quickly
+  through five intros, so timing/lifetime and full decoder fidelity remain open.
+- Verified and seeded00184FD0 (seed12) after original prior ret4. Startup now
+  reaches a new two-texture draw (primitive6, FVF142, stride24,48 vertices).
+  Native DX8 currently refuses it. Before that stop, frame407 contains the
+  main menu text: Begin Story, Load Game, Danger Room, Options, Review, Credits.
+  This is a PARTIAL menu; background/later draw and interactivity are unverified.
+  Capture copied unchanged to outputs/xml1-dx8-main-menu-partial.bmp and posted
+  as new content. No claim of complete menu, FMV fidelity, audio or playable level1.
+- Next: implement the observed second texture stage with native DX8, while
+  retaining the movie timing/lifetime defects as required work, not skipping FMVs.
