@@ -19,6 +19,23 @@ static D3DFORMAT replay_format(uint32_t format) {
         default:throw std::runtime_error("Unsupported texture format");
     }
 }
+static IDirect3DTexture8* read_texture(IDirect3DDevice8* device,FILE* file,unsigned width,unsigned height,uint32_t packed) {
+    if(!xml1_texture_bytes(width,height,packed)) throw std::runtime_error("Invalid texture mip chain");
+    unsigned format=packed&255,levels=xml1_texture_levels(packed);
+    IDirect3DTexture8* texture=nullptr;
+    checked(device->CreateTexture(width,height,levels,0,replay_format(format),D3DPOOL_MANAGED,&texture));
+    for(unsigned level=0;level<levels;++level) {
+        unsigned rows=format==14?(height+3)/4:height;
+        unsigned row_bytes=format==14?((width+3)/4)*16:width*(format==6?4:1);
+        std::vector<unsigned char> pixels((size_t)rows*row_bytes);
+        if(std::fread(pixels.data(),1,pixels.size(),file)!=pixels.size()) throw std::runtime_error("Truncated texture mip chain");
+        D3DLOCKED_RECT lock={}; checked(texture->LockRect(level,&lock,nullptr,0));
+        for(unsigned y=0;y<rows;++y) std::memcpy((char*)lock.pBits+y*lock.Pitch,pixels.data()+y*row_bytes,row_bytes);
+        checked(texture->UnlockRect(level));
+        width=width>1?width/2:1; height=height>1?height/2:1;
+    }
+    return texture;
+}
 static DWORD blend(DWORD v) {
     if (v <= 1) return v + 1;
     if (v >= 0x300 && v <= 0x308) return v - 0x300 + 3;
@@ -83,7 +100,8 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         complete_rendering(device);
         return false;
     }
-    const bool version5=magic[7]=='5';
+    const bool version6=magic[7]=='6';
+    const bool version5=magic[7]=='5'||version6;
     const bool version4=magic[7]=='4'||version5;
     const bool version3=magic[7]=='3'||version4;
     const bool version2=magic[7]=='2'||version3;
@@ -111,34 +129,13 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         auto width=header[0],height=header[1],vertices=header[2];
         if (!width||!height||width>4096||height>4096||vertices<3||vertices>1000000)
             throw std::runtime_error("Invalid replay geometry");
-        if ((header[3]!=14&&header[3]!=6&&header[3]!=0&&header[3]!=25)||!xml1_fvf_stride(header[4]))
+        if(!xml1_fvf_stride(header[4])||(!version6&&(header[3]>255||second_header[2]>255)))
             throw std::runtime_error("Unsupported replay format");
         const unsigned stride=xml1_fvf_stride(header[4]);
         if((header[5]!=5&&header[5]!=6&&header[5]!=7)||(header[5]==5&&vertices%3)) throw std::runtime_error("Unsupported primitive type");
-        const unsigned rows=header[3]!=14?height:(height+3)/4;
-        const unsigned rowBytes=header[3]!=14?width*(header[3]==6?4:1):((width+3)/4)*16;
-        size_t texBytes=(size_t)rows*rowBytes;
-        std::vector<unsigned char> tex(texBytes), vb(vertices*stride);
-        read(tex.data(),tex.size());
-        IDirect3DTexture8* second_texture=nullptr;
-        if(second_header[0]) {
-            unsigned w=second_header[0],h=second_header[1],fmt=second_header[2];
-            if(w>4096||!h||h>4096||(fmt!=6&&fmt!=14&&fmt!=0&&fmt!=25)) throw std::runtime_error("Invalid second texture");
-            unsigned second_rows=fmt!=14?h:(h+3)/4,second_row_bytes=fmt!=14?w*(fmt==6?4:1):((w+3)/4)*16;
-            std::vector<unsigned char> second_pixels((size_t)second_rows*second_row_bytes);
-            read(second_pixels.data(),second_pixels.size());
-            checked(device->CreateTexture(w,h,1,0,replay_format(fmt),D3DPOOL_MANAGED,&second_texture));
-            D3DLOCKED_RECT second_lock={};checked(second_texture->LockRect(0,&second_lock,nullptr,0));
-            for(unsigned y=0;y<second_rows;++y) std::memcpy((char*)second_lock.pBits+y*second_lock.Pitch,second_pixels.data()+y*second_row_bytes,second_row_bytes);
-            checked(second_texture->UnlockRect(0));
-        }
-        read(vb.data(),vb.size());
-        IDirect3DTexture8* texture=nullptr;
-        checked(device->CreateTexture(width,height,1,0,replay_format(header[3]),D3DPOOL_MANAGED,&texture));
-        D3DLOCKED_RECT lock={}; checked(texture->LockRect(0,&lock,nullptr,0));
-        for (unsigned y=0;y<rows;++y)
-            std::memcpy((char*)lock.pBits+y*lock.Pitch,tex.data()+y*rowBytes,rowBytes);
-        checked(texture->UnlockRect(0));
+        IDirect3DTexture8* texture=read_texture(device,file,width,height,header[3]);
+        IDirect3DTexture8* second_texture=second_header[0]?read_texture(device,file,second_header[0],second_header[1],second_header[2]):nullptr;
+        std::vector<unsigned char> vb(vertices*stride); read(vb.data(),vb.size());
         checked(device->SetViewport(&viewport));
         checked(device->SetTransform(D3DTS_WORLD,&matrices[0]));
         checked(device->SetTransform(D3DTS_VIEW,&matrices[1]));

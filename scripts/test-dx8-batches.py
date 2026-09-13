@@ -143,3 +143,25 @@ triangles_output=triangles.with_suffix('.bmp')
 subprocess.run([str(worker),'--replay',str(triangles),str(triangles_output)],cwd=root,check=True)
 assert triangles_output.read_bytes()==fan_output.read_bytes(), 'Equivalent triangle list differs'
 print('PASS: triangle list matches equivalent fan and strip')
+
+# Distinct colors in each level expose missing levels and incorrect payload
+# offsets, including DXT3's full 16-byte blocks at logical sizes2x2 and1x1.
+for index,value in ((44,1),(48,1),(5,1)):
+    struct.pack_into('<I',state,888+index*4,value)
+mip_vertices=b''.join(struct.pack('<5f',x,y,.5,u,v) for x,y,u,v in
+    [(-.5,.5,0,0),(.5,.5,1,0),(-.5,-.5,0,1),(.5,-.5,1,1)])
+for fmt in (6,14):
+    if fmt==6:
+        chain=struct.pack('<16I',*([0xffff0000]*16))+struct.pack('<4I',*([0xff00ff00]*4))+struct.pack('<I',0xff0000ff)
+    else:
+        chain=b''.join(struct.pack('<QHHI',0xffffffffffffffff,color,color,0) for color in (0xf800,0x07e0,0x001f))
+    for level,expected in enumerate((b'\x00\x00\xff',b'\x00\xff\x00',b'\xff\x00\x00')):
+        struct.pack_into('<I',state,888+7*4,level)
+        mip=root/f'build/dx8-mip-{fmt}-{level}.bin'
+        mip.write_bytes(b'XMLDX8R6'+struct.pack('<7I',1,4,4,4,fmt|(3<<8),0x102,6)+state+bytes(84)+
+            struct.pack('<32f',*(identity*2))+chain+mip_vertices)
+        output=mip.with_suffix('.bmp')
+        subprocess.run([str(worker),'--replay',str(mip),str(output)],cwd=root,check=True)
+        pixels=output.read_bytes(); at=54+(240*640+320)*3
+        assert pixels[at:at+3]==expected, f'Incorrect mip level {level} format{fmt}'
+print('PASS: native ARGB/DXT3 mip chains select red/green/blue levels, including sub-block dimensions')

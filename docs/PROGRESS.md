@@ -507,3 +507,16 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
  60-second diagnostic bound3 without another crash or graphics guard. Movement
   and camera response are demonstrated, but combat, complete level traversal,
   timing/performance, texture mip chains, FMVs and audio correctness remain open.
+
+## Full texture mip uploads (boot079)
+
+- Version6 packets preserve the resource's explicit mip count. Each level is
+  bounds checked and uploaded; uncompressed levels are independently unswizzled.
+  DXT3 retains complete blocks even below4x4, matching xemu's texture layout.
+- Native tests use distinct red/green/blue mip levels and explicitly select each
+  level for ARGB and DXT3, including2x2/1x1 DXT blocks. Earlier primitive, lighting,
+  texture-stage, clear and batch tests remain passing. boot079 reachesframe1080
+  with movement and ends at the60-second bound3. No duplicate screenshot posted.
+- Next audio finding: the toolkit monitor clears DSP output then fills it from
+  its separate software mixer. Actual guest DSP output is therefore discarded;
+  routing and native sample capture are required before any audio fidelity claim.

@@ -46,6 +46,23 @@ static void append(const void* data,size_t bytes) {
     }
     memcpy(packet+used,data,bytes); used+=bytes;
 }
+static void append_texture(uint32_t address,unsigned width,unsigned height,uint32_t packed) {
+    size_t total=xml1_texture_bytes(width,height,packed);
+    if(!total) fatal("invalid mip chain");
+    const unsigned char *pixels=guest(address,total);
+    unsigned format=packed&255;
+    for(unsigned level=0;level<xml1_texture_levels(packed);++level) {
+        size_t bytes=xml1_texture_level_bytes(width,height,format);
+        if(format==14) append(pixels,bytes);
+        else {
+            void *linear=malloc(bytes);
+            if(!linear) fatal("mip conversion allocation failed");
+            xbox_unswizzle_rect(linear,pixels,width,height,format==6?4:1);
+            append(linear,bytes); free(linear);
+        }
+        pixels+=bytes; width=width>1?width/2:1; height=height>1?height/2:1;
+    }
+}
 static void connect_worker(void) {
     char name[128], command[512];
     snprintf(name,sizeof(name),"\\\\.\\pipe\\OpenXML1DX8-%lu",GetCurrentProcessId());
@@ -140,17 +157,19 @@ void xml1_graphics_live_observe(uint32_t va) {
         if(tex1) {
             unsigned fmt=(tex1[3]>>8)&255;
             if((fmt!=14&&fmt!=6&&fmt!=0&&fmt!=25)||tex1[4]) fatal("unimplemented second texture format");
-            second_header[0]=1u<<((tex1[3]>>20)&15); second_header[1]=1u<<((tex1[3]>>24)&15); second_header[2]=fmt;
-            second_bytes=fmt!=14?(size_t)second_header[0]*second_header[1]*(fmt==6?4:1):(size_t)((second_header[0]+3)/4)*((second_header[1]+3)/4)*16;
+            second_header[0]=1u<<((tex1[3]>>20)&15); second_header[1]=1u<<((tex1[3]>>24)&15); second_header[2]=fmt|(((tex1[3]>>16)&15)<<8);
+            second_bytes=xml1_texture_bytes(second_header[0],second_header[1],second_header[2]);
+            if(!second_bytes) fatal("invalid second mip chain");
             if((uint64_t)tex1[1]+second_bytes>64u*1024*1024) fatal("second texture bounds");
         }
         for(unsigned stage=0;stage<2;++stage)
             if(ts[stage*32+21]&&!(matrix_mask&(1u<<(stage+2)))) fatal("missing texture transform");
         uint32_t format=(tex[3]>>8)&255;
         if ((format!=14&&format!=6&&format!=0&&format!=25)||tex[4]) fatal("unimplemented texture format");
-        uint32_t header[6]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),vertex_count,format,fvf,a[0]};
+        uint32_t header[6]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),vertex_count,format|(((tex[3]>>16)&15)<<8),fvf,a[0]};
         uint64_t offset=(uint64_t)vb[1]+(indexed?0:(uint64_t)a[1]*stride), bytes=(uint64_t)vertex_count*stride;
-        size_t tex_bytes=format!=14?(size_t)header[0]*header[1]*(format==6?4:1):(size_t)((header[0]+3)/4)*((header[1]+3)/4)*16;
+        size_t tex_bytes=xml1_texture_bytes(header[0],header[1],header[3]);
+        if(!tex_bytes) fatal("invalid primary mip chain");
         if (offset+bytes>64u*1024*1024||(uint64_t)tex[1]+tex_bytes>64u*1024*1024) fatal("resource bounds");
         uint32_t rs[168]; memcpy(rs,guest(0x36C860,sizeof(rs)),sizeof(rs));
         if(rs[102]&&(!material_valid||(light_mask&~light_valid))) fatal("missing material or enabled light definition");
@@ -170,7 +189,7 @@ void xml1_graphics_live_observe(uint32_t va) {
             if (argb_reports<4 || frames%60==0) {
                 const uint32_t *rgba=pixels;
                 size_t colored=0,opaque=0;
-                for (size_t i=0;i<tex_bytes/4;++i) {
+                for (size_t i=0;i<(size_t)header[0]*header[1];++i) {
                     colored+=(rgba[i]&0xFFFFFF)!=0;
                     opaque+=(rgba[i]>>24)!=0;
                 }
@@ -179,21 +198,8 @@ void xml1_graphics_live_observe(uint32_t va) {
                 ++argb_reports;
             }
         }
-        if(format!=14) {
-            void *linear=malloc(tex_bytes);
-            if (!linear) fatal("texture conversion allocation failed");
-            xbox_unswizzle_rect(linear,pixels,header[0],header[1],format==6?4:1);
-            append(linear,tex_bytes); free(linear);
-        } else append(pixels,tex_bytes);
-        if(tex1) {
-            const void *second_pixels=guest(0x80000000+tex1[1],second_bytes);
-            if(second_header[2]!=14) {
-                void *linear=malloc(second_bytes);
-                if(!linear) fatal("second texture conversion allocation failed");
-                xbox_unswizzle_rect(linear,second_pixels,second_header[0],second_header[1],second_header[2]==6?4:1);
-                append(linear,second_bytes);free(linear);
-            } else append(second_pixels,second_bytes);
-        }
+        append_texture(0x80000000+tex[1],header[0],header[1],header[3]);
+        if(tex1) append_texture(0x80000000+tex1[1],second_header[0],second_header[1],second_header[2]);
         if(indexed) {
             const uint16_t *indices=guest(a[2],vertex_count*2);
             uint32_t device=*(const uint32_t *)guest(0x36CAF8,4);
@@ -228,7 +234,7 @@ static void flush_completed_work(void) {
     uint32_t *d=guest(device,0x40);
     if (g_ecx!=device) fatal("unexpected push-buffer flush device");
     uint32_t fence=d[0x2c/4]-2;
-    send_bytes("XMLDX8F5",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+    send_bytes("XMLDX8F6",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
     draws=0; used=0;
     /* InsertFence records this counter before incrementing by two. Signal only
      * after all preceding native submissions have completed; no Present here. */
@@ -242,7 +248,7 @@ static void ordered_clear(const uint32_t *a) {
     const void *rects=a[0]?guest(a[1],(size_t)a[0]*16):NULL;
     if(pipe==INVALID_HANDLE_VALUE) connect_worker();
     if(draws) {
-        send_bytes("XMLDX8F5",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+        send_bytes("XMLDX8F6",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
         draws=0; used=0;
     }
     uint32_t header[5]={a[2],a[3],a[4],a[5],a[0]};
@@ -261,7 +267,7 @@ void xml1_graphics_swap(void) {
             frames+1,d[0x2c/4],*(uint32_t*)guest(d[0x30/4],4),draws);
     }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
-    send_bytes("XMLDX8R5",8); send_bytes(&draws,4); send_bytes(packet,used);
+    send_bytes("XMLDX8R6",8); send_bytes(&draws,4); send_bytes(packet,used);
     receive_ack();
     ++frames;
     xml1_input_test_frame(frames);
