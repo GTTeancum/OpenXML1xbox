@@ -86,7 +86,10 @@ int main(int argc, char** argv) {
                 std::ungetc(next,input);
                 char capture[128];
                 std::snprintf(capture,sizeof(capture),"build/dx8-live-frame-%06u.bmp",frame);
+                ULONGLONG command_start=GetTickCount64();
                 bool presented=replay_stream(device,input,(std::getenv("XML1_DX8_CAPTURE_ALL")||frame<=8||frame%60==0)?capture:nullptr,true);
+                ULONGLONG command_ms=GetTickCount64()-command_start;
+                if(command_ms>=50) std::printf("[DX8 COMMAND] seq=%u frame=%u presented=%u ms=%llu\n",sequence,frame,presented,command_ms);
                 DWORD ack=sequence,written=0;
                 if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                 if (presented) {

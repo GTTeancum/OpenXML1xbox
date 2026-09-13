@@ -55,3 +55,9 @@ audio in38.663 seconds, so real-time pacing and A/V fidelity remain open.
 Consumer-paced audio reaches28 seconds of PCM in28.010 seconds (boot115).
 Movie speed, intermittent image artifacts and full A/V synchronization remain
 unverified; the level1 completion goal is still active.
+
+
+Optimized playback testing and an event-driven FIFO renderer handoff are available.
+boot121 advances naturally through later intro movies, including native Raven
+artwork. One earlier optimized run stalled before movies; startup reliability,
+movie fidelity and current playable level1 still require work.

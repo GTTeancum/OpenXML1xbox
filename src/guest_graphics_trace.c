@@ -9,6 +9,7 @@ void xml1_graphics_live_observe(uint32_t va);
 void xml1_movie_watch_arm(uint32_t va);
 void xml1_movie_watch_report(void);
 static uint32_t movie_source_to_watch;
+static RECOMP_TLS ULONGLONG movie_convert_start;
 
 static void dump_region(const char *path, uint32_t va, size_t bytes)
 {
@@ -27,6 +28,7 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    if(va==0x32B8A0) movie_convert_start=GetTickCount64();
     if(va==0x35DDC0) {
         static unsigned reports;
         uint32_t *stack=(uint32_t *)((uintptr_t)g_xbox_mem_offset+g_esp);
@@ -74,6 +76,11 @@ void xml1_graphics_observe(uint32_t va)
         }
     }
     if (va==0x3A6D39 && g_esp<xbox_GetMappedSize()-40) {
+        if(movie_convert_start) {
+            ULONGLONG elapsed=GetTickCount64()-movie_convert_start;
+            if(elapsed>=30) fprintf(stderr,"[MOVIE CONVERT TO SWIZZLE] ms=%llu\n",elapsed);
+            movie_convert_start=0;
+        }
         if(getenv("XML1_CAPTURE_MOVIE_SOURCE")) {
             extern unsigned xml1_graphics_frame_number(void);
             const uint32_t *a=(const uint32_t *)((uintptr_t)g_xbox_mem_offset+g_esp+4);
@@ -184,4 +191,27 @@ void xml1_graphics_observe(uint32_t va)
         fprintf(stderr, "[D3D TRACE] captured %u calls at %08X; no render milestone claimed\n", count, va);
         _exit(4);
     }
+}
+
+static RECOMP_TLS LARGE_INTEGER convert_wall_start;
+static RECOMP_TLS uint64_t convert_cpu_start;
+static uint64_t thread_cpu_ticks(void) {
+    FILETIME create, exit, kernel, user;
+    if (!GetThreadTimes(GetCurrentThread(), &create, &exit, &kernel, &user)) return 0;
+    return (((uint64_t)kernel.dwHighDateTime<<32)|kernel.dwLowDateTime)
+         + (((uint64_t)user.dwHighDateTime<<32)|user.dwLowDateTime);
+}
+void xml1_movie_convert_begin(void) {
+    QueryPerformanceCounter(&convert_wall_start);
+    convert_cpu_start=thread_cpu_ticks();
+}
+void xml1_movie_convert_end(void) {
+    static LONG reports;
+    LARGE_INTEGER end, frequency;
+    QueryPerformanceCounter(&end); QueryPerformanceFrequency(&frequency);
+    uint64_t cpu=thread_cpu_ticks()-convert_cpu_start;
+    LONG count=InterlockedIncrement(&reports);
+    if(count<=8 || count%60==0)
+        fprintf(stderr,"[MOVIE CONVERTER] count=%ld wall_ms=%.3f cpu_ms=%.3f\n",count,
+            1000.0*(end.QuadPart-convert_wall_start.QuadPart)/frequency.QuadPart,cpu/10000.0);
 }

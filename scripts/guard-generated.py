@@ -71,3 +71,21 @@ for path in root.glob('recomp_*.c'):
         text = text[:start] + block.replace('RECOMP_ABI_CALL(', 'XML1_CHECK_CDECL0(') + text[end:]
     if text != original:
         path.write_text(text, encoding='utf-8')
+
+# Time the converter itself, excluding later graphics and synchronization calls.
+for path in root.glob('recomp_*.c'):
+    text = path.read_text(encoding='utf-8')
+    marker = 'void sub_0032B8A0(void)\n{'
+    if marker not in text or 'xml1_movie_convert_begin' in text:
+        continue
+    text = text.replace(marker, 'static void xml1_movie_convert_impl(void)\n{', 1)
+    text += """
+extern void xml1_movie_convert_begin(void);
+extern void xml1_movie_convert_end(void);
+void sub_0032B8A0(void) {
+    xml1_movie_convert_begin();
+    xml1_movie_convert_impl();
+    xml1_movie_convert_end();
+}
+"""
+    path.write_text(text, encoding='utf-8')

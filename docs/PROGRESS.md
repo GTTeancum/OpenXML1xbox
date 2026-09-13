@@ -735,3 +735,30 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Output retry/payload/event-wait test, output mutex test, actual VP resampling
   and GP/EP bootstrap tests pass. Sixteen-patch reverse-stack validation passes.
   Next investigate movie processing speed and revalidate menu/level1 with audio.
+
+
+## Optimized playback and renderer handoff (boot116–121)
+
+- A separate opt-in build uses /O2 /Ob1 for generated game code. The default
+  diagnostic build remains /Od /Ob0; both retain fail-fast guards and symbols.
+  Optimized CPU comparison/carry (2940 cases), FIST rounding, VP resampling and
+  original XGSwizzleRect tests pass. This does not establish optimization safety:
+  upstream still emits uninitialized local EBP saves in standard-frame functions.
+- Initial converter-to-swizzle timing was misleading as a CPU measurement:
+  boot118 times the converter itself at roughly7–8ms, while the broader interval
+  often spans31–47ms. Thread CPU time is also logged but has coarse accounting
+  granularity. Native worker command logging reports commands exceeding50ms.
+- The FIFO transport gate now uses WaitOnAddress/WakeByAddressAll instead of
+  Sleep(1) polling. Compare-and-wait prevents a missed release; waking all avoids
+  leaving the next ticket asleep. This requires Windows8+ synchronization APIs;
+  graphics still uses the real system Direct3D8. Both builds pass the16-thread
+  FIFO and unsigned-ticket rollover test.
+- boot117 (optimized, polling gate) reaches captured frame360 in30s. boot119
+  (address wait) stalls before movies, repeatedly waiting on a guest handle;
+  boot120 repeat reaches captured frame420 in30s. This is an unresolved startup
+  reliability failure, not a successful result to discard. Timing still falls
+  short of the requested playback quality.
+- boot121 runs the intro sequence without forced input: later movie paths i101,
+  i103, i104 and i105 are reached. Native frame780 shows the Raven logo, new
+  artwork relative to the earlier Activision capture. Full movie/A-V fidelity,
+  current level1 and sustained gameplay remain unverified.
