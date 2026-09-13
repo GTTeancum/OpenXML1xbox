@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(OpenXML1xbox LANGUAGES C)
+add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/x87-status-fixture.inc"
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-x87-status-test.py"
+    DEPENDS scripts/generate-x87-status-test.py external/xboxrecomp/tools/recomp/lifter.py)
+add_executable(x87-status-test tests/x87_status_test.c "${CMAKE_CURRENT_SOURCE_DIR}/build/x87-status-fixture.inc")
+target_include_directories(x87-status-test PRIVATE external/xboxrecomp/templates/runtime build)
 
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "The initial XboxRecomp baseline requires Windows x64.")
