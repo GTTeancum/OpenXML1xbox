@@ -24,6 +24,12 @@ Checked 2026-09-13 during XML1 initialization debugging.
   the project's explicit -Disassemble mode now passes upstream --force.
 - Search found no PR specifically addressing NtQueryVirtualMemory. Our first
   runtime loop repeatedly queries it during the engine's address-space scan.
+- SETcc/flags search returned merged #8, #16, #28 and #34, already in our pin;
+  current translator still dropped comparison snapshots at differing-operand joins.
+  The local fix and executable regression are recorded in the separate flag-joins patch.
+- Reused upstream xbox_input's Windows XInput backend for controller polling;
+  project guest ABI wrappers replace XInitDevices/XGetDevices and XInput entry points
+  so native Windows operation does not depend on emulating Xbox USB hardware.
 
 Recheck upstream for a matching fix before implementing new toolkit changes.
 Do not blindly merge branches or replace the pin during an experiment.

@@ -29,6 +29,9 @@ cmake --build build/project --config Release --parallel 4
 ./scripts/run-boot-probe.ps1 -Seconds 20
 ```
 
+Add `-TestPad` to expose a neutral controller entirely inside the game process.
+The current boot reaches a D3D swap wait; it does not yet display a game frame.
+
 The genuine system-D3D8 device probe builds separately with
 `cmake -S renderer -B build/dx8 -A Win32`. It is not yet a game renderer.
 See `docs/PROGRESS.md`, `docs/UPSTREAM-REVIEW.md` and `docs/GOAL.md` for evidence,

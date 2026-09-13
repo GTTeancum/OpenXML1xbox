@@ -1,0 +1,107 @@
+diff --git a/tools/recomp/test_flag_join.py b/tools/recomp/test_flag_join.py
+new file mode 100644
+index 0000000..74a9e84
+--- /dev/null
++++ b/tools/recomp/test_flag_join.py
+@@ -0,0 +1,39 @@
++"""Comparison snapshots must survive a join of different CMP operands."""
++from tools.recomp import config
++from tools.recomp.translator import FunctionTranslator, _merge_flag_states
++from tools.recomp.disasm import Operand
++
++BASE = 0x10000
++
++def translate_join(consumer=bytes.fromhex('0f95c0c3')):
++    # test ecx,ecx; jz alternate; cmp eax,edx; jmp join; nop;
++    # alternate: cmp ebx,esi; join: consumer.
++    image = bytes.fromhex('85c9740539d0eb039039f3') + consumer
++    config._install([config.Section('.text', BASE, len(image), 0, len(image), True)],
++                              entry_point=BASE, kernel_thunk_addr=BASE,
++                              origin='flag-join-test')
++    db = {BASE: {'start': hex(BASE), 'end': BASE + len(image),
++                 '_addr': BASE, 'size': len(image)}}
++    return FunctionTranslator(image, db).translate_function(BASE, db[BASE])
++
++def test_different_cmp_operands_join_for_setne():
++    code = translate_join()
++    assert 'CMP_NE(_fa, _fb)' in code, code
++    assert '_flags /* setne */' not in code
++
++def test_different_cmp_operands_join_for_cmovne():
++    code = translate_join(bytes.fromhex('0f45c7c3'))
++    assert 'if (CMP_NE(_fa, _fb)) eax = edi;' in code, code
++
++def test_unknown_path_is_not_guessed():
++    assert _merge_flag_states([None, ('cmp', [])]) is None
++
++def test_mixed_operations_are_not_guessed():
++    a = Operand(type='reg', reg='eax')
++    b = Operand(type='reg', reg='edx')
++    assert _merge_flag_states([('cmp', [a, b]), ('test', [a, b])]) is None
++
++def test_mixed_widths_are_not_guessed():
++    wide = [Operand(type='reg', reg='eax'), Operand(type='reg', reg='edx')]
++    narrow = [Operand(type='reg', reg='al'), Operand(type='reg', reg='dl')]
++    assert _merge_flag_states([('cmp', wide), ('cmp', narrow)]) is None
+diff --git a/tools/recomp/translator.py b/tools/recomp/translator.py
+index 09a9a5d..dd0e971 100644
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -23,7 +23,31 @@ from .config import va_to_file_offset, is_code_address
+ from . import config as _config
+ from .disasm import Disassembler
+ from .lifter import (Lifter, lift_basic_block, detect_seh_helpers,
+-                     detect_setjmp_helpers, _func_ident)
++                     detect_setjmp_helpers, _func_ident, _operand_width)
++
++
++def _merge_flag_states(states):
++    """Merge comparable snapshots without requiring identical source operands.
++
++    CMP/TEST save their operands into function-local _fa/_fb/_fas/_fbs at
++    runtime. A shared consumer can use whichever predecessor executed. Keep
++    operation and width equal because sign/parity handling depends on them;
++    arithmetic states still reconstruct operands and cannot use this merge.
++    """
++    if not states or any(not state or not state[0] for state in states):
++        return None
++    first = states[0]
++    if all(state == first for state in states[1:]):
++        return first
++    if first[0] not in ("cmp", "test") or len(first[1]) != 2:
++        return None
++    width = _operand_width(first[1][0]) or _operand_width(first[1][1])
++    for kind, ops in states[1:]:
++        if kind != first[0] or len(ops) != 2:
++            return None
++        if (_operand_width(ops[0]) or _operand_width(ops[1])) != width:
++            return None
++    return first
+ 
+ 
+ def write_if_changed(path, text):
+@@ -984,20 +1008,17 @@ class FunctionTranslator:
+                 # compile. The null statement costs nothing and is always valid.
+                 lines.append(f"loc_{bb.start:08X}: ;")
+ 
+-            # Inherit the flag state only when every predecessor agrees on it.
++            # Inherit agreed state, including compatible CMP/TEST snapshots
++            # whose source operands differ between predecessor paths.
+             # Blocks are walked in address order, so a back edge's predecessor
+             # may not be computed yet -- treat that as unknown rather than
+-            # guessing, which costs a fallback condition and never a wrong one.
++            # guessing at which operation produced the runtime flags.
+             sources = preds[bb.start]
+             if bb.start == start or not sources:
+                 incoming = None
+             elif all(p in out_state for p in sources):
+                 states = [out_state[p] for p in sources]
+-                incoming = states[0]
+-                for other in states[1:]:
+-                    if other != incoming:
+-                        incoming = None
+-                        break
++                incoming = _merge_flag_states(states)
+             else:
+                 incoming = None
+ 

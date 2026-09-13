@@ -68,6 +68,34 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   Full 256-MiB guest diagnostic snapshot is local at build/guest-failure.bin.
   This is a resource-setup failure, not a rendering or gameplay milestone.
 
+## Comparison joins, input, and first swap path
+
+- The boot-012 null resource was caused by generated sub_00138160. Eight distinct
+  comparisons converge on SETNE; the translator discarded their differing operand
+  identities and emitted `_flags`, initialized to zero. Compatible CMP/TEST
+  predecessors now share the existing runtime operand snapshots. Mixed operations,
+  widths and unknown predecessors remain unmerged.
+- Regression evidence: five Python join tests, plus 196 compiled/executed translated
+  SETNE/CMOVNE vectors across both paths; upstream suite 242 passed, 10 subtests.
+  Fix preserved separately in patches/xboxrecomp-flag-joins.patch. Both patches
+  apply cleanly to the pinned checkout; setup applies both idempotently.
+- boot-013 passes the resource setup, reads additional compressed assets, then
+  reaches Xbox USB initialization. Seven verified XDK input entry points now use
+  a native guest ABI shim over upstream Windows XInput, rather than Xbox USB drivers.
+- `run-boot-probe.ps1 -TestPad` exposes a neutral virtual pad inside this process.
+  The setter in guest_input.h can supply future scripted controls entirely within
+  the target process. No desktop or OS input injection is used.
+- Input test passes enumeration/change masks, opaque handle closure, 24-byte state
+  serialization with neighboring memory guards, feedback completion event and
+  stdcall cleanup. Its fake backend records zero host input/output calls.
+- boot-014 with the process-local pad runs to its 20-second watchdog, at 2,496,705
+  indirect calls. It waits in the D3D swap path: guest stack includes 0x00360100,
+  0x0036828B, 0x00368BBF, 0x00368BDE, 0x00368C92, game return 0x001BD9CF.
+  Device pointer 0x0036CB00; watchdog EDX 0x8007E000. See build/boot-014.log.
+- Next: observe D3D state/draw submissions and implement genuine DX8 presentation.
+  Neither frame submission nor a watchdog exit establishes visible/correct rendering.
+  No real game screenshot or verified audio milestone yet.
+
 ## Genuine DX8
 
 - System D3D8 is available to a 32-bit process; no 64-bit system DLL was found.

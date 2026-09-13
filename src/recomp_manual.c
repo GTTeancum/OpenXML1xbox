@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "xbox_memory_layout.h"
+#include "guest_input.h"
 extern volatile uint32_t g_icall_trace[16], g_icall_trace_idx;
 extern volatile uint64_t g_icall_count;
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_ebx, g_esi, g_edi, g_ebp, g_esp;
@@ -11,7 +12,7 @@ void xml1_guest_memmove(void);
 recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
 {
     if (xbox_va == 0x00342AA0) return xml1_guest_memmove;
-    return NULL;
+    return xml1_input_lookup(xbox_va);
 }
 
 /* Stop at the first unresolved call; skipped initialization is not success. */

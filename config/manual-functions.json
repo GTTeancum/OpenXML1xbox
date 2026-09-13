@@ -1,3 +1,10 @@
 {
-  "0x00342AA0": "xml1_guest_memmove"
+  "0x00342AA0": "xml1_guest_memmove",
+  "0x003BF897": "xml1_XInitDevices",
+  "0x003C0465": "xml1_XGetDevices",
+  "0x003C0487": "xml1_XGetDeviceChanges",
+  "0x003C0336": "xml1_XInputOpen",
+  "0x003C038C": "xml1_XInputClose",
+  "0x003C0398": "xml1_XInputGetState",
+  "0x003C040B": "xml1_XInputSetState"
 }
