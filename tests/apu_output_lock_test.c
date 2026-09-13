@@ -12,8 +12,9 @@ void xml1_apu_capture_transfer(unsigned kind,unsigned address,const void *data,u
 void xml1_apu_capture_gp(const uint32_t *samples) { (void)samples; }
 void xml1_apu_capture_source(unsigned voice,const float *samples,unsigned count,unsigned format,unsigned base,unsigned offset) { (void)voice;(void)samples;(void)count;(void)format;(void)base;(void)offset; }
 void mcpx_apu_monitor_frame(MCPXAPUState *);
+void mcpx_apu_monitor_idle(MCPXAPUState *);
 static MCPXAPUState *state;
-static int available,called;
+static int available,called,idle;
 static DWORD WINAPI probe(void *unused) {
     (void)unused; available=TryEnterCriticalSection(&state->lock.cs);
     if(available) LeaveCriticalSection(&state->lock.cs);
@@ -26,7 +27,7 @@ static void probe_lock(void) {
 }
 void recomp_apu_dsp_output(const int16_t *samples,unsigned frames) {
     if(frames!=256 || samples==&state->monitor.frame_buf[0][0]) abort();
-    for(unsigned i=0;i<512;++i) if(samples[i]!=(int16_t)(i-256)) abort();
+    for(unsigned i=0;i<512;++i) if(samples[i]!=(idle ? 0 : (int16_t)(i-256))) abort();
     probe_lock(); if(!available) abort();
     ++called;
 }
@@ -38,7 +39,17 @@ int main(void) {
     if(called!=1) return 2;
     probe_lock(); if(available) return 3;
     for(unsigned i=0;i<512;++i) if(((int16_t *)state->monitor.frame_buf)[i]) return 4;
+    idle=1;
+    for(unsigned phase=0;phase<8;++phase) {
+        state->ep_frame_div=phase;
+        for(unsigned i=0;i<512;++i) ((int16_t *)state->monitor.frame_buf)[i]=(int16_t)(i-256);
+        mcpx_apu_monitor_idle(state);
+        if(state->ep_frame_div!=(int)phase) return 5;
+        for(unsigned i=0;i<512;++i) if(((int16_t *)state->monitor.frame_buf)[i]!=(int16_t)(i-256)) return 6;
+        probe_lock(); if(available) return 7;
+    }
+    if(called!=9) return 8;
     qemu_mutex_unlock(&state->lock); DeleteCriticalSection(&state->lock.cs);free(state);
-    puts("PASS: completed PCM copied, device mutex released during output and reacquired afterward; no audio device");
+    puts("PASS: PCM output releases/reacquires device mutex; idle silence preserves all eight DSP phases and pending PCM; no audio device");
     return 0;
 }

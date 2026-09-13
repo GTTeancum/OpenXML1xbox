@@ -1,0 +1,39 @@
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -278,6 +278,19 @@
+             g_waveout.frames_written);
+ }
+ 
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++void mcpx_apu_monitor_idle(MCPXAPUState *d)
++{
++    /* Device pacing continues while the sound engine is stopped. Its DSP
++     * position and any partially completed monitor block must stay intact. */
++    extern void recomp_apu_dsp_output(const int16_t *samples,unsigned frames);
++    static const int16_t silence[256][2] = {0};
++    qemu_mutex_unlock(&d->lock);
++    recomp_apu_dsp_output(&silence[0][0],256);
++    qemu_mutex_lock(&d->lock);
++}
++#endif
++
+ void mcpx_apu_monitor_frame(MCPXAPUState *d)
+ {
+     if ((d->ep_frame_div + 1) % 8) {
+@@ -501,9 +514,16 @@
+             /* Full pipeline: VP voices → DSP → monitor → waveOut */
+             se_frame(d);
+         } else {
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++            /* A stopped sound engine must not advance the GP/EP sample
++             * position. Keep the device fed without changing DSP cadence or
++             * clearing a partially completed monitor block. */
++            mcpx_apu_monitor_idle(d);
++#else
+             /* Lightweight: just monitor frame (test tone + software mixer) */
+             mcpx_apu_monitor_frame(d);
+             d->ep_frame_div++;
++#endif
+         }
+         update_irq(d);
+         d->set_irq=false;
