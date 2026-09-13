@@ -9,9 +9,11 @@ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_ebx, g_esi, g_edi, g_ebp, g_es
 extern ptrdiff_t g_xbox_mem_offset;
 typedef void (*recomp_func_t)(void);
 void xml1_guest_memmove(void);
+void xml1_graphics_swap(void);
 recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
 {
     if (xbox_va == 0x00342AA0) return xml1_guest_memmove;
+    if (xbox_va == 0x00368BE0) return xml1_graphics_swap;
     return xml1_input_lookup(xbox_va);
 }
 

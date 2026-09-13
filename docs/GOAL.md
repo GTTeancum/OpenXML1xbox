@@ -19,5 +19,6 @@ Do not claim completion solely because the deadline is reached. Goal status tool
 do not expose a pause operation; report the deadline stop accurately rather than
 marking an unfinished goal complete.
 
-Current milestone: CPU/kernel initialization and game-data loading. Native game
-rendering and audio are pending; see PROGRESS.md for evidence and blockers.
+Current milestone: first legal splash presented from live guest execution through
+native Windows DX8. Startup then waits in Xbox audio DSP initialization. FMV,
+menu, level 1, audio and visual correctness remain unverified; see PROGRESS.md.

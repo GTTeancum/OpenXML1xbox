@@ -5,6 +5,7 @@
 #include <string.h>
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
 extern ptrdiff_t g_xbox_mem_offset;
+void xml1_graphics_live_observe(uint32_t va);
 
 static void dump_region(const char *path, uint32_t va, size_t bytes)
 {
@@ -23,6 +24,7 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    xml1_graphics_live_observe(va);
     static int enabled = -1;
     static FILE *calls;
     static unsigned count;

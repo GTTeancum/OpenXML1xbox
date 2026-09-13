@@ -139,3 +139,34 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Next: connect live guest submissions to the DX8 worker, replace the GPU swap
   wait with real frame completion, then advance startup with fail-fast diagnostics.
   Goal remains active with the original 2026-09-14 12:14:26 UTC cutoff.
+
+## Live DX8 presentation (2026-09-13 07:55 UTC)
+
+- Added a persistent x86 system-DX8 worker connected to the x64 game through a
+  process-specific local named pipe. The game packages actual draw-time state,
+  textures and vertices; Swap returns only after the worker presents the frame
+  and acknowledges it. This uses the upstream manual-function override mechanism.
+- The worker owns its hidden render window and captures only its own backbuffer.
+  A Windows job binds worker lifetime to the game process, including watchdog
+  termination. Verified neither process remained after the bounded boot.
+- Command: `scripts/run-boot-probe.ps1 -Seconds 20 -TestPad -LiveDX8`.
+  Build the x86 worker in build/renderer and the Release game in build/project.
+- boot-019-live-dx8.log: frame 1, two draws, 418,152 payload bytes; worker reports
+  successful Present. Inspected and posted build/dx8-live-frame-000001.bmp:
+  genuine live legal splash with XML1 art/logo/text.
+- Startup continues loading assets and allocating audio objects after Swap.
+  At the 20-second watchdog it is in DSOUND's DSP command path, with guest stack
+  00372A0F/00372A89/0036F56A/0036F729/00370689/001900EB. This differs from the
+  original GPU Swap wait. No second frame, FMV, menu or audio milestone yet.
+- Narrow renderer limitations remain explicit and fail-fast: current strip/FVF
+  0x142, single DXT3 texture, full black/depth-one clears before geometry. Other
+  draw, texture, clear, swap-flag and selected state paths need implementation.
+  Xbox swap callbacks/counters and subsequent GPU fence behavior are not yet
+  validated. A successful first frame does not establish those semantics.
+- Rechecked upstream branch and all-PR listings for audio/DSP/swap fixes:
+  main is still 3706cefa; the only other branch is unchanged. Audio PRs 31 and24
+  are already merged. The APU DSP source explicitly remains GP/EP passthrough;
+  its optional doorbell ACK computes no DSP results. Do not mistake enabling
+  that workaround for audio correctness. No ACK workaround was enabled here.
+- Next: integrate actual audio processing / DSP command behavior to advance
+  startup, while extending native DX8 support as new submissions are reached.

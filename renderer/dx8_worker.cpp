@@ -8,12 +8,20 @@ typedef BOOL WINBOOL;
 #include <cstdio>
 #include <cstring>
 #include "dx8_replay.h"
+#include <io.h>
+#include <fcntl.h>
 
 // Stage one: establish actual system D3D8 capabilities before defining the
 // Xbox-to-PC graphics bridge. This probe does not run or render game code.
 int main(int argc, char** argv) {
     const bool replayMode = argc == 4 && std::strcmp(argv[1], "--replay") == 0;
-    if (!replayMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
+    const bool liveMode = argc == 3 && std::strcmp(argv[1], "--stream") == 0;
+    if (liveMode) {
+        std::freopen("build/dx8-live.log","wb",stdout);
+        std::freopen("build/dx8-live-errors.log","wb",stderr);
+        std::setvbuf(stdout,nullptr,_IONBF,0);
+    }
+    if (!replayMode && !liveMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
         std::fprintf(stderr, "Usage: xml1-dx8-worker --probe | --replay packet.bin capture.bmp\n");
         return 2;
     }
@@ -62,6 +70,27 @@ int main(int argc, char** argv) {
     if (device && replayMode) {
         try { replay(device,argv[2],argv[3]); }
         catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
+    }
+    if (device && liveMode) {
+        try {
+            HANDLE pipe=CreateFileA(argv[2],GENERIC_READ|GENERIC_WRITE,0,nullptr,OPEN_EXISTING,0,nullptr);
+            if (pipe==INVALID_HANDLE_VALUE) throw std::runtime_error("Cannot connect live graphics pipe");
+            int fd=_open_osfhandle((intptr_t)pipe,_O_RDONLY|_O_BINARY);
+            FILE* input=fd>=0?_fdopen(fd,"rb"):nullptr;
+            if (!input) throw std::runtime_error("Cannot read graphics pipe");
+            for (unsigned frame=1;;++frame) {
+                int next=std::fgetc(input);
+                if (next==EOF) break;
+                std::ungetc(next,input);
+                char capture[128];
+                std::snprintf(capture,sizeof(capture),"build/dx8-live-frame-%06u.bmp",frame);
+                replay_stream(device,input,(frame==1||frame%60==0)?capture:nullptr,true);
+                DWORD ack=frame,written=0;
+                if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
+                if (frame==1||frame%60==0) std::printf("Presented live frame %u\n",frame);
+            }
+            std::fclose(input);
+        } catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
     }
     if (device) device->Release();
     if (window) DestroyWindow(window);

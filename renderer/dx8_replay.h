@@ -45,16 +45,14 @@ static void capture_backbuffer(IDirect3DDevice8* device, const char* path) {
     std::fclose(file); checked(surface->UnlockRect()); surface->Release();
     std::printf("Own DX8 backbuffer saved: %s\n", path);
 }
-static void replay(IDirect3DDevice8* device, const char* path, const char* capture) {
-    FILE* file = std::fopen(path, "rb");
-    if (!file) throw std::runtime_error("Cannot open replay");
+static void replay_stream(IDirect3DDevice8* device, FILE* file, const char* capture, bool live=false) {
     auto read = [&](void* dst, size_t bytes) {
         if (std::fread(dst,1,bytes,file) != bytes) throw std::runtime_error("Truncated replay");
     };
     char magic[8]; read(magic,8);
     if (std::memcmp(magic,"XMLDX8R1",8)) throw std::runtime_error("Invalid replay version");
     uint32_t count; read(&count,4);
-    if (!count || count>10000) throw std::runtime_error("Invalid draw count");
+    if ((!live && !count) || count>10000) throw std::runtime_error("Invalid draw count");
     checked(device->Clear(0,nullptr,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL,0,1.0f,0));
     checked(device->BeginScene());
     for (uint32_t n=0;n<count;++n) {
@@ -106,8 +104,16 @@ static void replay(IDirect3DDevice8* device, const char* path, const char* captu
         }
         checked(device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP,vertices-2,vb.data(),24));
         texture->Release();
-        std::printf("Replayed game draw %u: %u vertices, %ux%u DXT3\n",n+1,vertices,width,height);
+        if (!live) std::printf("Replayed game draw %u: %u vertices, %ux%u DXT3\n",n+1,vertices,width,height);
     }
-    std::fclose(file); checked(device->EndScene());
-    capture_backbuffer(device,capture);
+    checked(device->EndScene());
+    if (capture) capture_backbuffer(device,capture);
+    if (live) checked(device->Present(nullptr,nullptr,nullptr,nullptr));
+}
+static void replay(IDirect3DDevice8* device, const char* path, const char* capture) {
+    FILE* file = std::fopen(path,"rb");
+    if (!file) throw std::runtime_error("Cannot open replay");
+    try { replay_stream(device,file,capture); }
+    catch (...) { std::fclose(file); throw; }
+    std::fclose(file);
 }
