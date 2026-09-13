@@ -669,3 +669,20 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Rechecked upstream open PRs. NewPR46 implements presentation-only gamma ramps
   for the toolkit D3D11 backend; it does not explain localized movie blocks and
   does not apply directly to this native system-D3D8 renderer. PR47 remains open.
+
+
+## FIFO native renderer transport (boot110–111)
+
+- Added transport acquisition timing. boot110 proves rendering and background
+  vblank requests can wait hundreds of milliseconds behind the critical
+  section: observed flush453ms and vblank437ms near frame232. The shared pipe
+  must remain serialized, but lock reacquisition had no FIFO guarantee.
+- Replaced it with a ticket gate: each caller reserves its place before waiting,
+  so a repeated background request cannot overtake a queued flush/swap. Waiting
+  callers sleep1ms instead of spinning. Native regression queues16 own-process
+  threads and verifies exact FIFO execution, plus32-bit ticket rollover.
+- boot111 reaches the30-second bound3 with no transport wait at or above100ms
+  and no fatal guard. Presents reachframe300, but movie processing remains slow;
+  this does not prove real-time playback, synchronized audio or eliminate the
+  intermittent image artifacts. Further performance/decoder-lifetime and audio
+  resampling work remains. No repeat screenshot posted.

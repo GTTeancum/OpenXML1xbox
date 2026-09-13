@@ -21,6 +21,8 @@ target_sources(xbox_apu PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/ac97_registers.
 target_link_libraries(xbox_apu PUBLIC xml1-dsp)
 target_compile_options(xbox_apu PRIVATE /UNDEBUG)
 add_executable(apu-dsp-test tests/apu_dsp_test.c)
+add_executable(fair-gate-test tests/fair_gate_test.c)
+target_include_directories(fair-gate-test PRIVATE src)
 add_executable(guest-fist-test tests/guest_fist_test.c)
 target_include_directories(guest-fist-test PRIVATE external/xboxrecomp/templates/runtime external/xboxrecomp/src)
 add_executable(guest-physical-test tests/guest_physical_test.c src/guest_physical.c)
