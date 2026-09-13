@@ -52,6 +52,19 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    /* Read-only CRI audio diagnostics. Addresses come from error-string
+       references and call targets in the supplied executable. */
+    static int adx_trace=-1;
+    if(adx_trace<0) adx_trace=getenv("XML1_TRACE_ADX")!=NULL;
+    if(adx_trace && (va==0x305E20 || va==0x309F00 || va==0x306590 || va==0x30C9C0)
+       && g_esp<xbox_GetMappedSize()-20) {
+        static unsigned reports;
+        if(++reports<=160) {
+            const uint32_t *stack=(const uint32_t *)((uintptr_t)g_xbox_mem_offset+g_esp);
+            fprintf(stderr,"[ADX TRACE] va=%08X caller=%08X args=%08X/%08X/%08X/%08X\n",
+                    va,stack[0],stack[1],stack[2],stack[3],stack[4]);
+        }
+    }
     /* Script bindings identified from the supplied XBE's function/name/type
        table. Observe the original calls; do not alter script or fade state. */
     static int script_trace=-1;

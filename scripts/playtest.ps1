@@ -24,7 +24,11 @@ $settings = @{
 }
 foreach ($name in $settings.Keys) {
     $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
-    [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process')
+    if ($null -eq $settings[$name]) {
+        Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+    } else {
+        [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process')
+    }
 }
 $log = Join-Path $projectRoot ('build/human-playtest-{0}.log' -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
 Write-Host 'OpenXML1 human playtest: connect an XInput controller before starting.'
@@ -43,6 +47,10 @@ try {
 } finally {
     Pop-Location
     foreach ($name in $settings.Keys) {
-        [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process')
+        if ($null -eq $saved[$name]) {
+            Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+        } else {
+            [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process')
+        }
     }
 }
