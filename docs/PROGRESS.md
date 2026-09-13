@@ -1248,3 +1248,33 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Saved actual submitted PCM/timeline as work/boot166-dsp.pcm and .csv for
   subsequent audio diagnosis. Scratchiness is not fixed or certified absent.
   Full traversal and the black-world human transition remain unresolved.
+
+## 2026-09-13: conditional DSP ALU defect isolated; audio still unresolved
+
+- Offline EP tracing of boot152 shows X:$636 initialization flag=1 and the
+  original filter clearing its history every256 samples. Actual submitted
+  PCM has a boundary discontinuity absent from captured GP output/EP input.
+  EXTRACTU offset/width semantics match DSP56300FM Rev.5 pp.13-72/73.
+- Found a separate, demonstrable interpreter decode defect: IFcc/IFcc.U
+  encodings were treated as register-to-register parallel moves. A false
+  TFR X0,A IFEQ executed, and CLR A IFGE incorrectly reset the six-frame
+  firmware control counter. Implemented conditional ALU dispatch using the
+  existing predicate evaluator, preserving CCR for IFcc and updating only
+  for true IFcc.U, per the manual pp.13-74/75. The import script reproduces it.
+- New8192-vector test covers every CCR value, all16 predicates, both update
+  modes, and destination preservation. It fails before the fix and passes
+  afterward, alongside640 arithmetic,17040 EXTRACTU, DMA and bootstrap cases.
+- Diagnostic build and boot167 complete the60-second bound (exit3), render
+  FMV, and produce57.11seconds of PCM without fatal errors. The human/optimized
+  executable remains unchanged. Local captures: work/boot167-dsp.pcm and
+  work/boot167-transfers.bin; trace work/filter-boundary-replay/trace-fixed.log.
+- This is NOT an audio-fidelity fix: fresh EP replay still has descriptor
+  flags008002 and filter initialization=1. The firmware's BC3=2 path enters
+  P:$304 with B1=1 after API6, whose DMA helper leaves N5 in B. The conditional
+  fix does correct the counter but does not clear this separate reset path.
+  Replay validates transfers through10000frames, then reaches its diagnostic
+  limit; it is not a complete replay of the57-second capture.
+- Fresh waveform correlation is lower (~0.21-0.32 absolute in selected
+  comparisons) and discontinuities persist. Do not certify scratchiness
+  resolved or silently bypass the original filter. Black-world transition
+  remains separately unresolved, with prior human evidence preserved.

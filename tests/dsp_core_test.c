@@ -62,6 +62,35 @@ static unsigned extractu_tests(DSPState *d) {
     }
     return cases;
 }
+static unsigned conditional_tests(DSPState *d) {
+    unsigned cases=0;
+    /* DSP56300FM Rev.5 pp.13-74/75: IFcc preserves CCR; IFcc.U updates
+       it only on a true condition. Exercise all CCR values and predicates. */
+    for(unsigned sr=0;sr<256;++sr) for(unsigned cc=0;cc<16;++cc)
+    for(unsigned update=0;update<2;++update) {
+        unsigned c=sr&1,v=(sr>>1)&1,z=(sr>>2)&1,n=(sr>>3)&1;
+        unsigned u=(sr>>4)&1,e=(sr>>5)&1,l=(sr>>6)&1;
+        unsigned predicates[8]={!c,n==v,!z,!n,!(z||(!u&&!e)),!e,!l,!z&&(n==v)};
+        unsigned take=cc<8?predicates[cc]:!predicates[cc-8];
+        dsp_reset(d); dsp_sync_to_vm(d);
+        d->core.pc=0; d->core.registers[DSP_REG_SR]=sr;
+        d->core.registers[DSP_REG_A2]=0x12;
+        d->core.registers[DSP_REG_A1]=0x345678;
+        d->core.registers[DSP_REG_A0]=0xabcdef;
+        d->core.registers[DSP_REG_B1]=0x987654;
+        dsp_sync_from_vm(d);
+        dsp_write_memory(d,'P',0,0x202013|(update<<12)|(cc<<8)); /* CLR A IFcc[.U] */
+        dsp_step(d); dsp_sync_to_vm(d);
+        CHECK(d->core.pc==1);
+        CHECK(d->core.registers[DSP_REG_A2]==(take?0:0x12));
+        CHECK(d->core.registers[DSP_REG_A1]==(take?0:0x345678));
+        CHECK(d->core.registers[DSP_REG_A0]==(take?0:0xabcdef));
+        CHECK(d->core.registers[DSP_REG_B1]==0x987654);
+        CHECK(d->core.registers[DSP_REG_SR]==(take&&update?((sr&0xc1)|0x14):sr));
+        ++cases;
+    }
+    return cases;
+}
 int main(void) {
     DSPState *d=dsp_init(scratch,memory,fifo,true); CHECK(d);
     dsp_sync_to_vm(d); CHECK(d->core.is_gp);
@@ -85,6 +114,7 @@ int main(void) {
         CHECK(d->core.registers[dest?DSP_REG_B2:DSP_REG_A2]==(((uint64_t)expected>>24)&255));
         ++cases;
     }
+    unsigned conditionals=conditional_tests(d);
     unsigned extracts=extractu_tests(d);
     memset(scratch,0x5A,sizeof(scratch));
     const uint32_t data[4]={0x123456,0xABCDEF,0x800001,0xFFFFFF};
@@ -101,5 +131,6 @@ int main(void) {
     dsp_destroy(d);
     printf("PASS: %u executed DSP arithmetic vectors, bidirectional scratch DMA with guards, bootstrap masking (%u transfers).\n",cases,transfers);
     printf("PASS: %u EXTRACTU vectors including flags, field boundaries and accumulator aliasing.\n",extracts);
+    printf("PASS: %u conditional ALU vectors.\n",conditionals);
     return 0;
 }

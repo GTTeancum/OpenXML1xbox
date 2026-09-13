@@ -5343,6 +5343,20 @@ static void emu_pm_2(dsp_core_t* dsp)
     0010 00ee eeed dddd S,D
     001d dddd iiii iiii #xx,D
 */
+    /* DSP56300FM Rev.5 pp.13-74/75: conditional ALU prefixes occupy
+       encodings that are not register-to-register parallel moves. */
+    if ((dsp->cur_inst & 0xffe000) == 0x202000) {
+        uint32_t saved_sr = dsp->registers[DSP_REG_SR];
+        if (emu_calc_cc(dsp, (dsp->cur_inst >> 8) & 15)) {
+            opcodes_alu[dsp->cur_inst & BITMASK(8)](dsp);
+            if (!(dsp->cur_inst & 0x1000)) {
+                dsp->registers[DSP_REG_SR] =
+                    (dsp->registers[DSP_REG_SR] & ~0xffu) | (saved_sr & 0xffu);
+            }
+        }
+        return;
+    }
+
     if ((dsp->cur_inst & 0xffff00) == 0x200000) {
         /* Execute parallel instruction */
         opcodes_alu[dsp->cur_inst & BITMASK(8)](dsp);

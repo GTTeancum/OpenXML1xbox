@@ -44,7 +44,25 @@ c_backend.write_text(c_backend.read_text(encoding='utf-8').replace('    core->op
 core_header = dest/'interp/dsp_cpu.h'
 core_header.write_text(core_header.read_text(encoding='utf-8').replace('    bool is_gp;', '    uint32_t history[64][7];\n    unsigned history_cursor;\n    bool is_gp;'), encoding='utf-8')
 emu = dest/'interp/dsp_emu.c.inc'
-emu.write_text(emu.read_text(encoding='utf-8') + '\n' + (root/'src/dsp_extractu.c.inc').read_text(encoding='utf-8'), encoding='utf-8')
+emu_text = emu.read_text(encoding='utf-8')
+conditional_anchor = '    if ((dsp->cur_inst & 0xffff00) == 0x200000) {'
+assert emu_text.count(conditional_anchor) == 1
+emu_text = emu_text.replace(conditional_anchor, '''    /* DSP56300FM Rev.5 pp.13-74/75: conditional ALU prefixes occupy
+       encodings that are not register-to-register parallel moves. */
+    if ((dsp->cur_inst & 0xffe000) == 0x202000) {
+        uint32_t saved_sr = dsp->registers[DSP_REG_SR];
+        if (emu_calc_cc(dsp, (dsp->cur_inst >> 8) & 15)) {
+            opcodes_alu[dsp->cur_inst & BITMASK(8)](dsp);
+            if (!(dsp->cur_inst & 0x1000)) {
+                dsp->registers[DSP_REG_SR] =
+                    (dsp->registers[DSP_REG_SR] & ~0xffu) | (saved_sr & 0xffu);
+            }
+        }
+        return;
+    }
+
+''' + conditional_anchor)
+emu.write_text(emu_text + '\n' + (root/'src/dsp_extractu.c.inc').read_text(encoding='utf-8'), encoding='utf-8')
 cpu = dest/'interp/dsp_cpu.c'
 cpu_text = cpu.read_text(encoding='utf-8').replace('"extractu #CO, S2, D", NULL, NULL', '"extractu #CO, S2, D", NULL, emu_extractu_imm')
 cpu_text = cpu_text.replace('    dsp->cur_inst = read_memory_p(dsp, dsp->pc);', '''    dsp->cur_inst = read_memory_p(dsp, dsp->pc);
@@ -82,7 +100,8 @@ enables launch-time XML1_DSP_JIT=ep or1 comparison, without UI settings or live
 backend switching. Narrow qemu compatibility headers provide allocation/endian helpers;
 trace event macros are disabled. DSP instructions and DMA operations retain
 upstream implementations except the EXTRACTU immediate extension imported from
-src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics).
+src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics),
+and IFcc/IFcc.U conditional ALU decoding (DSP56300FM Rev.5 pp.13-74/75).
 Y-memory bounds failures log register/program context before the original assert.
 Standalone CMake and tests are project additions.
 ''',encoding='utf-8')

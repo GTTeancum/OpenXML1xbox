@@ -11,6 +11,7 @@ enables launch-time XML1_DSP_JIT=ep or1 comparison, without UI settings or live
 backend switching. Narrow qemu compatibility headers provide allocation/endian helpers;
 trace event macros are disabled. DSP instructions and DMA operations retain
 upstream implementations except the EXTRACTU immediate extension imported from
-src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics).
+src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics),
+and IFcc/IFcc.U conditional ALU decoding (DSP56300FM Rev.5 pp.13-74/75).
 Y-memory bounds failures log register/program context before the original assert.
 Standalone CMake and tests are project additions.
