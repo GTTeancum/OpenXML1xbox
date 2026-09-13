@@ -1,0 +1,249 @@
+diff --git a/src/kernel/CMakeLists.txt b/src/kernel/CMakeLists.txt
+index 90060bd..062d8d8 100644
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -19,6 +19,7 @@ set(KERNEL_SOURCES
+     kernel_crypto.c
+     kernel_thunks.c
+     kernel_bridge.c
++    guest_vmem.c
+     xbox_memory_layout.c
+     icall_feedback.c
+     recomp_trace.c
+diff --git a/src/kernel/guest_vmem.c b/src/kernel/guest_vmem.c
+new file mode 100644
+index 0000000..ebcb7ed
+--- /dev/null
++++ b/src/kernel/guest_vmem.c
+@@ -0,0 +1,93 @@
++#include "guest_vmem.h"
++#include "xbox_memory_layout.h"
++#include <string.h>
++extern ptrdiff_t g_xbox_mem_offset;
++
++#define USER_END 0x7FFE0000u
++#define PAGE 4096u
++#define COMMIT 0x1000u
++#define RESERVE 0x2000u
++#define FREE 0x10000u
++#define INVALID 0xC000000Du
++#define CONFLICT 0xC0000018u
++typedef struct { uint32_t owner, state, protect, initial_protect; } vm_page;
++/* Metadata costs 8 MiB; guest address backing is separately configured. */
++static vm_page pages[USER_END / PAGE];
++
++int guest_vmem_allocate(uint32_t *base, uint32_t *size, uint32_t type,
++                        uint32_t protect, uint32_t *status)
++{
++    if (*base < g_xbox_total_ram) return 0;
++    *status = INVALID;
++    uint64_t end64 = ((uint64_t)*base + *size + PAGE - 1) & ~(uint64_t)(PAGE - 1);
++    uint32_t start = *base & ~((type & RESERVE) ? 0xFFFFu : PAGE - 1);
++    if (!*size || (type != RESERVE && type != COMMIT && type != (RESERVE | COMMIT)) ||
++        start < g_xbox_total_ram || end64 > USER_END || end64 <= start) return 1;
++    if (end64 > g_xbox_map_size) { *status = 0xC0000017u; return 1; }
++    uint32_t end = (uint32_t)end64;
++    uint32_t owner = pages[start / PAGE].owner;
++    for (uint32_t p = start / PAGE; p < end / PAGE; ++p) {
++        if ((type & RESERVE) ? pages[p].state != 0 :
++            (!owner || pages[p].owner != owner)) { *status = CONFLICT; return 1; }
++    }
++    if (type & RESERVE) owner = start;
++    for (uint32_t p = start / PAGE; p < end / PAGE; ++p) {
++        if ((type & COMMIT) && pages[p].state != COMMIT)
++            memset((void *)((uintptr_t)g_xbox_mem_offset + p * PAGE), 0, PAGE);
++        pages[p].owner = owner;
++        if (type & RESERVE) pages[p].initial_protect = protect;
++        pages[p].state = (type & COMMIT) ? COMMIT : RESERVE;
++        pages[p].protect = (type & COMMIT) ? protect : 0;
++    }
++    *base = start; *size = end - start; *status = 0;
++    return 1;
++}
++
++int guest_vmem_query(uint32_t address, uint32_t info[7])
++{
++    if (address < g_xbox_total_ram || address >= USER_END) return 0;
++    uint32_t start = address & ~(PAGE - 1);
++    vm_page first = pages[start / PAGE];
++    uint32_t end = start + PAGE;
++    while (end < USER_END) {
++        vm_page *next = &pages[end / PAGE];
++        if (next->owner != first.owner || next->state != first.state ||
++            next->protect != first.protect) break;
++        end += PAGE;
++    }
++    info[0] = start; info[1] = first.owner;
++    info[2] = first.initial_protect; info[3] = end - start;
++    info[4] = first.state ? first.state : FREE;
++    info[5] = first.protect; info[6] = first.state ? 0x20000 : 0;
++    return 1;
++}
++
++int guest_vmem_free(uint32_t *base, uint32_t *size, uint32_t type,
++                    uint32_t *status)
++{
++    if (*base < g_xbox_total_ram) return 0;
++    *status = INVALID;
++    if (*base >= USER_END) return 1;
++    uint32_t start = *base & ~(PAGE - 1), end;
++    uint32_t owner = pages[start / PAGE].owner;
++    if (!owner) return 1;
++    if (type == 0x8000) {
++        if (*size || *base != owner) return 1;
++        end = start;
++        while (end < USER_END && pages[end / PAGE].owner == owner) end += PAGE;
++    } else if (type == 0x4000) {
++        uint64_t finish = ((uint64_t)*base + *size + PAGE - 1) & ~(uint64_t)(PAGE - 1);
++        if (!*size || finish > USER_END) return 1;
++        end = (uint32_t)finish;
++        for (uint32_t p = start / PAGE; p < end / PAGE; ++p)
++            if (pages[p].owner != owner) return 1;
++    } else return 1;
++    for (uint32_t p = start / PAGE; p < end / PAGE; ++p) {
++        if (pages[p].state == COMMIT)
++            memset((void *)((uintptr_t)g_xbox_mem_offset + p * PAGE), 0, PAGE);
++        if (type == 0x8000) memset(&pages[p], 0, sizeof(pages[p]));
++        else { pages[p].state = RESERVE; pages[p].protect = 0; }
++    }
++    *base = start; *size = end - start; *status = 0;
++    return 1;
++}
+diff --git a/src/kernel/guest_vmem.h b/src/kernel/guest_vmem.h
+new file mode 100644
+index 0000000..4bb479f
+--- /dev/null
++++ b/src/kernel/guest_vmem.h
+@@ -0,0 +1,10 @@
++#pragma once
++#include <stdint.h>
++
++/* Extended user VA allocations backed by the distinct mapping above RAM.
++ * Return 1 when handled, 0 to use the legacy below-RAM implementation. */
++int guest_vmem_allocate(uint32_t *base, uint32_t *size, uint32_t type,
++                        uint32_t protect, uint32_t *status);
++int guest_vmem_query(uint32_t address, uint32_t info[7]);
++int guest_vmem_free(uint32_t *base, uint32_t *size, uint32_t type,
++                    uint32_t *status);
+diff --git a/src/kernel/kernel_bridge.c b/src/kernel/kernel_bridge.c
+index 6dc5ce3..2c40c9b 100644
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -27,6 +27,7 @@
+ 
+ #include "kernel.h"
+ #include "xbox_memory_layout.h"
++#include "guest_vmem.h"
+ #include "recomp_icall_feedback.h"
+ #include <stdio.h>
+ /* stdlib.h is load-bearing, not tidiness. Without it C89 implicit declaration
+@@ -751,6 +752,18 @@ static void bridge_NtAllocateVirtualMemory(void)
+     uint32_t size = size_ptr ? BRIDGE_MEM32(size_ptr) : 0;
+     /* Read the base address hint (0 = let kernel choose) */
+     uint32_t base_hint = base_ptr ? BRIDGE_MEM32(base_ptr) : 0;
++    uint32_t vm_status;
++    if (base_ptr && size_ptr &&
++        guest_vmem_allocate(&base_hint, &size, alloc_type, protect, &vm_status)) {
++        if (!vm_status) {
++            BRIDGE_MEM32(base_ptr) = base_hint;
++            BRIDGE_MEM32(size_ptr) = size;
++        }
++        fprintf(stderr, "  [VM] allocate base=%08X size=%u type=%X status=%08X\n",
++                base_hint, size, alloc_type, vm_status);
++        g_eax = vm_status;
++        return;
++    }
+ 
+     if (KERNEL_LOG_ON()) {
+         fprintf(stderr, "  [KERNEL] NtAllocateVirtualMemory: base=0x%08X size=%u type=0x%X prot=0x%X\n",
+@@ -929,11 +942,25 @@ static void bridge_NtQueryVirtualMemory(void)
+     uint32_t info_va = STACK_ARG(1);
+     uint32_t page_base = base_va & ~0xFFFu;
+ 
+-    if (!info_va) {
++    /* The guest VirtualQuery wrapper scans until failure. Success above the
++     * user VMA range makes its 32-bit cursor wrap and scan forever (XML1's
++     * Alchemy memory statistics). This is a guest boundary, not a host query.
++     * Xbox user space ends at 0x7FFEFFFF; allocation/query VMA bases are capped
++     * one 64-KiB allocation unit below that (see Cxbx AddressRanges.h).
++     */
++    const uint32_t user_vma_end = 0x7FFE0000u;
++    if (!info_va || base_va >= user_vma_end) {
+         g_eax = 0xC000000Du;               /* STATUS_INVALID_PARAMETER */
+         return;
+     }
+ 
++    uint32_t vm_info[7];
++    if (guest_vmem_query(base_va, vm_info)) {
++        for (unsigned i = 0; i < 7; ++i) BRIDGE_MEM32(info_va + i * 4) = vm_info[i];
++        g_eax = 0;
++        return;
++    }
++
+     BRIDGE_MEM32(info_va + 0x00) = page_base;          /* BaseAddress */
+     BRIDGE_MEM32(info_va + 0x04) = page_base;          /* AllocationBase */
+     BRIDGE_MEM32(info_va + 0x08) = 0x04;               /* PAGE_READWRITE */
+@@ -944,7 +971,11 @@ static void bridge_NtQueryVirtualMemory(void)
+         BRIDGE_MEM32(info_va + 0x0C) = XBOX_TOTAL_RAM - page_base; /* RegionSize */
+         BRIDGE_MEM32(info_va + 0x10) = 0x1000;         /* MEM_COMMIT */
+     } else {
+-        BRIDGE_MEM32(info_va + 0x0C) = 0x1000;
++        /* Return the remaining contiguous free range rather than millions of
++         * individual pages. Preserve the existing flat committed RAM model. */
++        BRIDGE_MEM32(info_va + 0x0C) = page_base < g_xbox_code_lo
++            ? (g_xbox_code_lo & ~0xFFFu) - page_base
++            : user_vma_end - page_base;
+         BRIDGE_MEM32(info_va + 0x10) = 0x10000;        /* MEM_FREE */
+         BRIDGE_MEM32(info_va + 0x08) = 0;
+         BRIDGE_MEM32(info_va + 0x18) = 0;
+@@ -965,6 +996,17 @@ static void bridge_NtFreeVirtualMemory(void)
+     uint32_t base_ptr = STACK_ARG(0);
+     uint32_t size_ptr = STACK_ARG(1);
+     uint32_t free_type = STACK_ARG(2);
++    uint32_t base = base_ptr ? BRIDGE_MEM32(base_ptr) : 0;
++    uint32_t size = size_ptr ? BRIDGE_MEM32(size_ptr) : 0;
++    uint32_t status;
++    if (base_ptr && size_ptr && guest_vmem_free(&base, &size, free_type, &status)) {
++        if (!status) {
++            BRIDGE_MEM32(base_ptr) = base;
++            BRIDGE_MEM32(size_ptr) = size;
++        }
++        g_eax = status;
++        return;
++    }
+ 
+     g_eax = (uint32_t)xbox_NtFreeVirtualMemory(
+         XBOX_TO_NATIVE(base_ptr), XBOX_TO_NATIVE(size_ptr), free_type);
+diff --git a/src/kernel/xbox_memory_layout.h b/src/kernel/xbox_memory_layout.h
+index 90dbd7c..f891cbc 100644
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -388,25 +388,9 @@ extern RECOMP_TLS uint32_t g_fs_base;
+ /** Base VA of the dynamic heap area (above stack). */
+ #define XBOX_HEAP_BASE      (XBOX_STACK_BASE + XBOX_STACK_SIZE)  /* 0x00F80000 */
+ 
+-/** Exclusive top of the dynamic heap: the end of RAM for this run. Runtime,
+- *  not a macro, because RAM size is now configurable (retail 64 MB vs devkit
+- *  128 MB). The total mapped region (data + stack + heap) equals RAM so the
+- *  engine's memory probing stops at the correct boundary. */
+-/* The heap runs to the end of the *mapped* range, not the end of RAM.
+- *
+- * When a title maps more address space than it has RAM, a large
+- * MEM_RESERVE has to come from somewhere. Carving it out of a separate
+- * arena above the heap looked tidy and was wrong: the guest CRT's own
+- * bookkeeping never learns about that region, so realloc's block lookup
+- * fails for a pointer in it and the copy is skipped -- a grown buffer
+- * comes back empty with the old one still intact. Half-Life 2 loses a
+- * 129-node CUtlRBTree that way, and the tree then self-cycles.
+- *
+- * Letting the ordinary heap serve the whole mapped range keeps every
+- * allocation inside one allocator the guest already understands.
+- */
+-#define XBOX_HEAP_TOP       ((uint32_t)(g_xbox_map_size ? g_xbox_map_size \
+-                                                        : g_xbox_total_ram))
++/* XML1 tracks extended reservations separately; the physical heap must not
++ * grow into that arena or two allocators can hand out the same guest pages. */
++#define XBOX_HEAP_TOP       ((uint32_t)g_xbox_total_ram)
+ 
+ /** No static mirror/guard region. RAM mirror is handled via file mapping
+  *  views that alias the same physical pages as the base 64 MB region. */

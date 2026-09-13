@@ -16,4 +16,6 @@
 - Final Windows D3D8 backend is not implemented by this setup.
 - ISO, XBE audit, game code generation and runtime validation remain pending.
 
-No application window, desktop capture or input automation was used.
+The entries above record initial setup only. Subsequent ISO import, diagnostic
+execution, native D3D8 probe and local toolkit patches are documented in PROGRESS.md.
+No desktop capture or host input automation has been used.

@@ -1,0 +1,8 @@
+[
+  { "start": "0x0022E280", "reason": "boot-009 callback target; decoded aligned entry after ret" },
+  { "start": "0x00194890", "reason": "boot-008 vtable target; SEH prologue after int3 padding" },
+  { "start": "0x001E05B0", "reason": "boot-010 vtable target; aligned .text entry after int3 padding" },
+  { "start": "0x0020CC80", "reason": "static rdata vtable target in an uncovered .text gap; aligned entry after int3 padding, decoded thiscall save/setup" },
+  { "start": "0x0035E120", "reason": "boot-011 target; XbSymbolDatabase 20eced5 identifies D3DDevice_SetRenderState_VertexBlend" },
+  { "start": "0x0035EF90", "reason": "XbSymbolDatabase 20eced5 identifies D3DDevice_SetRenderState_SampleAlpha in an uncovered D3D code gap" }
+]
