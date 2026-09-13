@@ -264,3 +264,19 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
 - Existing DSP vectors pass with diagnostic history enabled. No new screen or
   audio-correctness claim. Encoded output remains unsupported and its DSP memory
   issue remains recorded rather than suppressed.
+
+## GPU fence evidence (2026-09-13)
+
+- boot-032/033 shows the live worker presented two frames before the wait.
+  Both submissions have next fence=9 and completion=3. The wait targets fence9,
+  flags10, called from003601C3, with zero pending native draw packets.
+- The original InsertFence routine0035FD20 writes semaphore commands containing
+  the current counter, records the fence/push-buffer pair and increments by2.
+  The wait inserts a fence when its target equals the next counter. Completion
+  is polled through device+30 (8007E000 here). The original flush0035FC00 is the
+  relevant point to connect an acknowledgement for already submitted work.
+- Captured the worker's first eight frames for diagnosis (still post only new
+  content). Inspected frame2; it shows the same legal splash, not a new milestone.
+- Do not simply skip the wait. Next implementation must tie fence signalling to
+  native DX8 completion, including a flush without Present, and refuse unsupported
+  pending work. Current Present acknowledgement alone does not update guest fences.

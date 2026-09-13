@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
                 std::ungetc(next,input);
                 char capture[128];
                 std::snprintf(capture,sizeof(capture),"build/dx8-live-frame-%06u.bmp",frame);
-                replay_stream(device,input,(frame==1||frame%60==0)?capture:nullptr,true);
+                replay_stream(device,input,(frame<=8||frame%60==0)?capture:nullptr,true);
                 DWORD ack=frame,written=0;
                 if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                 if (frame==1||frame%60==0) std::printf("Presented live frame %u\n",frame);

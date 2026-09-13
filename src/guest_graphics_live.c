@@ -62,6 +62,15 @@ static void connect_worker(void) {
 void xml1_graphics_live_observe(uint32_t va) {
     if (!live()||va<0x35ADA0||va>=0x36F300) return;
     const uint32_t *a=guest(g_esp+4,32);
+    if (va==0x35FDE0) {
+        static unsigned logged;
+        if (logged++<8) {
+            uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
+            const uint32_t *d=guest(device,0x40);
+            fprintf(stderr,"[DX8 FENCE] target=%08X flags=%08X latest=%08X completion_ptr=%08X completion=%08X frames=%u pending_draws=%u caller=%08X\n",
+                a[0],a[1],d[0x2c/4],d[0x30/4],*(uint32_t*)guest(d[0x30/4],4),frames,draws,*(uint32_t*)guest(g_esp,4));
+        }
+    }
     if (va==0x35AE90) {
         if (a[0]>=10) fatal("invalid transform");
         memcpy(matrices[a[0]],guest(a[1],64),64); matrix_mask|=1u<<a[0];
@@ -114,6 +123,12 @@ void xml1_graphics_swap(void) {
     if (!live()) fatal("Swap requires XML1_LIVE_DX8=1 (trace mode stops before Swap)");
     uint32_t flags=*(uint32_t*)guest(g_esp+4,4);
     if (flags) fatal("unimplemented swap flags");
+    if (frames<8) {
+        uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
+        const uint32_t *d=guest(device,0x40);
+        fprintf(stderr,"[DX8 SUBMIT] frame=%u latest_fence=%08X completed=%08X draws=%u\n",
+            frames+1,d[0x2c/4],*(uint32_t*)guest(d[0x30/4],4),draws);
+    }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
     send_bytes("XMLDX8R1",8); send_bytes(&draws,4); send_bytes(packet,used);
     DWORD ack=0,bytes=0;
