@@ -56,13 +56,21 @@ void xml1_graphics_observe(uint32_t va)
        references and call targets in the supplied executable. */
     static int adx_trace=-1;
     if(adx_trace<0) adx_trace=getenv("XML1_TRACE_ADX")!=NULL;
-    if(adx_trace && (va==0x305E20 || va==0x309F00 || va==0x306590 || va==0x30C9C0)
+    if(adx_trace && (va==0x305E20 || va==0x309F00 || va==0x306590 || va==0x30C9C0
+                    || va==0x30B460 || va==0x30B990 || va==0x30B080 || va==0x30AC80)
        && g_esp<xbox_GetMappedSize()-20) {
         static unsigned reports;
         if(++reports<=160) {
             const uint32_t *stack=(const uint32_t *)((uintptr_t)g_xbox_mem_offset+g_esp);
             fprintf(stderr,"[ADX TRACE] va=%08X caller=%08X args=%08X/%08X/%08X/%08X\n",
                     va,stack[0],stack[1],stack[2],stack[3],stack[4]);
+            if((va==0x30B460 || va==0x30B990 || va==0x30B080) && stack[1]
+               && stack[1]<xbox_GetMappedSize()-0x58) {
+                const uint32_t *object=(const uint32_t *)((uintptr_t)g_xbox_mem_offset+stack[1]);
+                fprintf(stderr,"[ADX MIX STATE] object=%08X mode=%u output_channels=%u input_channels=%u pan=%d/%d flags=%08X\n",
+                        stack[1],object[3],object[0x2C/4],object[0x30/4],
+                        (int32_t)object[0x44/4],(int32_t)object[0x48/4],object[0x4C/4]);
+            }
         }
     }
     /* Script bindings identified from the supplied XBE's function/name/type
