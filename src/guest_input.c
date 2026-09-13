@@ -15,15 +15,22 @@ static uint32_t handles[4], generation, previous_mask;
 static uint32_t test_connected;
 static XBOX_INPUT_STATE test_states[4];
 static uint32_t test_press_frame;
+static uint32_t test_move_frame;
 
 void xml1_input_test_frame(uint32_t frame)
 {
-    if(!test_mode || !test_press_frame) return;
-    if(frame==test_press_frame || frame==test_press_frame+12) {
+    if(!test_mode) return;
+    if(test_press_frame && (frame==test_press_frame || frame==test_press_frame+12)) {
         XBOX_GAMEPAD state={0};
         state.bAnalogButtons[XBOX_BUTTON_A]=frame==test_press_frame?255:0;
         xml1_input_test_state(0,1,&state);
         fprintf(stderr,"[INPUT TEST] frame=%u A=%u (process-local only)\n",frame,state.bAnalogButtons[XBOX_BUTTON_A]);
+    }
+    if(test_move_frame && (frame==test_move_frame || frame==test_move_frame+60)) {
+        XBOX_GAMEPAD state={0};
+        state.sThumbLX=frame==test_move_frame?32767:0;
+        xml1_input_test_state(0,1,&state);
+        fprintf(stderr,"[INPUT TEST] frame=%u left-stick-X=%d (process-local only)\n",frame,state.sThumbLX);
     }
 }
 
@@ -86,6 +93,15 @@ void xml1_XInitDevices(void)
             fprintf(stderr,"[FATAL INPUT] XML1_TEST_A_FRAME must be 1..1000000\n"); _exit(4);
         }
         test_press_frame=(uint32_t)parsed;
+    }
+    const char *move=getenv("XML1_TEST_MOVE_FRAME");
+    test_move_frame=0;
+    if(test_mode && move && *move) {
+        char *end=NULL; unsigned long parsed=strtoul(move,&end,10);
+        if(!end || *end || !parsed || parsed>1000000 || (test_press_frame && parsed<=test_press_frame+12)) {
+            fprintf(stderr,"[FATAL INPUT] XML1_TEST_MOVE_FRAME must be 1..1000000 and after A release\n"); _exit(4);
+        }
+        test_move_frame=(uint32_t)parsed;
     }
     memset(handles, 0, sizeof(handles));
     memset(test_states, 0, sizeof(test_states));

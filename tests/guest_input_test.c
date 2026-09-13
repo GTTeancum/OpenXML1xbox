@@ -31,6 +31,7 @@ static uint32_t call(uint32_t va, unsigned n, const uint32_t *args) {
 int main(void) {
     _putenv_s("XML1_TEST_PAD", "1");
     _putenv_s("XML1_TEST_A_FRAME", "600");
+    _putenv_s("XML1_TEST_MOVE_FRAME", "750");
     g_xbox_mem_offset = (ptrdiff_t)memory;
     uint32_t args[4] = {0};
     REQUIRE(call(0x3BF897, 2, args) == 0);
@@ -59,6 +60,12 @@ int main(void) {
     xml1_input_test_frame(612);
     REQUIRE(call(0x3C0398, 2, args) == 0);
     REQUIRE(memory[0x60000A] == 0);
+    xml1_input_test_frame(750);
+    REQUIRE(call(0x3C0398, 2, args) == 0);
+    REQUIRE(*(int16_t *)(memory+0x600012) == 32767);
+    xml1_input_test_frame(810);
+    REQUIRE(call(0x3C0398, 2, args) == 0);
+    REQUIRE(*(int16_t *)(memory+0x600012) == 0);
     memset(memory + 0x600100, 0, 70);
     *(uint32_t *)(memory + 0x600104) = 123;
     *(uint32_t *)(memory + 0x3C6C90) = 0xFE1234;

@@ -491,3 +491,11 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   native triangle-list mapping with count divisibility validation; regression
   confirms equivalent list, strip and fan capture identical pixels. Rebuilt game
   and renderer. Next run boot077 checks progress beyond that draw.
+
+- boot077 reaches level1 with health/energy bars and item counters, continues to
+  frame1080, and ends at the60-second diagnostic bound3 without a guard/crash.
+  Capture720 was inspected; no duplicate scene was posted. This verifies continued
+  rendering while idle, not combat, movement, level completion or audio fidelity.
+- Added opt-in XML1_TEST_MOVE_FRAME, after the A-release interval, to hold the
+  left stick right for60 presented frames within the process-local test pad.
+  Synthetic test verifies its wire press/release and zero host input/output calls.
