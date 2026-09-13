@@ -33,3 +33,11 @@ Checked 2026-09-13 during XML1 initialization debugging.
 
 Recheck upstream for a matching fix before implementing new toolkit changes.
 Do not blindly merge branches or replace the pin during an experiment.
+
+## Submitted fixes
+
+- User authorized upstream PRs. Submitted comparison-join fix as
+  https://github.com/sp00nznet/xboxrecomp/pull/41 from an isolated checkout of
+  the pinned upstream main. Fork branch GTTeancum:fix/cmp-flags-at-joins,
+  commit 10a4b66. Recompiler tests: 165 passed, 10 subtests passed.
+  Includes translator change and five regression tests, no game/generated data.

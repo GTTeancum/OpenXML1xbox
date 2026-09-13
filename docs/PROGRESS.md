@@ -184,3 +184,19 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   mapping, and game-host APU initialization. See docs/AUDIO.md.
 - Recorded user clarification: post screenshots only for new visible content.
   No new screenshot or additional gameplay milestone in this checkpoint.
+
+## APU integration and upstream PR (2026-09-13 08:14 UTC)
+
+- Opened upstream PR41 for compatible CMP/TEST metadata at control-flow joins.
+  Isolated upstream test run: 165 passed, 10 subtests. User authorized PRs.
+- Connected the full DSP interpreter to GP/EP reset, memory registers, scatter/
+  gather DMA and frame processing; replaced the passthrough source in the root
+  build. Optional -APU initializes the audio device and routes APU MMIO faults.
+- New APU/DSP integration test passes register round-trips and real bootstrap
+  across two SG pages. The 640-vector DSP test still passes in the combined build.
+- boot-020/021 with -APU exercises MMIO and reaches a different DSOUND startup/
+  cleanup loop, with 8007000E in the guest stack. The allocation/kernel/translated
+  control flow must be traced before calling this an actual memory exhaustion.
+  DSP correctness for the game and any audible output remain unverified.
+- Toolkit changes are a third reproducible patch; clean apply check and repeated
+  setup patch checks pass. No new screenshot, FMV/menu/level milestone yet.

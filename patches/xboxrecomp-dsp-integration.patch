@@ -1,0 +1,176 @@
+diff --git a/src/apu/apu_core.c b/src/apu/apu_core.c
+index 459be77..db8d690 100644
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -501,12 +501,10 @@ static void mcpx_apu_reset_locked(MCPXAPUState *d)
+     mcpx_apu_vp_reset(d);
+ 
+     if (d->gp.dsp) {
+-        memset((void *)d->gp.dsp->core.pram_opcache, 0,
+-               sizeof(d->gp.dsp->core.pram_opcache));
++        dsp_invalidate_opcache(d->gp.dsp);
+     }
+     if (d->ep.dsp) {
+-        memset((void *)d->ep.dsp->core.pram_opcache, 0,
+-               sizeof(d->ep.dsp->core.pram_opcache));
++        dsp_invalidate_opcache(d->ep.dsp);
+     }
+     d->set_irq = false;
+ }
+@@ -583,6 +581,8 @@ void mcpx_apu_shutdown(MCPXAPUState *d)
+     mcpx_apu_vp_finalize(d);
+     mcpx_apu_monitor_finalize(d);
+ 
++    dsp_destroy(d->gp.dsp);
++    dsp_destroy(d->ep.dsp);
+     free(d);
+     g_state = NULL;
+     fprintf(stderr, "[APU] Shutdown complete\n");
+@@ -615,7 +615,7 @@ void mcpx_apu_dispatch_mmio(MCPXAPUState *d, hwaddr addr, uint64_t val,
+             mcpx_apu_write(d, addr, val, size);
+         }
+     }
+-    /* GP (0x30000) and EP (0x50000) regions ignored for now */
++    if (is_write) xml1_apu_dsp_write(d, addr, val, size);
+ }
+ 
+ /* ============================================================
+@@ -626,6 +626,7 @@ void mcpx_apu_dispatch_mmio(MCPXAPUState *d, hwaddr addr, uint64_t val,
+ uint64_t mcpx_apu_mmio_read(MCPXAPUState *d, uint64_t addr, unsigned int size)
+ {
+     if (!d) return 0;
++    if (addr >= 0x30000) return xml1_apu_dsp_read(d, addr, size);
+     if (addr >= 0x20000 && addr < 0x30000) {
+         return mcpx_apu_vp_read(d, addr - 0x20000, size);
+     } else if (addr < 0x20000) {
+diff --git a/src/apu/apu_state.h b/src/apu/apu_state.h
+index 651b334..9d2a208 100644
+--- a/src/apu/apu_state.h
++++ b/src/apu/apu_state.h
+@@ -25,118 +25,7 @@
+ #include "apu_regs.h"
+ #include "apu_debug.h"
+ 
+-/* ============================================================
+- * DSP CPU registers
+- * ============================================================ */
+-
+-#define DSP_REG_MAX     0x40
+-#define DSP_XRAM_SIZE   4096
+-#define DSP_YRAM_SIZE   2048
+-#define DSP_PRAM_SIZE   4096
+-#define DSP_MIXBUFFER_SIZE 1024
+-#define DSP_PERIPH_SIZE 128
+-
+-/* ============================================================
+- * DSP Core State (from dsp_cpu.h)
+- * ============================================================ */
+-
+-typedef struct dsp_core_s {
+-    bool is_gp;
+-    bool is_idle;
+-    uint32_t cycle_count;
+-
+-    uint16_t instr_cycle;
+-
+-    uint32_t pc;
+-    uint32_t registers[DSP_REG_MAX];
+-
+-    /* stack[0=ssh], stack[1=ssl] */
+-    uint32_t stack[2][16];
+-
+-    uint32_t xram[DSP_XRAM_SIZE];
+-    uint32_t yram[DSP_YRAM_SIZE];
+-    uint32_t pram[DSP_PRAM_SIZE];
+-    const void *pram_opcache[DSP_PRAM_SIZE];
+-
+-    uint32_t mixbuffer[DSP_MIXBUFFER_SIZE];
+-
+-    /* peripheral space */
+-    uint32_t periph[DSP_PERIPH_SIZE];
+-
+-    uint32_t loop_rep;
+-    uint32_t pc_on_rep;
+-
+-    /* Interruptions */
+-    uint16_t interrupt_state;
+-    uint16_t interrupt_instr_fetch;
+-    uint16_t interrupt_save_pc;
+-    uint16_t interrupt_counter;
+-    uint16_t interrupt_ipl_to_raise;
+-    uint16_t interrupt_pipeline_count;
+-    int16_t interrupt_ipl[12];
+-    uint16_t interrupt_is_pending[12];
+-
+-    /* callbacks */
+-    uint32_t (*read_peripheral)(struct dsp_core_s *core, uint32_t address);
+-    void (*write_peripheral)(struct dsp_core_s *core, uint32_t address, uint32_t value);
+-
+-    uint32_t num_inst;
+-    uint32_t cur_inst_len;
+-    uint32_t cur_inst;
+-
+-    char str_disasm_memory[2][50];
+-    uint32_t disasm_memory_ptr;
+-    bool exception_debugging;
+-
+-    uint32_t disasm_prev_inst_pc;
+-    bool disasm_is_looping;
+-
+-    uint32_t disasm_cur_inst;
+-    uint16_t disasm_cur_inst_len;
+-
+-    char disasm_str_instr[256];
+-    char disasm_str_instr2[523];
+-    char disasm_parallelmove_name[64];
+-
+-    uint32_t disasm_registers_save[64];
+-} dsp_core_t;
+-
+-/* ============================================================
+- * DSP DMA State (from dsp_dma.h)
+- * ============================================================ */
+-
+-typedef void (*dsp_scratch_rw_func)(
+-    void *opaque, uint8_t *ptr, uint32_t addr, size_t len, bool dir);
+-typedef void (*dsp_fifo_rw_func)(
+-    void *opaque, uint8_t *ptr, unsigned int index, size_t len, bool dir);
+-
+-typedef struct DSPDMAState {
+-    dsp_core_t *core;
+-
+-    void *rw_opaque;
+-    dsp_scratch_rw_func scratch_rw;
+-    dsp_fifo_rw_func fifo_rw;
+-
+-    uint32_t configuration;
+-    uint32_t control;
+-    uint32_t start_block;
+-    uint32_t next_block;
+-
+-    bool error;
+-    bool eol;
+-} DSPDMAState;
+-
+-/* ============================================================
+- * DSP State (from dsp_state.h)
+- * ============================================================ */
+-
+-typedef struct DSPState {
+-    dsp_core_t core;
+-    DSPDMAState dma;
+-    int save_cycles;
+-    uint32_t interrupts;
+-    bool is_gp;
+-} DSPState;
++#include "dsp.h"
+ 
+ /* ============================================================
+  * SVF (State Variable Filter) - from vp/svf.h
+@@ -523,3 +412,6 @@ extern MCPXAPUState *g_state;
+ extern struct McpxApuDebug g_dbg, g_dbg_cache;
+ extern int g_dbg_voice_monitor;
+ extern uint64_t g_dbg_muted_voices[4];
++
++uint64_t xml1_apu_dsp_read(MCPXAPUState *d, uint64_t addr, unsigned size);
++void xml1_apu_dsp_write(MCPXAPUState *d, uint64_t addr, uint64_t value, unsigned size);

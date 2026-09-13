@@ -41,6 +41,9 @@ static int s_memory_query_test;
 
 /* xboxrecomp runtime headers */
 #include <xbox/xboxrecomp.h>
+extern MCPXAPUState *g_apu_state;
+extern bool apu_hook_handle_mmio(PCONTEXT context, uintptr_t fault_address,
+                                uint32_t xbox_address, int is_write);
 
 /*
  * If xboxrecomp.h is not an umbrella header in your setup, include
@@ -163,6 +166,11 @@ static LONG CALLBACK veh_handler(PEXCEPTION_POINTERS ep)
 {
     if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
         uintptr_t fault_addr = ep->ExceptionRecord->ExceptionInformation[1];
+        uint64_t guest_fault = fault_addr - (uintptr_t)g_xbox_mem_offset;
+        if (g_apu_state && guest_fault >= 0xFE800000 && guest_fault < 0xFE880000 &&
+            apu_hook_handle_mmio(ep->ContextRecord, fault_addr, (uint32_t)guest_fault,
+                                (int)ep->ExceptionRecord->ExceptionInformation[0]))
+            return EXCEPTION_CONTINUE_EXECUTION;
 
         /*
          * GPU register probe at 0xFD000000 range.
@@ -290,6 +298,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     printf("XBE loaded: %zu bytes\n", xbe_size);
 
     /* Step 2: Initialize Xbox memory layout */
+    if (getenv("XML1_APU")) _putenv_s("RECOMP_AC97_READY", "1");
     printf("Initializing Xbox memory layout...\n");
     /* Distinct virtual backing for Alchemy reservations; physical RAM remains 64 MiB. */
     xbox_SetMapSize(256u * 1024u * 1024u);
@@ -301,6 +310,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     g_xbox_mem_offset = xbox_GetMemoryOffset();
     printf("Xbox memory mapped. Offset: 0x%llX\n", (unsigned long long)g_xbox_mem_offset);
+    if (getenv("XML1_APU") && !s_memory_query_test) {
+        /* DSP scratch buffers and scatter/gather tables currently observed in
+         * XML1 use physical allocations backed by the contiguous window. */
+        g_apu_state = mcpx_apu_init_standalone((uint8_t *)((uintptr_t)g_xbox_mem_offset + 0x80000000u));
+        if (!g_apu_state) { fprintf(stderr,"APU initialization failed\n"); return 1; }
+    }
 
     /* Step 3: Initialize Xbox kernel */
     printf("Initializing Xbox kernel replacement...\n");
@@ -379,6 +394,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     printf("\nGame returned. Cleaning up...\n");
 
     /* Cleanup */
+    if (g_apu_state) { mcpx_apu_shutdown(g_apu_state); g_apu_state = NULL; }
     xbox_kernel_shutdown();
     xbox_MemoryLayoutShutdown();
     free(xbe_data);
