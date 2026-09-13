@@ -4,3 +4,4 @@
 *.txt text eol=lf
 patches/dsp56300-no-inline-do.patch text eol=lf
 patches/xboxrecomp-irql-exclusion.patch text eol=lf
+patches/xboxrecomp-prologue-saved-frame.patch text eol=lf

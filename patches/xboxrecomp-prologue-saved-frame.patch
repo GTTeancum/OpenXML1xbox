@@ -1,0 +1,38 @@
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -865,7 +865,12 @@
+         # would still hold. Deliberately not the same as making ebp global:
+         # that also changes save/restore, and a callee that fails to restore
+         # then corrupts its caller (tried; esp underflowed inside XapiStartup).
+-        if "ebp" in used_regs and not self._func_has_prologue(instructions):
++        if "ebp" in used_regs and self._func_has_prologue(instructions):
++            # The prologue's first PUSH saves the incoming register before
++            # MOV establishes this function's frame. It must not push an
++            # uninitialized C local into the guest's saved-frame chain.
++            lines.append("    ebp = g_ebp;  /* prologue saves caller's frame */")
++        elif "ebp" in used_regs:
+             lines.append("    ebp = g_ebp;  /* frameless: caller's frame */")
+ 
+         # Add _flags variable if function has conditional instructions
+--- /dev/null
++++ b/tools/recomp/test_prologue_saved_frame.py
+@@ -0,0 +1,19 @@
++"""A classic prologue must save the caller's EBP, not a C indeterminate value."""
++from tools.recomp import config
++from tools.recomp.translator import FunctionTranslator
++
++
++def test_prologue_saves_inherited_frame_before_establishing_its_own():
++    base = 0x10000
++    # push ebp; mov ebp,esp; mov eax,[ebp]; pop ebp; ret
++    # The return value exposes the saved incoming frame pointer itself.
++    image = bytes.fromhex('558bec8b45005dc3')
++    config._install([config.Section('.text', base, len(image), 0, len(image), True)],
++                    entry_point=base, kernel_thunk_addr=base,
++                    origin='prologue-saved-frame-test')
++    db = {base: {'start': hex(base), 'end': base + len(image),
++                 '_addr': base, 'size': len(image)}}
++    code = FunctionTranslator(image, db).translate_function(base, db[base])
++    assert code.index('ebp = g_ebp;') < code.index('PUSH32(esp, ebp);')
++    assert code.index('PUSH32(esp, ebp);') < code.index('ebp = esp;')
++    assert 'eax = MEM32(ebp);' in code

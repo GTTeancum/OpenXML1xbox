@@ -1129,3 +1129,25 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   diagnostic. Full human playability and all fidelity requirements remain
   unverified. Do not rebuild or run competing probes while a human test
   process is active; verify live process state before resuming implementation.
+
+## 2026-09-13 - Saved frame-pointer regression, upstream PR48
+
+- Rechecked upstream origin/main, available branches and open pull requests;
+  the pin remains3706cef and no existing PR addresses this prologue save.
+- A synthetic eight-byte x86 function (push ebp; mov ebp,esp; mov eax,[ebp];
+  pop ebp; ret) exposes an uninitialized generated local. MSVC /Od /we4700
+  rejects the original generated PUSH32 with C4700. This is a demonstrated
+  recompiler defect, not a diagnosis of the minimap or any combat behavior.
+- Initializing the prologue local from the existing g_ebp bridge before PUSH
+  makes the fixture compile and return the seeded caller frame, retain it in
+  the saved-frame stack slot, and restore the expected guest stack pointer.
+- Added the23rd ordered toolkit patch. Full reverse-stack validation passes;
+  all175 local recompiler tests plus16 subtests pass, and9 focused tests pass
+  against the clean upstream base. Submitted upstream PR48:
+  https://github.com/sp00nznet/xboxrecomp/pull/48
+- The game generated sources/executables were not regenerated or rebuilt
+  for this change while the user prepares a human test. The active playtest
+  binary therefore remains the previously validated build. Runtime integration
+  and broader frame-bridge correctness remain work to do.
+- No active human-playtest process was present at the checks this turn.
+  Keep inspecting live process state before competing runs or binary updates.
