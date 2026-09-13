@@ -27,6 +27,11 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    if(va==0x35DDC0) {
+        static unsigned reports;
+        uint32_t *stack=(uint32_t *)((uintptr_t)g_xbox_mem_offset+g_esp);
+        if(++reports<=40) fprintf(stderr,"[FADE FACTOR] caller=%08X value=%08X\n",stack[0],stack[1]);
+    }
     if(va==0x374D3E && g_ecx<xbox_GetMappedSize()-0x74) {
         static LONG reports;
         if(InterlockedIncrement(&reports)<=100) {

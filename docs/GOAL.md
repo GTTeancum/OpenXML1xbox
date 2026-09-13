@@ -45,3 +45,6 @@ movie progression and current level1 behavior remain unverified.
 Movie VM releases now return buffers to the guest heap; boot100/101 no longer
 exhaust it. Nonzero movie textures still render black; draw-state investigation
 and audio rate/progression validation remain necessary.
+
+First native FMV artwork is visible after guest FIST rounding fix (boot107
+Activision capture). Decoder block artifacts and audio/timing remain unresolved.

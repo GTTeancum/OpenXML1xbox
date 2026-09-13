@@ -67,3 +67,6 @@ Do not blindly merge branches or replace the pin during an experiment.
   with key exports; initializes the empty circular request list at+28/+2C.
   Fixes the reproduced XML1 audio-thread file-close null-list crash. No game
   bytes in the PR. Local ordered patch9 and all patch idempotence checks pass.
+
+
+PR47: guest x87 FIST/FISTP rounding control, commit55aa0ba. Isolated84 Python tests and native CTest pass. https://github.com/sp00nznet/xboxrecomp/pull/47

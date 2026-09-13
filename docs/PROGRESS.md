@@ -620,3 +620,31 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   upload contents confirm that path. Next inspect the actual movie draw packet,
   transforms/UVs/blending and native output rather than assuming another alias
   mismatch. No new screenshot posted; no FMV/audio fidelity claim.
+
+
+## First native FMV image and guest FIST rounding (boot102–107)
+
+- Captured movie-frame241.bin from the game's actual draw: geometry and texture
+  are present, but texture factor01000101 almost eliminates the output. Changing
+  only that factor in a diagnostic replay reveals the image; this override was
+  never installed in the game and is not milestone evidence.
+- Traced original color packing through243650,1A41F0 and3439C4. The helper's
+  apparently mismatched double push/pop leaves the original x87 value intact.
+  The fault is generated FIST/P using llrint despite the guest control word
+  selecting truncation. White255.5 rounds to256, overflowing packed channels.
+  Extracted XBE is byte-identical to the default.xbe read directly from the ISO
+  (SHA2562ea531f11e0b5b7ca651485012b871ef99a5099c566a6d7cb8ec327ee73d62ac).
+- Ordered patch14 implements guest rounding control for signed16/32/64-bit
+  stores: nearest-even, down, up and truncation; out-of-range/non-finite results
+  become integer-indefinite. Unmasked exceptions/status tracking are outside
+  this change. Native regression verifies rounding/bounds and white packing;
+  all84 recompiler tests pass; fourteen-patch reverse-stack check passes.
+- boot106 now emitsFFFFFFFF without overrides. boot107 reaches its75-second
+  bound3 and displays Activision FMV artwork in the native backbuffer. Posted
+  outputs/xml1-dx8-fmv-activision.bmp comes from boot107frame300. Visible block
+  artifacts remain; this is an FMV-image milestone, not correct decoding or
+  synchronized audio/video. Current gameplay still needs revalidation.
+- Upstream PR47: https://github.com/sp00nznet/xboxrecomp/pull/47, isolated pin
+  worktree commit55aa0ba. Native CTest and84 Python tests pass there as well.
+  Next investigate decoder block artifacts, pacing/audio resampling and return
+  to level1 with the accumulated fixes.

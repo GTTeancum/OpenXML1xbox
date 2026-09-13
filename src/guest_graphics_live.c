@@ -291,6 +291,11 @@ void xml1_graphics_swap(void) {
     }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
     send_bytes("XMLDX8R6",8); send_bytes(&draws,4); send_bytes(packet,used);
+    if(frames==240 && getenv("XML1_CAPTURE_MOVIE_PACKET")) {
+        FILE *out=fopen("build/movie-frame241.bin","wb");
+        if(!out) fatal("cannot capture movie packet");
+        fwrite("XMLDX8R6",1,8,out); fwrite(&draws,4,1,out); fwrite(packet,1,used,out); fclose(out);
+    }
     receive_ack();
     ++frames;
     xml1_input_test_frame(frames);
