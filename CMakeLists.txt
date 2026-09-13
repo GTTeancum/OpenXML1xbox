@@ -108,3 +108,5 @@ endif()
 add_executable(kernel-directory-test tests/kernel_directory_test.c)
 target_include_directories(kernel-directory-test PRIVATE external/xboxrecomp/src/kernel)
 target_link_libraries(kernel-directory-test PRIVATE xboxrecomp)
+
+add_executable(xaudio2-dsp-queue-test tests/xaudio2_dsp_queue_test.c)

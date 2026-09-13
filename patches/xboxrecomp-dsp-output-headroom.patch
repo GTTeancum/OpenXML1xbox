@@ -1,0 +1,92 @@
+--- a/src/apu/apu_xaudio2.c
++++ b/src/apu/apu_xaudio2.c
+@@ -24,8 +24,17 @@
+ 
+ #define XA2_SAMPLE_RATE   48000
+ #define XA2_CHANNELS      2
+-#define XA2_BUF_SAMPLES   1024   /* ~21ms per submission */
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++/* The original backend budget is about 64 ms. Native DSP submissions are
++ * 256 frames, not 1024: three of them leave only 16 ms of scheduling slack. */
++#define XA2_BUF_SAMPLES   256
++#define XA2_NUM_BUFS      12
++#define XA2_PRIME_BUFS    6
++#else
++#define XA2_BUF_SAMPLES   1024
+ #define XA2_NUM_BUFS      3
++#define XA2_PRIME_BUFS    1
++#endif
+ 
+ static IXAudio2               *g_xa2 = NULL;
+ static IXAudio2MasteringVoice *g_xa2_master = NULL;
+@@ -34,6 +43,7 @@
+ static int                     g_xa2_next_buf = 0;
+ static int                     g_xa2_initialized = 0;
+ static int                     g_xa2_frames_written = 0;
++static int                     g_xa2_started = 0;
+ static HANDLE g_xa2_buffer_event;
+ static volatile LONG g_xa2_voice_error;
+ static void STDMETHODCALLTYPE cb_pass_start(IXAudio2VoiceCallback *self,UINT32 bytes) { (void)self;(void)bytes; }
+@@ -89,11 +99,17 @@
+         goto fail;
+     }
+ 
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++    /* Start only after the producer has supplied real PCM. */
++    g_xa2_started = 0;
++#else
+     hr = IXAudio2SourceVoice_Start(g_xa2_source, 0, XAUDIO2_COMMIT_NOW);
+     if (FAILED(hr)) {
+         fprintf(stderr, "[XA2] Start failed: 0x%08lX\n", hr);
+         goto fail;
+     }
++    g_xa2_started = 1;
++#endif
+ 
+     g_xa2_next_buf = 0;
+     g_xa2_initialized = 1;
+@@ -130,6 +146,7 @@
+     if (g_xa2_initialized)
+         fprintf(stderr, "[XA2] Shut down (%d frames written)\n", g_xa2_frames_written);
+     g_xa2_initialized = 0;
++    g_xa2_started = 0;
+     if(g_xa2_buffer_event) { CloseHandle(g_xa2_buffer_event); g_xa2_buffer_event=NULL; }
+ }
+ 
+@@ -157,7 +174,9 @@
+     int copy_samples;
+     HRESULT hr;
+ 
+-    if (!g_xa2_initialized || !g_xa2_source) return 0;
++    if (!g_xa2_initialized || !g_xa2_source || !samples ||
++        num_samples <= 0 || num_samples > XA2_BUF_SAMPLES ||
++        InterlockedCompareExchange(&g_xa2_voice_error,0,0)) return 0;
+ 
+     IXAudio2SourceVoice_GetState(g_xa2_source, &state, XAUDIO2_VOICE_NOSAMPLESPLAYED);
+     if ((int)state.BuffersQueued >= XA2_NUM_BUFS) return 0;
+@@ -172,7 +191,7 @@
+         LARGE_INTEGER now;
+         if(!frequency.QuadPart) QueryPerformanceFrequency(&frequency);
+         QueryPerformanceCounter(&now);
+-        if(submissions) {
++        if(submissions && g_xa2_started) {
+             double gap=1000.0*(now.QuadPart-previous.QuadPart)/frequency.QuadPart;
+             if(gap>maximum_gap_ms) maximum_gap_ms=gap;
+             if(!state.BuffersQueued) ++empty_observations;
+@@ -197,6 +216,16 @@
+ 
+     g_xa2_next_buf = (idx + 1) % XA2_NUM_BUFS;
+     g_xa2_frames_written++;
++    if(!g_xa2_started && state.BuffersQueued + 1 >= XA2_PRIME_BUFS) {
++        hr = IXAudio2SourceVoice_Start(g_xa2_source, 0, XAUDIO2_COMMIT_NOW);
++        if(FAILED(hr)) {
++            InterlockedExchange(&g_xa2_voice_error,(LONG)hr);
++            SetEvent(g_xa2_buffer_event);
++            /* This buffer was accepted: do not duplicate it on a retry. */
++        } else {
++            g_xa2_started = 1;
++        }
++    }
+     return 1;
+ }
+ 
