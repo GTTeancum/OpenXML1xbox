@@ -1,0 +1,141 @@
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -960,6 +960,81 @@
+  * resample. This gives us functional audio at the cost of quality.
+  * ============================================================ */
+ 
++#ifdef RECOMP_APU_LIBSAMPLERATE
++static long voice_resample_callback(void *cb_data, float **data)
++{
++    MCPXAPUVoiceFilter *filter = cb_data;
++    uint16_t v = filter->voice;
++    assert(v < MCPX_HW_MAX_VOICES);
++    MCPXAPUState *d = (MCPXAPUState *)((char *)filter - offsetof(MCPXAPUState, vp.filters) - v*sizeof(*filter));
++
++    int sample_count = 0;
++    while (sample_count < NUM_SAMPLES_PER_FRAME) {
++        int active = voice_get_mask(d, v, NV_PAVS_VOICE_PAR_STATE,
++                                    NV_PAVS_VOICE_PAR_STATE_ACTIVE_VOICE);
++        if (!active) {
++            break;
++        }
++        int count = voice_get_samples(
++            d, v, (float(*)[2]) & filter->resample_buf[2 * sample_count],
++            NUM_SAMPLES_PER_FRAME - sample_count);
++        if (count <= 0) {
++            break;
++        }
++        sample_count += count;
++    }
++
++    if (sample_count < NUM_SAMPLES_PER_FRAME) {
++        /* Starvation causes SRC hang on repeated calls. Provide silence. */
++        memset(&filter->resample_buf[2*sample_count], 0,
++            2*(NUM_SAMPLES_PER_FRAME-sample_count)*sizeof(float));
++        sample_count = NUM_SAMPLES_PER_FRAME;
++    }
++
++    *data = filter->resample_buf;
++    return sample_count;
++}
++
++static int voice_resample(MCPXAPUState *d, uint16_t v, float samples[][2],
++                          int requested_num, float rate)
++{
++    assert(v < MCPX_HW_MAX_VOICES);
++    MCPXAPUVoiceFilter *filter = &d->vp.filters[v];
++
++    if (filter->resampler == NULL) {
++        filter->voice = v;
++        int err;
++
++        /* Note: Using a sinc based resampler for quality. Unsure about
++         * hardware's actual interpolation method; it could just be linear, in
++         * which case using this resampler is overkill, but quality is good
++         * so use it for now.
++         */
++        // FIXME: Don't do 2ch resampling if this is a mono voice
++        filter->resampler = src_callback_new(&voice_resample_callback,
++                                           SRC_SINC_FASTEST, 2, &err, filter);
++        if (filter->resampler == NULL) {
++            fprintf(stderr, "src error: %s\n", src_strerror(err));
++            assert(0);
++        }
++    }
++
++    int count = src_callback_read(filter->resampler, rate, requested_num,
++                                  (float *)samples);
++    if (count == -1) {
++        DPRINTF("resample error\n");
++    }
++    if (count != requested_num) {
++        DPRINTF("resample returned fewer than expected: %d\n", count);
++
++        if (count == 0)
++            return -1;
++    }
++
++    return count;
++}
++
++#else
+ static int voice_resample(MCPXAPUState *d, uint16_t v, float samples[][2],
+                           int requested_num, float rate)
+ {
+@@ -982,6 +1057,14 @@
+     return sample_count;
+ }
+ 
++#endif
++
++#ifdef RECOMP_APU_LIBSAMPLERATE
++/* Process-local diagnostic entry exercises the same source fetch and SRC state. */
++int xml1_apu_resample_probe(MCPXAPUState *d,uint16_t voice,float (*samples)[2],int count,float rate) {
++    return voice_resample(d,voice,samples,count,rate);
++}
++#endif
+ /* ============================================================
+  * Voice processing (main per-voice function)
+  * ============================================================ */
+@@ -1256,7 +1339,10 @@
+ 
+ void mcpx_apu_vp_finalize(MCPXAPUState *d)
+ {
+-    (void)d;
++    for(unsigned v=0;v<MCPX_HW_MAX_VOICES;++v) {
++        if(d->vp.filters[v].resampler) src_delete(d->vp.filters[v].resampler);
++        d->vp.filters[v].resampler=NULL;
++    }
+ }
+ 
+ void mcpx_apu_vp_reset(MCPXAPUState *d)
+@@ -1269,5 +1355,6 @@
+     memset(d->vp.voice_locked, 0, sizeof(d->vp.voice_locked));
+     for (int v = 0; v < MCPX_HW_MAX_VOICES; v++) {
+         hrtf_filter_init(&d->vp.filters[v].hrtf);
+-    }
+-}
++        voice_reset_filters(d,(uint16_t)v);
++    }
++}
+--- a/src/apu/apu_shim.h
++++ b/src/apu/apu_shim.h
+@@ -189,6 +189,9 @@
+  * We stub it initially; voices will play at native rate.
+  * ============================================================ */
+ 
++#ifdef RECOMP_APU_LIBSAMPLERATE
++#include <samplerate.h>
++#else
+ typedef void SRC_STATE;
+ 
+ #define SRC_SINC_FASTEST 2
+@@ -229,6 +232,8 @@
+         out[i] = (int16_t)s;
+     }
+ }
++
++#endif
+ 
+ /* ============================================================
+  * SDL Audio stubs

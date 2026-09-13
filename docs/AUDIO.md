@@ -1,7 +1,9 @@
 # Audio bring-up
 
-The live game currently waits in the DSOUND DSP command path after presenting
-the legal splash. Correct audio and advancement beyond that wait are not proven.
+The live game produces original DSP audio through XAudio2 with mapped DMA and
+stateful voice resampling. Playback remains slower than real time; complete
+audio fidelity and synchronization are unverified. Details below retain the
+bring-up history.
 
 XboxRecomp at 3706cefa includes XAudio2 error handling (PR31) and synchronized
 DirectSound cursors (PR24). Its GP/EP DSP file is explicitly a passthrough stub.
@@ -182,3 +184,28 @@ No recognizable FMV or audible correctness milestone has been established.
   upload contents confirm that path. Next inspect the actual movie draw packet,
   transforms/UVs/blending and native output rather than assuming another alias
   mismatch. No new screenshot posted; no FMV/audio fidelity claim.
+
+
+## Stateful voice resampling (boot112)
+
+- Added libsamplerate0.2.2 as a pinned submodule at
+  c96f5e3de9c4488f4e6c97f59f5245f22fda22f7 (annotated release tag resolves here).
+  Its BSD license is retained in external/libsamplerate/COPYING. CMake links
+  the real library and enables RECOMP_APU_LIBSAMPLERATE, replacing the shim's
+  dummy SRC functions only for this configuration.
+- Ordered patch15 restores xemu's callback-based SINC_FASTEST resampling path
+  from the previously pinned reference. Rate changes now affect source-frame
+  consumption. Starvation supplies silence without a zero-progress callback
+  loop; filters reset with voice/VP reset and are freed on VP finalization.
+  The exact Xbox interpolation kernel remains unverified.
+- Native actual-VP regression fetches stereo PCM through the real SG path and
+  verifies rates0.5,1,48000/44100,2; expected consumption and tone crossings;
+  stereo preservation; identical output across32/64-frame reads; reset clears
+  history; finalization releases state. GP/EP bootstrap/MMIO test also passes.
+  Fifteen-patch reverse-stack validation passes. Setup now creates/installs the
+  Python environment before invoking the Python-backed patch-stack checker.
+- boot112 finishes40s bound3 without fatal guards or heap exhaustion. Native
+  output reaches1440000 sample frames(30s) by38.663 wall seconds,2305818 nonzero
+  stereo values, peak27417 and no clipping. Pitch path is improved, but output
+  is still slower than real time and full A/V fidelity is not established.
+  Next investigate pacing/performance, then revalidate movies/menu/level1.

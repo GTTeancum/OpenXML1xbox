@@ -686,3 +686,28 @@ No splash/FMV/menu/level screenshot milestone has been reached. Audio is unverif
   this does not prove real-time playback, synchronized audio or eliminate the
   intermittent image artifacts. Further performance/decoder-lifetime and audio
   resampling work remains. No repeat screenshot posted.
+
+
+## Stateful voice resampling (boot112)
+
+- Added libsamplerate0.2.2 as a pinned submodule at
+  c96f5e3de9c4488f4e6c97f59f5245f22fda22f7 (annotated release tag resolves here).
+  Its BSD license is retained in external/libsamplerate/COPYING. CMake links
+  the real library and enables RECOMP_APU_LIBSAMPLERATE, replacing the shim's
+  dummy SRC functions only for this configuration.
+- Ordered patch15 restores xemu's callback-based SINC_FASTEST resampling path
+  from the previously pinned reference. Rate changes now affect source-frame
+  consumption. Starvation supplies silence without a zero-progress callback
+  loop; filters reset with voice/VP reset and are freed on VP finalization.
+  The exact Xbox interpolation kernel remains unverified.
+- Native actual-VP regression fetches stereo PCM through the real SG path and
+  verifies rates0.5,1,48000/44100,2; expected consumption and tone crossings;
+  stereo preservation; identical output across32/64-frame reads; reset clears
+  history; finalization releases state. GP/EP bootstrap/MMIO test also passes.
+  Fifteen-patch reverse-stack validation passes. Setup now creates/installs the
+  Python environment before invoking the Python-backed patch-stack checker.
+- boot112 finishes40s bound3 without fatal guards or heap exhaustion. Native
+  output reaches1440000 sample frames(30s) by38.663 wall seconds,2305818 nonzero
+  stereo values, peak27417 and no clipping. Pitch path is improved, but output
+  is still slower than real time and full A/V fidelity is not established.
+  Next investigate pacing/performance, then revalidate movies/menu/level1.

@@ -48,3 +48,6 @@ and audio rate/progression validation remain necessary.
 
 First native FMV artwork is visible after guest FIST rounding fix (boot107
 Activision capture). Decoder block artifacts and audio/timing remain unresolved.
+
+Stateful voice resampling is active and tested; boot112 produces30 seconds of
+audio in38.663 seconds, so real-time pacing and A/V fidelity remain open.
