@@ -17,6 +17,38 @@ static ULONGLONG fps_title_started;
 static unsigned fps_title_frames;
 static LRESULT CALLBACK playtest_window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     if (message == WM_CLOSE) { user_closed = true; return 0; }
+    if(message==WM_SETFOCUS || message==WM_KILLFOCUS) {
+        xml1_pc_channel_focus(message==WM_SETFOCUS);return 0;
+    }
+    if(message==WM_KEYDOWN || message==WM_KEYUP || message==WM_SYSKEYDOWN || message==WM_SYSKEYUP) {
+        bool down=message==WM_KEYDOWN || message==WM_SYSKEYDOWN;
+        // Alt+F4 and other system shortcuts remain normal window behavior.
+        if(message==WM_SYSKEYDOWN || message==WM_SYSKEYUP)return DefWindowProcW(window,message,wparam,lparam);
+        if(!down || !(lparam&(1u<<30)))pc_ui::input_key((unsigned)wparam,down);
+        return 0;
+    }
+    if(message==WM_MOUSEMOVE || message==WM_LBUTTONDOWN || message==WM_LBUTTONUP ||
+       message==WM_RBUTTONDOWN || message==WM_RBUTTONUP || message==WM_MBUTTONDOWN || message==WM_MBUTTONUP) {
+        int x=(short)LOWORD(lparam),y=(short)HIWORD(lparam);
+        unsigned key=message==WM_LBUTTONDOWN || message==WM_LBUTTONUP?VK_LBUTTON:
+            message==WM_RBUTTONDOWN || message==WM_RBUTTONUP?VK_RBUTTON:
+            message==WM_MBUTTONDOWN || message==WM_MBUTTONUP?VK_MBUTTON:0;
+        bool down=message==WM_LBUTTONDOWN || message==WM_RBUTTONDOWN || message==WM_MBUTTONDOWN;
+        if(down)SetCapture(window);
+        pc_ui::input_mouse(x,y,key,down,0);
+        if(key && !down && !(wparam&(MK_LBUTTON|MK_RBUTTON|MK_MBUTTON)) && GetCapture()==window)ReleaseCapture();
+        return 0;
+    }
+    if(message==WM_CAPTURECHANGED) {
+        xml1_pc_channel_key(VK_LBUTTON,0);xml1_pc_channel_key(VK_RBUTTON,0);xml1_pc_channel_key(VK_MBUTTON,0);
+        return 0;
+    }
+    if(message==WM_MOUSEWHEEL) {
+        POINT point={(short)LOWORD(lparam),(short)HIWORD(lparam)};ScreenToClient(window,&point);
+        int wheel=(short)HIWORD(wparam);
+        pc_ui::input_mouse(point.x,point.y,0,false,wheel);
+        return 0;
+    }
     if (message == WM_TIMER && wparam == fps_title_timer) {
         ULONGLONG now = GetTickCount64();
         ULONGLONG elapsed = now - fps_title_started;
@@ -47,16 +79,18 @@ static bool pump_playtest_window() {
 int main(int argc, char** argv) {
     const bool replayMode = argc == 4 && std::strcmp(argv[1], "--replay") == 0;
     const bool benchmarkMode = argc == 4 && std::strcmp(argv[1], "--benchmark") == 0;
+    const bool pcPreviewMode = argc == 3 && std::strcmp(argv[1], "--pc-menu-preview") == 0;
     const bool vblankMode = argc == 3 && std::strcmp(argv[1], "--vblank-stream") == 0;
     const bool liveMode = vblankMode || (argc == 3 && std::strcmp(argv[1], "--stream") == 0);
     const char* visibleEnv = std::getenv("XML1_DX8_VISIBLE");
     const bool visible = liveMode && !vblankMode && visibleEnv && !std::strcmp(visibleEnv, "1");
+    pc_ui::physical_input=visible && !std::getenv("XML1_PC_TEST_INPUT");
     if (liveMode) {
         std::freopen(vblankMode?"build/dx8-vblank.log":"build/dx8-live.log","wb",stdout);
         std::freopen(vblankMode?"build/dx8-vblank-errors.log":"build/dx8-live-errors.log","wb",stderr);
         std::setvbuf(stdout,nullptr,_IONBF,0);
     }
-    if (!replayMode && !benchmarkMode && !liveMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
+    if (!replayMode && !benchmarkMode && !liveMode && !pcPreviewMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
         std::fprintf(stderr, "Usage: xml1-dx8-worker --probe | --replay packet.bin capture.bmp | --benchmark packet.bin iterations\n");
         return 2;
     }
@@ -86,7 +120,13 @@ int main(int argc, char** argv) {
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wc.lpszClassName = L"OpenXML1DX8Probe";
     RegisterClassW(&wc);
-    const DWORD windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+    Xml1PcInputSnapshot initial_input={};
+    bool pc_connected=liveMode && !vblankMode && std::getenv("XML1_PC_INPUT_CHANNEL");
+    if(pc_connected && (!xml1_pc_channel_connect() || !xml1_pc_channel_read(&initial_input,1))) {
+        std::fprintf(stderr,"Cannot connect PC input channel\n");return 2;
+    }
+    bool borderless=visible && pc_connected && initial_input.settings.fullscreen;
+    const DWORD windowStyle = borderless?WS_POPUP:WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
     unsigned render_width=liveMode&&!vblankMode?1280:640,render_height=liveMode&&!vblankMode?720:480;
     const char* resolution=vblankMode?nullptr:std::getenv("XML1_DX8_RESOLUTION");
     if(resolution) {
@@ -96,11 +136,21 @@ int main(int argc, char** argv) {
         else {std::fprintf(stderr,"Unsupported XML1_DX8_RESOLUTION\n");return 2;}
     }
     output_width=render_width;output_height=render_height;
+    pc_ui::width=render_width;pc_ui::height=render_height;
+    pc_ui::client_width=render_width;pc_ui::client_height=render_height;
     RECT client = {0, 0, (LONG)render_width, (LONG)render_height};
     AdjustWindowRect(&client, windowStyle, FALSE);
     HWND window = CreateWindowW(wc.lpszClassName, visible ? L"OpenXML1 - DX8 Playtest" : L"XML1 D3D8 probe", windowStyle,
         CW_USEDEFAULT, CW_USEDEFAULT, client.right-client.left, client.bottom-client.top,
         nullptr, nullptr, wc.hInstance, nullptr);
+    if(borderless) {
+        MONITORINFO monitor={};monitor.cbSize=sizeof(monitor);
+        if(!GetMonitorInfoW(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&monitor))return 2;
+        const RECT &r=monitor.rcMonitor;
+        SetWindowPos(window,nullptr,r.left,r.top,r.right-r.left,r.bottom-r.top,SWP_NOZORDER|SWP_NOACTIVATE);
+        // Mouse coordinates are client pixels; scale hit targets to this size.
+        pc_ui::client_width=r.right-r.left;pc_ui::client_height=r.bottom-r.top;
+    }
     D3DPRESENT_PARAMETERS pp = {};
     D3DDISPLAYMODE mode = {};
     api->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode);
@@ -129,6 +179,14 @@ int main(int argc, char** argv) {
     if (device && replayMode) {
         try { replay(device,argv[2],argv[3]); }
         catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
+    }
+    if(device && pcPreviewMode) {
+        try {
+            Xml1PcSettings settings;xml1_pc_settings_defaults(&settings);pc_ui::open(settings);
+            if(std::getenv("XML1_PC_PREVIEW_BINDINGS"))pc_ui::key(VK_TAB);
+            checked(device->BeginScene());pc_ui::draw(device);checked(device->EndScene());
+            capture_backbuffer(device,argv[2]);
+        } catch(const std::exception& error) {std::fprintf(stderr,"%s\n",error.what());hr=E_FAIL;}
     }
     if(device && benchmarkMode) {
         quiet_replay=true;
@@ -212,6 +270,7 @@ int main(int argc, char** argv) {
     }
     if(texture_requests) report_texture_cache(0);
     clear_texture_cache();
+    pc_ui::release();xml1_pc_channel_close();
     if (device) device->Release();
     if (window) { KillTimer(window, fps_title_timer); DestroyWindow(window); }
     UnregisterClassW(wc.lpszClassName, wc.hInstance);

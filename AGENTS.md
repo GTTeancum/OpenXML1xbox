@@ -16,3 +16,5 @@
 - User-selected player staging is !GAME. Put X-Men Legends.exe and build.ini directly beside default.xbe and the loose asset directories, with the renderer in runtime. Do not create another player/ tree or nest the assets under game/ there.
 - A smoke check that only proves frames rendered is never sufficient. Inspect expected artwork, FMVs, menu backgrounds, transitions and applicable audio in the actual staged build; explicitly report any unverified portions.
 - Preserve original resource filenames and use the reference PKGB format. Correct extraction and package declarations at their source; do not invent PKGB attributes, runtime alias routing, or other custom fixes to compensate for packaging errors.
+- Imported XML2 menu IGBs must retain their PKGB associations and declared relative paths. Author the IGB assets and menu contents within that structure; do not replace it with an independent overlay or rename extracted resources.
+- Menu asset authoring is limited to the IGBs and their populated menu contents. Preserve the reference file structure and package relationships when copying and staging them.

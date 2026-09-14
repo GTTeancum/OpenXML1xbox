@@ -59,6 +59,26 @@ extern "C" int xml1_install_pc_menu(const char *root, char *error, unsigned erro
         // Only a player installation can be updated, never the original extraction.
         if (!fs::exists(base / ".xml1-player-layout")) return 1;
         for (const char *language : {"eng", "fre", "ger"}) {
+            fs::path options_path=base/"ui/menus"/(std::string("options.")+language);
+            std::ifstream options_input(options_path,std::ios::binary);
+            if(!options_input)throw std::runtime_error("Missing options menu: "+options_path.string());
+            std::string options((std::istreambuf_iterator<char>(options_input)),{});options_input.close();
+            const std::string old_command="usecmd=\"optionscontroller\"";
+            auto command=options.find(old_command);
+            if(command!=std::string::npos) {
+                auto item=options.rfind("<item ",command),end=options.find("/>",command);
+                auto text=item==std::string::npos?std::string::npos:options.find("text=\"",item);
+                if(text==std::string::npos || text>end)throw std::runtime_error("Cannot identify native Controls menu item");
+                options.replace(command,old_command.size(),"usecmd=\"pcoptions\"");
+                text=options.find("text=\"",item);
+                auto text_end=options.find('"',text+6);
+                options.replace(text+6,text_end-text-6,"PC Options");
+                fs::path temp=options_path;temp+=".pc-menu-tmp";
+                std::ofstream output(temp,std::ios::binary|std::ios::trunc);
+                output.write(options.data(),options.size());output.close();
+                if(!output || !MoveFileExW(temp.c_str(),options_path.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
+                    throw std::runtime_error("Cannot install PC Options menu");
+            }
             fs::path path = base / "ui/menus" / (std::string("main.") + language);
             std::ifstream input(path, std::ios::binary);
             if (!input) throw std::runtime_error("Missing main-menu file: " + path.string());

@@ -9,6 +9,7 @@
 5. Finish HD and window-behavior checks.
 6. Plan the 32-bit/original-Xbox return path.
 7. Make XboxRecomp friendlier to future Xbox builds with modern toolchains.
+8. Integrate other IGB platform/version formats through IGB Blender as an oracle
 
 ## Detailed work
 

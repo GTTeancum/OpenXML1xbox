@@ -1,4 +1,5 @@
 #include "guest_input.h"
+#include "pc_gamepad.h"
 #include "xbox_memory_layout.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,6 +12,8 @@ extern xml1_guest_function recomp_lookup_kernel(uint32_t va);
 #define DISCONNECTED 1167u
 #define INVALID_ARGUMENT 87u
 static int test_mode;
+static int pc_test_mode;
+static SRWLOCK pc_poll_lock=SRWLOCK_INIT;
 static uint32_t handles[4], generation, previous_mask;
 static uint32_t test_connected;
 static XBOX_INPUT_STATE test_states[4];
@@ -109,7 +112,7 @@ static uint32_t read32(uint32_t va) { uint32_t v; memcpy(&v, guest(va, 4), 4); r
 static void write32(uint32_t va, uint32_t v) { memcpy(guest(va, 4), &v, 4); }
 static uint32_t arg(unsigned n) { return read32(g_esp + 4 + 4 * n); }
 static void finish(unsigned args, uint32_t result) { g_eax = result; g_esp += 4 + args * 4; }
-static DWORD poll(unsigned port, XBOX_INPUT_STATE *state)
+static DWORD poll(unsigned port, XBOX_INPUT_STATE *state, int consume)
 {
     if (port >= 4) return DISCONNECTED;
     if (test_mode) {
@@ -124,14 +127,39 @@ static DWORD poll(unsigned port, XBOX_INPUT_STATE *state)
         }
         return 0;
     }
-    return xbox_InputGetState(port, state);
+    Xml1PcInputSnapshot input;
+    AcquireSRWLockExclusive(&pc_poll_lock);
+    if(!xml1_pc_channel_read(&input,1)) {
+        ReleaseSRWLockExclusive(&pc_poll_lock);return xbox_InputGetState(port,state);
+    }
+    int slot=xml1_pc_controller_slot(&input.settings,port);
+    DWORD result=slot<0 || pc_test_mode?DISCONNECTED:xbox_InputGetState((DWORD)slot,state);
+    if(result)memset(state,0,sizeof(*state));
+    if(input.settings.keyboard_enabled && port==input.settings.keyboard_player) {
+        if(consume && !xml1_pc_channel_read(&input,0))memset(&input.controls,0,sizeof(input.controls));
+        Xml1PcGamepad keyboard,mixed;
+        xml1_pc_map_gamepad(&input,&keyboard);
+        memcpy(&mixed,&state->Gamepad,sizeof(mixed));xml1_pc_merge_gamepad(&mixed,&keyboard);
+        memcpy(&state->Gamepad,&mixed,sizeof(mixed));result=0;
+    }
+    if(input.menu_active || !input.controls.focused)memset(&state->Gamepad,0,sizeof(state->Gamepad));
+    static XBOX_INPUT_STATE previous[4];
+    if(memcmp(&state->Gamepad,&previous[port].Gamepad,sizeof(state->Gamepad))) {
+        previous[port].Gamepad=state->Gamepad;++previous[port].dwPacketNumber;
+        if(pc_test_mode && consume)fprintf(stderr,"[PC GAME INPUT] port=%u packet=%u buttons=%04X A=%u B=%u LX=%d LY=%d\n",
+            port,previous[port].dwPacketNumber,state->Gamepad.wButtons,state->Gamepad.bAnalogButtons[0],
+            state->Gamepad.bAnalogButtons[1],state->Gamepad.sThumbLX,state->Gamepad.sThumbLY);
+    }
+    state->dwPacketNumber=previous[port].dwPacketNumber;
+    ReleaseSRWLockExclusive(&pc_poll_lock);
+    return result;
 }
 static uint32_t connected_mask(void)
 {
     uint32_t result = 0;
     for (unsigned i = 0; i < 4; ++i) {
         XBOX_INPUT_STATE state;
-        if (!poll(i, &state)) result |= 1u << i;
+        if (!poll(i, &state,0)) result |= 1u << i;
     }
     return result;
 }
@@ -155,6 +183,7 @@ void xml1_XInitDevices(void)
 {
     const char *mode = getenv("XML1_TEST_PAD");
     test_mode = mode && strcmp(mode, "1") == 0;
+    pc_test_mode=getenv("XML1_PC_TEST_INPUT")!=NULL;
     test_input_path[0]=0; test_input_id=0; test_release_tick=0;
     const char *input_file=getenv("XML1_TEST_INPUT_FILE");
     if(test_mode && input_file && *input_file) {
@@ -217,7 +246,7 @@ void xml1_XInputOpen(void)
 {
     uint32_t type = arg(0), port = arg(1), slot = arg(2);
     XBOX_INPUT_STATE state;
-    if (type != GAMEPAD_TYPE || slot || port >= 4 || poll(port, &state)) { finish(4, 0); return; }
+    if (type != GAMEPAD_TYPE || slot || port >= 4 || poll(port, &state,0)) { finish(4, 0); return; }
     if (!handles[port]) {
         generation = (generation + 1) & 0xFFF;
         handles[port] = 0x58490000u | (generation << 4) | (port + 1);
@@ -235,7 +264,7 @@ void xml1_XInputGetState(void)
     int port = port_for(arg(0));
     uint32_t dest = arg(1);
     XBOX_INPUT_STATE state = {0};
-    DWORD result = port < 0 ? DISCONNECTED : poll((unsigned)port, &state);
+    DWORD result = port < 0 ? DISCONNECTED : poll((unsigned)port, &state,1);
     if (!dest) result = INVALID_ARGUMENT;
     if (!result) {
         /* Xbox wire payload is packet[4] + gamepad[18], struct padded to 24. */
@@ -257,8 +286,15 @@ void xml1_XInputSetState(void)
     memcpy(&vibration, bytes + 66, 4);
     DWORD result = port < 0 ? DISCONNECTED : 0;
     XBOX_INPUT_STATE state;
-    if (!result) result = poll((unsigned)port, &state);
-    if (!result && !test_mode) result = xbox_InputSetState((DWORD)port, &vibration);
+    if (!result) result = poll((unsigned)port, &state,0);
+    if (!result && !test_mode) {
+        Xml1PcInputSnapshot input={0};
+        int slot=xml1_pc_channel_read(&input,1)?xml1_pc_controller_slot(&input.settings,(unsigned)port):port;
+        if(slot>=0) {
+            result=xbox_InputSetState((DWORD)slot,&vibration);
+            if(result==DISCONNECTED && input.settings.keyboard_enabled && (unsigned)port==input.settings.keyboard_player)result=0;
+        }
+    }
     write32(feedback, result);
     uint32_t event = read32(feedback + 4);
     if (event) {

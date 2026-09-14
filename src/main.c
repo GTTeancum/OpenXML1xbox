@@ -40,8 +40,12 @@
 #include "loose_setup.h"
 #include "asset_routes.h"
 #include "pc_menu.h"
+#include "pc_input_channel.h"
 
 void xml1_pc_menu_command(const char *command) {
+    if (!strcmp(command,"pcoptions")) {
+        fprintf(stderr,"[PC MENU] Open PC options\n");xml1_pc_channel_request_menu();return;
+    }
     if (strcmp(command, "quitapp") != 0) return;
     fprintf(stderr, "[PC MENU] Quit selected; closing application and owned renderer jobs\n");
     fflush(stderr);
@@ -617,7 +621,6 @@ int main(int argc, char **argv)
                 _putenv_s("XML1_LIVE_DX8","1");
                 _putenv_s("XML1_DX8_VISIBLE","1");
                 _putenv_s("XML1_DX8_NO_CAPTURE","1");
-                if(!getenv("XML1_DX8_RESOLUTION"))_putenv_s("XML1_DX8_RESOLUTION","1920x1080");
                 _putenv_s("XML1_APU","1");
             }
         }
@@ -641,7 +644,6 @@ int main(int argc, char **argv)
             _putenv_s("XML1_DX8_VISIBLE", "0");
             _putenv_s("XML1_DX8_NO_CAPTURE", "1");
             _putenv_s("XML1_APU", "1");
-            if (!getenv("XML1_DX8_RESOLUTION")) _putenv_s("XML1_DX8_RESOLUTION", "1920x1080");
         } else if (!strcmp(argv[i], "--muted")) {
             _putenv_s("XML1_MUTED", "1");
         } else if (!strcmp(argv[i], "--help")) {
@@ -663,5 +665,15 @@ int main(int argc, char **argv)
     s_memory_query_test = argc == 2 && strcmp(argv[1], "--memory-query-test") == 0;
     s_irql_test = argc == 2 && strcmp(argv[1], "--irql-test") == 0;
     s_swizzle_test = argc == 2 && strcmp(argv[1], "--swizzle-test") == 0;
+    if(!s_memory_query_test && !s_irql_test && !s_swizzle_test && getenv("XML1_LIVE_DX8")) {
+        Xml1PcSettings settings;char error[256],resolution[32];
+        if(!xml1_pc_settings_load("pc-settings.ini",&settings,error,sizeof(error))) {
+            fprintf(stderr,"[PC SETTINGS] %s\n",error);return 4;
+        }
+        if(!xml1_pc_channel_create(&settings)) {fprintf(stderr,"[PC INPUT] Cannot create input channel\n");return 4;}
+        snprintf(resolution,sizeof(resolution),"%ux%u",settings.width,settings.height);
+        if(!getenv("XML1_DX8_RESOLUTION"))_putenv_s("XML1_DX8_RESOLUTION",resolution);
+        fprintf(stderr,"[PC INPUT] Loaded settings and created window input channel\n");
+    }
     return WinMain(GetModuleHandle(NULL), NULL, GetCommandLineA(), SW_SHOW);
 }

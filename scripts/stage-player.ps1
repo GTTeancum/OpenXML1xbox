@@ -48,10 +48,27 @@ Set-Content -LiteralPath (Join-Path $Destination '.xml1-player-layout') -Value '
 @'
 X-Men Legends
 
-Double-click X-Men Legends.exe to play. Connect an XInput controller first.
-The game uses 1080p widescreen and has no session timer.
+Double-click X-Men Legends.exe to play with a keyboard/mouse or XInput controller.
+The game defaults to 1080p widescreen and has no session timer.
 Select Quit at the bottom of the main menu, or close the game window, to stop
 the game and its audio.
+
+Options > PC Options contains display settings and rebindable controls.
+Apply saves pc-settings.ini. Back/Cancel discards unapplied changes.
+Display settings and player assignments take effect after restarting.
+Existing Sound/Music, camera, subtitles and vibration settings remain in Options.
+
+Default keyboard/mouse controls:
+WASD: move; Shift: walk; Space: jump; E: use/pick up.
+Left mouse or Num 4: attack. Right mouse or Num 6: smash.
+Num 5: hold for powers; 1-4: quick powers.
+Middle mouse + drag (or V + drag): camera; IJKL: camera keys.
+P/O: health/energy pack; C: call allies; arrows: select hero.
+M: map; F1: team stats; Esc: pause.
+Legacy menus: arrows or mouse wheel select, Enter/left click accepts,
+Backspace/right click goes back. Mouse clicks activate the selected item.
+PC Options supports clicking individual tabs, fields and buttons directly.
+This first pass uses WASD movement, not XML2's click-to-move/targeting.
 
 build.ini controls language and loose/packaged asset selection.
 Assets live directly beside this EXE. UDATA and TDATA contain saved data.
