@@ -2,18 +2,18 @@
 
 ## Summary
 
-1. **Smoke test various levels with 1–4 players.**
-2. **Keep FPS consistently above 30 at 1080p.**
-3. **Add an option to run assetsfb.zip loose.**
-4. **Support .pkgb manifests and loose resources instead of .fb bundles.**
-5. **Integrate a PC options menu.**
-6. **Integrate mouse and keyboard controls.**
-7. **Verify save listing and loading.**
-8. **Verify clean audio and headphone recovery.**
-9. **Finish HD and window-behavior checks.**
-10. **Validate long recordings and update documentation.**
-11. **Plan the 32-bit/original-Xbox return path.**
-12. **Document mod hooks and upstream reusable fixes.**
+1. Smoke test various levels with 1–4 players.
+2. Keep FPS consistently above 30 at 1080p.
+3. Add an option to run assetsfb.zip loose.
+4. Support .pkgb manifests and loose resources instead of .fb bundles.
+5. Integrate a PC options menu.
+6. Integrate mouse and keyboard controls.
+7. Verify save listing and loading.
+8. Verify clean audio and headphone recovery.
+9. Finish HD and window-behavior checks.
+10. Validate long recordings and update documentation.
+11. Plan the 32-bit/original-Xbox return path.
+12. Document mod hooks and upstream reusable fixes.
 
 ## Detailed work
 
