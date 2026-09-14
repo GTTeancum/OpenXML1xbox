@@ -134,7 +134,9 @@ static void connect_worker_channel(HANDLE *channel,HANDLE *job,const char *suffi
     if (!*job||!SetInformationJobObject(*job,JobObjectExtendedLimitInformation,&limit,sizeof(limit)))
         fatal("cannot bind graphics worker lifetime");
     STARTUPINFOA start={0}; PROCESS_INFORMATION process={0}; start.cb=sizeof(start);
-    snprintf(command,sizeof(command),"build\\renderer\\Release\\xml1-dx8-worker.exe %s %s",mode,name);
+    const char *worker=GetFileAttributesA(".xml1-player-layout")!=INVALID_FILE_ATTRIBUTES
+        ? "runtime\\xml1-dx8-worker.exe" : "build\\renderer\\Release\\xml1-dx8-worker.exe";
+    snprintf(command,sizeof(command),"\"%s\" %s %s",worker,mode,name);
     if (!CreateProcessA(NULL,command,NULL,NULL,FALSE,CREATE_NO_WINDOW|CREATE_SUSPENDED,NULL,NULL,&start,&process))
         fatal("cannot launch native DX8 worker");
     if (!AssignProcessToJobObject(*job,process.hProcess)) {

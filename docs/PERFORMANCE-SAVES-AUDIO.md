@@ -119,3 +119,51 @@ Reusable save-path fixes were submitted as XboxRecomp PR #53:
 https://github.com/sp00nznet/xboxrecomp/pull/53 (commit 0472a59).
 The isolated upstream synthetic-memory CTest fails before and passes after the
 fix. No game assets or generated game code are included.
+
+## Paused at user request
+
+The user requested that the goal be stalled. The current test was stopped and
+its evidence retained in work/headless-20260913-233128. This partial run includes
+navigation, combat, a tutorial modal, idle time and native captures; it is not a
+completed sustained-combat acceptance run. Xemu and OpenJPB were left untouched.
+
+Save listing, loading and overwrite are verified. Consistent 40+ FPS across
+levels at 1920x1080 16:9 and final audio quality acceptance remain open.
+The analysis helper and expanded run metadata remain saved in the working tree.
+Do not resume testing or launch the game until the user requests continuation.
+
+## Resumed isolated checks (September 13, 23:53)
+
+User requested "Try now". Xemu, OpenJPB and prior game/renderer processes were
+absent before testing. No other application was stopped. Same optimized build;
+no new performance or audio changes were introduced for this comparison.
+
+- HAARP exterior: work/headless-20260913-235312, 180-second hidden/muted run.
+  No profiling or native captures during the run. After the dialogue/movement
+  sequence, frames 5041-8160 (26 complete 120-frame windows) measured
+  47.62-49.01 FPS, weighted 48.69 FPS, worst individual frame 54.629 ms.
+  After wall time 110 seconds: zero queue-empty observations, maximum submission
+  gap 10.283 ms. PCM sample time differed from wall time by less than 1 ms over
+  the measured 66 seconds. This interval is predominantly a stationary scene
+  after movement, not sustained heavy combat.
+- Saved Central Park: work/headless-20260913-235635, 150-second hidden/muted run.
+  Native capture at 75 seconds confirms Wolverine level 2 at the Xtraction
+  Point after loading the overwritten save. Frames 4201-6960 (23 windows,
+  excluding the capture) measured 48.33-49.09 FPS, weighted 48.97 FPS, worst
+  frame 44.252 ms. After wall time 95 seconds: ONE queue-empty observation,
+  maximum submission gap 67.129 ms, reported near wall time 111.964 seconds.
+  This is a stationary loaded-game scene, not combat acceptance.
+
+Both runs used genuine Direct3D 8 at 1920x1080 16:9 and completed their diagnostic
+watchdogs normally. Analysis JSON is retained in each run directory. The results
+support improved performance without the competing games, but do not establish
+causation or eliminate occasional frame stalls. Audio acceptance remains OPEN:
+one isolated-run queue depletion persisted, and muted testing does not prove
+perceptual quality or physical headphone recovery. No visible game is left running.
+
+
+## Performance item closed (September 14, 2026)
+
+The user accepted the current performance results and directed closure of TODO
+item 2, with reopening if needed. Item 2 is complete by that acceptance; the
+measurement limitations above remain accurate. Audio item 8 remains open.

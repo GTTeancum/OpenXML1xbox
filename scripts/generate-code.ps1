@@ -17,5 +17,8 @@ try {
     & $python -m tools.recomp ../../game/default.xbe --all --split 250 --game-name 'X-Men Legends' --disasm-dir ../../analysis/disasm --func-id-dir ../../analysis/func_id --abi-dir ../../analysis/abi --gen-dir ../../src/recomp/gen --output-dir ../../analysis/recomp --manual-functions ../../config/manual-functions.json
     if ($LASTEXITCODE -ne 0) { throw 'Code generation failed.' }
     & $python (Join-Path $PSScriptRoot 'guard-generated.py')
+    & $python (Join-Path $PSScriptRoot 'guard-package-loading.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Package guards failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-pc-menu.py')
     if ($LASTEXITCODE -ne 0) { throw 'Generated diagnostic guards failed.' }
 } finally { Pop-Location }

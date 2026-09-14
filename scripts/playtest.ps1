@@ -4,12 +4,13 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$gameExe = Join-Path $projectRoot 'build/optimized/Release/xml1-boot-probe.exe'
-$workerExe = Join-Path $projectRoot 'build/renderer/Release/xml1-dx8-worker.exe'
-foreach ($required in @($gameExe, $workerExe, (Join-Path $projectRoot 'game/default.xbe'))) {
+$playerRoot = Join-Path $projectRoot '!GAME'
+$gameExe = Join-Path $playerRoot 'X-Men Legends.exe'
+$workerExe = Join-Path $playerRoot 'runtime/xml1-dx8-worker.exe'
+foreach ($required in @($gameExe, $workerExe, (Join-Path $playerRoot 'default.xbe'))) {
     if (!(Test-Path -LiteralPath $required)) { throw "Missing playtest requirement: $required" }
 }
-if (Get-Process -Name xml1-boot-probe -ErrorAction SilentlyContinue) {
+if (Get-Process -Name xml1-boot-probe,'X-Men Legends' -ErrorAction SilentlyContinue) {
     throw 'An XML1 game process is already running. Close it before starting another playtest.'
 }
 $saved = @{}

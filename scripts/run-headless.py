@@ -26,11 +26,12 @@ def main():
     if not 1 <= args.seconds <= 1800:
         parser.error('--seconds must be between 1 and 1800')
     data = args.data_root.resolve()
-    if data == (ROOT / 'game').resolve() or not (data / 'default.xbe').is_file():
+    originals=[(ROOT/name).resolve() for name in ('game','XBOXgame')]
+    if data in originals or not (data / 'default.xbe').is_file():
         parser.error('--data-root must be an isolated fixture containing default.xbe')
     for directory in ('UDATA', 'TDATA'):
         save = data / directory
-        if save.is_symlink() or save.resolve().is_relative_to((ROOT / 'game').resolve()):
+        if save.is_symlink() or any(save.resolve().is_relative_to(original) for original in originals):
             parser.error('Fixture save directories must not link to original game saves')
     running = subprocess.run(['powershell.exe', '-NoProfile', '-Command',
         "if (Get-Process -Name xml1-boot-probe -ErrorAction SilentlyContinue) { exit 1 }"],
@@ -71,7 +72,9 @@ def main():
         process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log,
             stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
         (output / 'run.json').write_text(json.dumps(dict(pid=process.pid, command=command,
-            seconds=args.seconds, data_root=str(data), muted=args.muted), indent=2))
+            seconds=args.seconds, data_root=str(data), muted=args.muted,
+            profile=args.profile, profile_delay=args.profile_delay, capture_pcm=args.capture_pcm,
+            sequence=events), indent=2))
         try:
             started=time.monotonic()
             for index, (second, action) in enumerate(events,1):

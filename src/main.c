@@ -36,6 +36,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "build_settings.h"
+#include "loose_setup.h"
+#include "asset_routes.h"
+#include "pc_menu.h"
+
+void xml1_pc_menu_command(const char *command) {
+    if (strcmp(command, "quitapp") != 0) return;
+    fprintf(stderr, "[PC MENU] Quit selected; closing application and owned renderer jobs\n");
+    fflush(stderr);
+    /* Same process lifetime contract as window close: Windows tears down the
+       in-process audio engine and closes KILL_ON_JOB_CLOSE renderer jobs.
+       Avoid CRT teardown while guest/audio worker threads are still live. */
+    ExitProcess(0);
+}
+static int s_headless;
 
 static int s_memory_query_test;
 static int s_irql_test;
@@ -90,8 +105,11 @@ extern ptrdiff_t g_xbox_mem_offset;
  * Run: py -3 -m tools.xbe_parser game/default.xbe
  */
 #define YOUR_GAME_ENTRY_POINT   0x001A1C97  /* Retail World XBE entry, parsed from supplied image */
-#define YOUR_GAME_XBE_PATH      "game\\default.xbe"
-#define YOUR_GAME_DIR            "game"
+static const char *player_xbe_path="game\\default.xbe";
+static char test_xbe_path[4096];
+static const char *player_data_dir="game";
+#define YOUR_GAME_XBE_PATH      player_xbe_path
+#define YOUR_GAME_DIR           player_data_dir
 
 /* ── Forward declarations ──────────────────────────────────── */
 
@@ -371,7 +389,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     /* Step 1: Load XBE */
     if (!load_xbe(YOUR_GAME_XBE_PATH, &xbe_data, &xbe_size)) {
-        fprintf(stderr, "Failed to load game/default.xbe.\n");
+        fprintf(stderr, "Failed to load %s.\n", YOUR_GAME_XBE_PATH);
         return 1;
     }
     printf("XBE loaded: %zu bytes\n", xbe_size);
@@ -416,6 +434,51 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             }
             fprintf(stderr,"[DIAGNOSTIC DATA ROOT] %s\n",test_game_dir);
         }
+        char settings_path[MAX_PATH], settings_error[256];
+        /* The host config is beside the project launcher. The original Xbox
+           game/build.ini remains untouched and must not shadow host options. */
+        if(test_game_dir) snprintf(settings_path,sizeof(settings_path),"%s/build.ini",test_game_dir);
+        else strcpy(settings_path,"build.ini");
+        if(test_game_dir && GetFileAttributesA(settings_path)==INVALID_FILE_ATTRIBUTES)
+            strcpy(settings_path,"build.ini");
+        if(!xml1_read_build_settings(settings_path,&xml1_build_settings,settings_error,sizeof(settings_error))) {
+            fprintf(stderr,"[BUILD SETTINGS ERROR] %s: %s\n",settings_path,settings_error);
+            if(!s_headless) MessageBoxA(NULL,settings_error,"X-Men Legends configuration",MB_OK|MB_ICONERROR);
+            return 4;
+        }
+        fprintf(stderr,"[BUILD SETTINGS] loose=%d text=%s movie=%s audio=%s\n",
+            xml1_build_settings.prefer_files_loose,xml1_build_settings.text_language,
+            xml1_build_settings.movie_language,xml1_build_settings.audio_language);
+        if(xml1_build_settings.prefer_files_loose) {
+            char setup_error[1024];
+            if(!xml1_prepare_loose_assets(test_game_dir ? test_game_dir : YOUR_GAME_DIR,
+                                         s_headless,setup_error,sizeof(setup_error))) {
+                fprintf(stderr,"[LOOSE SETUP ERROR] %s\n",setup_error);
+                return 4;
+            }
+
+            /* Retail XBE .pkg string has four bytes of zero padding before
+               the next pointer. Verify it before selecting native PKGB input. */
+            unsigned char *extension=(unsigned char *)((uintptr_t)g_xbox_mem_offset+0x003DAF00u);
+            static const unsigned char expected[8]={'.','p','k','g',0,0,0,0};
+            if(memcmp(extension,expected,sizeof(expected))) {
+                fprintf(stderr,"[BUILD SETTINGS ERROR] Package extension boundary differs from verified XBE\n");
+                return 4;
+            }
+            memcpy(extension,".pkgb",6);
+        }
+        if(!xml1_install_pc_menu(test_game_dir ? test_game_dir : YOUR_GAME_DIR,settings_error,sizeof(settings_error))) {
+            fprintf(stderr,"[PC MENU ERROR] %s\n",settings_error);
+            return 4;
+        }
+        if(!xml1_asset_routes_init(test_game_dir ? test_game_dir : YOUR_GAME_DIR,
+                                  &xml1_build_settings,settings_error,sizeof(settings_error))) {
+            fprintf(stderr,"[BUILD SETTINGS ERROR] %s\n",settings_error);
+            if(!s_headless) MessageBoxA(NULL,settings_error,"X-Men Legends configuration",MB_OK|MB_ICONERROR);
+            return 4;
+        }
+        extern void xbox_set_asset_path_filter(int (*filter)(const char*,char*,unsigned));
+        xbox_set_asset_path_filter(xml1_asset_path_filter);
         xbox_path_init(test_game_dir ? test_game_dir : YOUR_GAME_DIR, NULL);
     }
 
@@ -535,18 +598,55 @@ static BOOL load_xbe(const char *path, void **out_data, size_t *out_size)
 /* Console entry point (for debugging -- lets you see printf output) */
 int main(int argc, char **argv)
 {
+    /* Player builds resolve data beside the executable, regardless of shortcut cwd. */
+    int player_layout=0;
+    wchar_t executable[MAX_PATH],marker[MAX_PATH];
+    if(GetModuleFileNameW(NULL,executable,MAX_PATH)) {
+        wchar_t *slash=wcsrchr(executable,L'\\');
+        if(slash) {
+            *slash=0;
+            if(swprintf(marker,MAX_PATH,L"%ls\\.xml1-player-layout",executable)>0 &&
+               GetFileAttributesW(marker)!=INVALID_FILE_ATTRIBUTES) {
+                if(!SetCurrentDirectoryW(executable))return 4;
+                player_layout=1;
+                if(GetFileAttributesW(L"default.xbe")!=INVALID_FILE_ATTRIBUTES) {
+                    player_xbe_path="default.xbe";
+                    player_data_dir=".";
+                }
+                CreateDirectoryW(L"build",NULL);
+                _putenv_s("XML1_LIVE_DX8","1");
+                _putenv_s("XML1_DX8_VISIBLE","1");
+                _putenv_s("XML1_DX8_NO_CAPTURE","1");
+                if(!getenv("XML1_DX8_RESOLUTION"))_putenv_s("XML1_DX8_RESOLUTION","1920x1080");
+                _putenv_s("XML1_APU","1");
+            }
+        }
+    }
+    if(!player_layout) {
+        const char *test_data=getenv("XML1_TEST_GAME_DIR"),*test_pad=getenv("XML1_TEST_PAD");
+        if(test_data && test_pad && !strcmp(test_pad,"1")) {
+            int length=snprintf(test_xbe_path,sizeof(test_xbe_path),"%s/default.xbe",test_data);
+            if(length<0 || length>=sizeof(test_xbe_path))return 4;
+            player_xbe_path=test_xbe_path;
+        } else if(GetFileAttributesA(player_xbe_path)==INVALID_FILE_ATTRIBUTES &&
+                  GetFileAttributesA("XBOXgame/default.xbe")!=INVALID_FILE_ATTRIBUTES) {
+            player_xbe_path="XBOXgame/default.xbe";
+            player_data_dir="XBOXgame";
+        }
+    }
     for (int i=1; i<argc; ++i) {
         if (!strcmp(argv[i], "--headless")) {
+            s_headless=1;
             _putenv_s("XML1_LIVE_DX8", "1");
             _putenv_s("XML1_DX8_VISIBLE", "0");
             _putenv_s("XML1_DX8_NO_CAPTURE", "1");
             _putenv_s("XML1_APU", "1");
-            _putenv_s("XML1_DX8_RESOLUTION", "1920x1080");
+            if (!getenv("XML1_DX8_RESOLUTION")) _putenv_s("XML1_DX8_RESOLUTION", "1920x1080");
         } else if (!strcmp(argv[i], "--muted")) {
             _putenv_s("XML1_MUTED", "1");
         } else if (!strcmp(argv[i], "--help")) {
             puts("Usage: xml1-boot-probe [--headless] [--muted]\n"
-                 "  --headless  Hidden native DX8 rendering at 1080p with full audio processing.\n"
+                 "  --headless  Hidden native DX8 rendering (1080p default) with full audio processing.\n"
                  "  --muted     Silence this game's output; preserve DSP and audio pacing.");
             return 0;
         } else if (strcmp(argv[i], "--memory-query-test") &&
@@ -554,6 +654,11 @@ int main(int argc, char **argv)
             fprintf(stderr, "Unknown argument: %s\n", argv[i]);
             return 2;
         }
+    }
+    if(player_layout && !s_headless) {
+        FreeConsole();
+        freopen("build/game.log","wb",stdout);
+        freopen("build/game-errors.log","wb",stderr);
     }
     s_memory_query_test = argc == 2 && strcmp(argv[1], "--memory-query-test") == 0;
     s_irql_test = argc == 2 && strcmp(argv[1], "--irql-test") == 0;

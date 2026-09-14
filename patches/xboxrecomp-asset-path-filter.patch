@@ -1,0 +1,27 @@
+--- a/src/kernel/kernel_file.c
++++ b/src/kernel/kernel_file.c
+@@ -107,6 +107,11 @@
+     return result;
+ }
+ 
++/* Optional title-owned asset policy. Register before guest threads start. */
++static int (*s_asset_path_filter)(const char*,char*,unsigned);
++void xbox_set_asset_path_filter(int (*filter)(const char*,char*,unsigned)) {
++    s_asset_path_filter=filter;
++}
+ /* Translate an Xbox OBJECT_ATTRIBUTES path to a Win32 wide path */
+ static BOOL translate_obj_path(PXBOX_OBJECT_ATTRIBUTES ObjectAttributes,
+                                WCHAR* win_path, DWORD buf_size)
+@@ -124,6 +129,12 @@
+         int count = MultiByteToWideChar(CP_ACP, 0, xbox_path, -1,
+             win_path + used, (int)(buf_size - used));
+         return count != 0;
++    }
++    char routed[4096];
++    if(s_asset_path_filter) {
++        int result=s_asset_path_filter(xbox_path,routed,sizeof(routed));
++        if(result<0)return FALSE;
++        if(result>0)xbox_path=routed;
+     }
+     return xbox_translate_path(xbox_path, win_path, buf_size);
+ }

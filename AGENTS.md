@@ -9,4 +9,10 @@
 - Keep original ISO files unchanged. Inputs, extracted assets, generated game code, saves, captures, and build products stay local and excluded from Git.
 - Pin XboxRecomp as a submodule. Record any required upstream changes rather than silently updating the pinned revision.
 - Do not invent XBE addresses, title IDs, or compatibility results. Derive them from the user's supplied image.
-- Modding goals include loose-file overrides, validated asset conversion, and documented gameplay hooks that survive recompilation. These are goals, not implemented features.
+- Community mod-hook documentation is out of scope. Focus upstream contribution work on reusable toolkit fixes.
+
+- Standing TODO rule: TODO.MD contains only unfinished work. Remove completed items from both the summary and detailed sections, renumber remaining items and update internal references. Keep completion history and evidence in progress documentation, not in the TODO list. Do not reopen accepted work without user direction.
+- Standing staging rule: provide a self-contained, player-friendly folder with a plainly named game executable, build.ini, game data, and runtime dependencies. Never present separate build/work fixture paths as the playable delivery. Keep technical fixtures separate from player staging.
+- User-selected player staging is !GAME. Put X-Men Legends.exe and build.ini directly beside default.xbe and the loose asset directories, with the renderer in runtime. Do not create another player/ tree or nest the assets under game/ there.
+- A smoke check that only proves frames rendered is never sufficient. Inspect expected artwork, FMVs, menu backgrounds, transitions and applicable audio in the actual staged build; explicitly report any unverified portions.
+- Preserve original resource filenames and use the reference PKGB format. Correct extraction and package declarations at their source; do not invent PKGB attributes, runtime alias routing, or other custom fixes to compensate for packaging errors.

@@ -119,6 +119,9 @@ int main(void) {
         REQUIRE(*(uint16_t *)(memory+0x600008)==(1u<<i));
         REQUIRE(*(int16_t *)(memory+0x600012)==0 && *(int16_t *)(memory+0x600014)==0);
     }
+    command=fopen(command_path,"wb"); REQUIRE(command); fputs("25 back\n",command); fclose(command);
+    xml1_input_test_frame(1160); REQUIRE(call(0x3C0398,2,args)==0);
+    REQUIRE(*(uint16_t *)(memory+0x600008)==XBOX_GAMEPAD_BACK);
     REQUIRE(DeleteFileA(command_path));
     puts("PASS: file commands wait for complete lines, apply once, release buttons and stay process-local");
     memset(memory + 0x600100, 0, 70);

@@ -1,8 +1,10 @@
 /.venv/
 /build/
 /work/
+/player/
 /inputs/
 /game/
+/XBOXgame/
 /analysis/
 /src/recomp/gen/
 *.iso
@@ -17,3 +19,5 @@
 __pycache__/
 .pytest_cache/
 *.log
+
+/!GAME/

@@ -3,16 +3,12 @@
 ## Summary
 
 1. Smoke test various levels with 1–4 players.
-2. Reach 40+ FPS across various levels at 1080p.
-3. Add an option to run assetsfb.zip loose.
-4. Support .pkgb manifests and loose resources instead of .fb bundles.
-5. Integrate a PC options menu.
-6. Integrate mouse and keyboard controls.
-7. Verify save listing and loading.
-8. Verify clean audio and headphone recovery.
-9. Finish HD and window-behavior checks.
-10. Plan the 32-bit/original-Xbox return path.
-11. Document mod hooks and upstream reusable fixes.
+2. Integrate a PC options menu.
+3. Integrate mouse and keyboard controls.
+4. Verify clean audio and headphone recovery.
+5. Finish HD and window-behavior checks.
+6. Plan the 32-bit/original-Xbox return path.
+7. Make XboxRecomp friendlier to future Xbox builds with modern toolchains.
 
 ## Detailed work
 
@@ -28,55 +24,7 @@
 - [ ] Record pass/fail per matrix cell and reproducible defects with locations,
       builds, logs, and native visual evidence where useful.
 
-### 2. 40+ FPS across various levels at 1080p
-
-- [ ] Profile actual 1920×1080 gameplay, including heavy combat, effects,
-      scripted transitions, and the 1–4 player test matrix.
-- [ ] Remove measured bottlenecks without reducing rendering resolution,
-      changing game speed, or sacrificing graphics/audio correctness.
-- [ ] Demonstrate sustained gameplay at 40+ FPS using frame-time traces;
-      an overall average hiding slow levels is insufficient. Report slow frames and stalls,
-      with loading measured separately from active gameplay.
-- [ ] Repeat representative tests with OBS recording enabled; report its cost,
-      hardware, settings, build, and test duration.
-
-Recent New York and HAARP interior windows exceed 40 FPS at 1080p, but exterior
-stalls, sustained combat, and multiplayer performance remain open. See
-[performance evidence](docs/PERFORMANCE-SAVES-AUDIO.md).
-
-### 3. Optional loose assetsfb.zip contents
-
-- [ ] Add a documented option to load the extracted assetsfb.zip directory
-      tree while retaining packaged mode as an option.
-- [ ] Define path resolution, search precedence, fallback behavior, and
-      missing-file diagnostics so modders can identify the asset being loaded.
-- [ ] Verify boot, menus, saves, and representative levels in both modes;
-      demonstrate an edited loose asset without rebuilding the ZIP.
-- [ ] Document extraction, folder layout, configuration, and switching modes.
-
-Reference: `C:/Games/X-Men Legends II/build.ini` and the installed XML2 layout.
-The inspected build.ini declares build/language settings; it does not establish
-a loose-mode switch. Investigate the actual loading behavior before choosing one.
-
-### 4. PKGB manifests and loose resources instead of FB bundles
-
-Dependency: item 3 establishes the outer archive's loose mode first.
-
-- [ ] Document XML1 .fb contents and XML2 .pkgb package definitions, resource
-      types, dependency order, and filename resolution.
-- [ ] Provide repeatable conversion from .fb bundles to .pkgb manifests plus
-      loose resources, with validation and actionable error messages.
-- [ ] Integrate manifest loading and document precedence and compatibility
-      with packaged content.
-- [ ] Verify characters, maps, effects, scripts, and shared packages; edit a
-      loose resource and reload without rebuilding its .fb bundle.
-
-Reference: `C:/Games/X-Men Legends II/Packages/generated`, including
-`common_ents.PKGB` and character/map subdirectories. The inspected PKGB is a
-binary package definition containing resource types and filenames, not plain
-text. Retain the XML2-compatible manifest workflow.
-
-### 5. Integrated PC options menu
+### 2. Integrated PC options menu
 
 - [ ] Inventory XML2 PC options and behavior from the installed reference,
       including display, graphics, audio, and controls; track parity explicitly.
@@ -87,9 +35,9 @@ text. Retain the XML2-compatible manifest workflow.
 - [ ] Verify 720p/1080p layouts and controller/mouse/keyboard navigation,
       including returning safely to gameplay.
 
-Dependency: coordinate control configuration with item 6.
+Dependency: coordinate control configuration with item 3.
 
-### 6. Mouse and keyboard controls
+### 3. Mouse and keyboard controls
 
 - [ ] Establish XML2-style defaults for gameplay and menus, including movement,
       attacks, powers, character switching, and pause.
@@ -101,17 +49,7 @@ Dependency: coordinate control configuration with item 6.
       without stuck inputs or one player's input affecting another player.
 - [ ] Obtain a human gameplay check using the actual keyboard and mouse.
 
-### 7. Save listing and loading after restart
-
-- [x] Save, confirm the load-menu entry, close/reopen the game, load the save,
-      and confirm restored progress.
-- [x] Verify multiple saves and overwriting an existing save safely.
-
-Native 1080p tests confirmed listing, restored Central Park progress, a second save,
-overwrite, and loading the overwritten slot after restarting the game. Original
-saves were preserved. See [validation evidence](docs/PERFORMANCE-SAVES-AUDIO.md).
-
-### 8. Audio continuity and device recovery
+### 4. Audio continuity and device recovery
 
 - [ ] Verify 15–20 minutes of combat/transitions without crackle, stutter,
       missing sounds, or A/V drift; record reproducible remaining defects.
@@ -121,13 +59,13 @@ saves were preserved. See [validation evidence](docs/PERFORMANCE-SAVES-AUDIO.md)
 Simulated device-loss and native engine-restart tests passed; physical headphone
 recovery needs confirmation. See [audio recovery](docs/AUDIO-DEVICE-RECOVERY.md).
 
-### 9. HD presentation and window behavior
+### 5. HD presentation and window behavior
 
 - [ ] Check HUD, menus, FMVs, effects, and transitions at 1080p, 16:9 for clipping,
       incorrect framing, missing elements, and visual regressions.
 - [ ] Confirm live title-bar FPS and the normal mouse cursor in human play.
 
-### 10. Future 32-bit and original-Xbox return path
+### 6. Future 32-bit and original-Xbox return path
 
 - [ ] Assess a 32-bit game runtime and document toolkit, compiler, memory, and
       platform requirements for an original-Xbox build.
@@ -137,11 +75,22 @@ recovery needs confirmation. See [audio recovery](docs/AUDIO-DEVICE-RECOVERY.md)
 The current Windows game is 64-bit with a separate 32-bit DX8 renderer; no
 hardware port is implemented. See [Xbox return path](docs/XBOX-RETURN.md).
 
-### 11. Durable mod hooks and reusable upstream fixes
+### 7. XboxRecomp portability and nxdk build support
 
-- [ ] Document gameplay/script extension points that survive regeneration,
-      with a reproducible mod example and validation workflow.
-- [ ] Review local patches against upstream branches/PRs and submit suitable
-      isolated toolkit fixes with reproducible evidence.
+- [ ] Audit host-specific assumptions in generated code and runtime interfaces;
+      distinguish 32-bit Xbox addresses from host pointers.
+- [ ] Separate optional Windows graphics, audio, memory and process dependencies
+      behind clear platform interfaces while preserving the working Windows build.
+- [ ] Add 32-bit compile checks and synthetic runtime regressions for address
+      handling, calling conventions, register state and supported thread storage.
+- [ ] Add an optional nxdk build target and compile small generated-code fixtures
+      with a current toolchain, checking compiler, runtime and linker requirements.
+- [ ] Build a minimal XBE fixture and verify startup, a generated function and a
+      native kernel call using a reproducible test procedure.
+- [ ] Document supported configurations and remaining limitations, and submit
+      reusable changes as isolated, tested XboxRecomp PRs.
 
-See [upstream review](docs/UPSTREAM-REVIEW.md).
+Use modern C++ where supported by the selected toolchain; do not impose legacy
+XDK or 2005-era compiler restrictions. Scope is toolkit portability, not an XML1
+Xbox port, a complete game runtime, or full Xbox graphics/audio backends. Item 6
+covers the project's return-path planning; this item covers reusable toolkit work.
