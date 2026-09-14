@@ -11,9 +11,8 @@
 7. Verify save listing and loading.
 8. Verify clean audio and headphone recovery.
 9. Finish HD and window-behavior checks.
-10. Validate long recordings and update documentation.
-11. Plan the 32-bit/original-Xbox return path.
-12. Document mod hooks and upstream reusable fixes.
+10. Plan the 32-bit/original-Xbox return path.
+11. Document mod hooks and upstream reusable fixes.
 
 ## Detailed work
 
@@ -126,18 +125,7 @@ recovery needs confirmation. See [audio recovery](docs/AUDIO-DEVICE-RECOVERY.md)
       incorrect framing, missing elements, and visual regressions.
 - [ ] Confirm live title-bar FPS and the normal mouse cursor in human play.
 
-### 10. Long recording and current documentation
-
-- [ ] Verify a full 15–20 minute OBS take for audio sync, recording lag, and
-      automatic MP4 finalization when the game closes.
-- [ ] Add the user's public YouTube proof URL when supplied.
-- [ ] Reconcile stale current-status claims in README/supporting docs while
-      retaining historical diagnostics as history.
-
-The approximately 4m36s take verified auto-stop and was uploaded publicly by the
-user. See [recording](docs/RECORDING.md).
-
-### 11. Future 32-bit and original-Xbox return path
+### 10. Future 32-bit and original-Xbox return path
 
 - [ ] Assess a 32-bit game runtime and document toolkit, compiler, memory, and
       platform requirements for an original-Xbox build.
@@ -147,7 +135,7 @@ user. See [recording](docs/RECORDING.md).
 The current Windows game is 64-bit with a separate 32-bit DX8 renderer; no
 hardware port is implemented. See [Xbox return path](docs/XBOX-RETURN.md).
 
-### 12. Durable mod hooks and reusable upstream fixes
+### 11. Durable mod hooks and reusable upstream fixes
 
 - [ ] Document gameplay/script extension points that survive regeneration,
       with a reproducible mod example and validation workflow.
