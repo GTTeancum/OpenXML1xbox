@@ -56,7 +56,7 @@ for item in imports:
     result,conv,parameters=match.groups()
     parameters=re.sub(r'/\*.*?\*/','',parameters,flags=re.S).strip()
     params=[] if parameters in ('','void','VOID') else parameters.split(',')
-    args=[];index=1;body=[]
+    args=[];index=1;body=[];io_apc=False
     for p in params:
         p=re.sub(r'\b(IN|OUT|OPTIONAL|CONST)\b','',p).strip()
         p=re.sub(r'\b(\w+)\[\]$',r'*\1',p)
@@ -71,7 +71,12 @@ for item in imports:
             v=(f'g_ecx' if index==1 else 'g_edx') if conv=='FASTCALL' and index<=2 else f'ARG({index if conv!="FASTCALL" else index-2})'
             expr=f'({t})(uintptr_t){v}';index+=1
             if t in ('PKTHREAD','PRKTHREAD','PETHREAD'):expr=f'({t})port_native_thread({v})'
-            if 'ROUTINE' in t:body.append(f'if({v})nxdk_port_fail("{name}: guest callback requires trampoline",__FILE__,__LINE__);')
+            if t=='PIO_APC_ROUTINE':
+                if v!='ARG(3)':raise SystemExit('Unexpected I/O APC argument layout: '+name)
+                io_apc=True
+                expr='apc ? io_apc_callback : NULL'
+            elif io_apc and n=='ApcContext':expr='apc ? (PVOID)apc : (PVOID)(uintptr_t)ARG(4)'
+            elif 'ROUTINE' in t:body.append(f'if({v})nxdk_port_fail("{name}: guest callback requires trampoline",__FILE__,__LINE__);')
         args.append(expr)
     call=f'{name}('+','.join(args)+')'
     if result in ('VOID','void'):body.append(call+';')
@@ -81,9 +86,12 @@ for item in imports:
         body.append(f'if(!g_eax)port_log("ALLOC FAILED {name} bytes=%lu\\n",(unsigned long)ARG(1));')
     if name=='NtAllocateVirtualMemory':body.append('if((int32_t)g_eax<0)port_log("VM FAILED status=%08lx size=%lu\\n",(unsigned long)g_eax,(unsigned long)MEM32(ARG(3)));')
     cleanup=(index-1)*4 if conv=='NTAPI' else max(0,index-3)*4 if conv=='FASTCALL' else 0
+    if io_apc:
+        body.insert(0,f'IoApcBridge *apc=ARG(3)?io_apc_begin(ARG(3),ARG(4)):NULL;if(ARG(3)&&!apc){{g_eax=0xc000009au;g_esp+={cleanup+4};return;}}')
+        body.append('if(apc&&(int32_t)g_eax<0)InterlockedExchange(&apc->used,0);')
     body.append(f'g_esp+={cleanup+4};')
     lines.append('static void '+fn+'(void) { '+''.join(body)+' }')
-    report.append({'name':name,'kind':'native-wrapper','argument_words':index-1,'convention':conv})
+    report.append({'name':name,'kind':'native-wrapper','argument_words':index-1,'convention':conv,**({'callback':'thread-affine I/O APC bridge'} if io_apc else {})})
 lines+=['static uint32_t native_data(unsigned ordinal) {switch(ordinal){',*entries,'default:return 0;}}',
         'static recomp_func_t native_function(unsigned ordinal) {switch(ordinal){']
 for item in imports:

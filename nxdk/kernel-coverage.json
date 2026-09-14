@@ -27,7 +27,8 @@
     "name": "NtWriteFile",
     "kind": "native-wrapper",
     "argument_words": 8,
-    "convention": "NTAPI"
+    "convention": "NTAPI",
+    "callback": "thread-affine I/O APC bridge"
   },
   {
     "name": "HalDiskCachePartitionCount",
@@ -37,7 +38,8 @@
     "name": "NtReadFile",
     "kind": "native-wrapper",
     "argument_words": 8,
-    "convention": "NTAPI"
+    "convention": "NTAPI",
+    "callback": "thread-affine I/O APC bridge"
   },
   {
     "name": "IoCreateSymbolicLink",
@@ -73,7 +75,8 @@
     "name": "NtFsControlFile",
     "kind": "native-wrapper",
     "argument_words": 10,
-    "convention": "NTAPI"
+    "convention": "NTAPI",
+    "callback": "thread-affine I/O APC bridge"
   },
   {
     "name": "NtSetInformationFile",
@@ -103,7 +106,8 @@
     "name": "NtQueryDirectoryFile",
     "kind": "native-wrapper",
     "argument_words": 10,
-    "convention": "NTAPI"
+    "convention": "NTAPI",
+    "callback": "thread-affine I/O APC bridge"
   },
   {
     "name": "RtlAnsiStringToUnicodeString",
@@ -145,7 +149,8 @@
     "name": "NtDeviceIoControlFile",
     "kind": "native-wrapper",
     "argument_words": 10,
-    "convention": "NTAPI"
+    "convention": "NTAPI",
+    "callback": "thread-affine I/O APC bridge"
   },
   {
     "name": "ObfDereferenceObject",

@@ -100,6 +100,39 @@ static int identity_test(void)
     const uint8_t *original=port_guest_pointer(MEM32(0x10118));
     return !memcmp(native+8,original+8,4)&&!memcmp(native+0x5c,original+0x5c,64)&&!memcmp(native+0xa4,original+0xa4,12)&&!memcmp(native+0xb0,original+0xb0,288);
 }
+
+static uint32_t read_with_apc(HANDLE file,IO_STATUS_BLOCK *status,char *buffer,uint32_t context)
+{
+    LARGE_INTEGER offset={.QuadPart=0};uint32_t sp=g_esp;
+    /* The generated memcpy is also a three-argument cdecl function. The
+       kernel's reserved third APC argument is zero, so it returns Context
+       without copying. The actual asynchronous read supplies the payload. */
+    uint32_t args[]={(uint32_t)(uintptr_t)file,0,0x11040,context,(uint32_t)(uintptr_t)status,
+                     (uint32_t)(uintptr_t)buffer,4,(uint32_t)(uintptr_t)&offset};
+    for(unsigned i=8;i;--i)MEM32(g_esp-=4)=args[i-1];
+    MEM32(g_esp-=4)=0;recomp_lookup_kernel(0xfe000000u+219*4)();
+    if(g_esp!=sp)nxdk_port_fail("I/O wrapper stack imbalance",__FILE__,__LINE__);
+    return g_eax;
+}
+static int io_apc_test(void)
+{
+    HANDLE file=CreateFileA("D:\\guest.xbe",GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,FILE_FLAG_OVERLAPPED,NULL);
+    if(file==INVALID_HANDLE_VALUE){port_log("APC test open error %lu\n",(unsigned long)GetLastError());return 0;}
+    IO_STATUS_BLOCK status={0};char buffer[4]={0};uint32_t marker=0x11223344;
+    uint32_t context=(uint32_t)(uintptr_t)&marker,before=port_io_apc_completed;
+    /* More failures than slots must not exhaust the bridge table. */
+    for(unsigned i=0;i<80;++i){
+        if(read_with_apc(INVALID_HANDLE_VALUE,&status,buffer,context)!=0xc0000008u){CloseHandle(file);return 0;}
+    }
+    uint32_t result=read_with_apc(file,&status,buffer,context);
+    if((int32_t)result<0){port_log("APC test read status %08lx\n",(unsigned long)result);CloseHandle(file);return 0;}
+    g_eax=0xabcdef12;uint32_t sp=g_esp;
+    for(unsigned i=0;i<500&&port_io_apc_completed==before;++i)SleepEx(10,TRUE);
+    int pass=port_io_apc_completed==before+1&&port_io_apc_result==context&&marker==0x11223344&&
+             status.Status==0&&status.Information==4&&!memcmp(buffer,"XBEH",4)&&g_eax==0xabcdef12&&g_esp==sp;
+    if(!pass)port_log("APC test completion=%lu status=%08lx bytes=%lu result=%lx marker=%lx\n",(unsigned long)(port_io_apc_completed-before),(unsigned long)status.Status,(unsigned long)status.Information,(unsigned long)port_io_apc_result,(unsigned long)marker);
+    CloseHandle(file);return pass;
+}
 typedef struct DpcTest {KEVENT done;uint32_t args[3];volatile uint32_t result;} DpcTest;
 static void NTAPI dpc_test(PKDPC dpc,void *context,void *arg1,void *arg2)
 {
@@ -169,6 +202,8 @@ int port_selftest(void)
     port_log("PASS generated SSE skinning: two vertices, three bone influences, output stride and guard values\n");
     if(!identity_test())return 0;
     port_log("PASS native/guest title identity and certificate metadata agree\n");
+    if(!io_apc_test())return 0;
+    port_log("PASS asynchronous native file read, generated-code APC, guest context preservation and failed-request cleanup\n");
     g_eax=0x13572468;
     memset(dst,0,sizeof(dst));
     KDPC dpc;KTIMER timer;DpcTest test={0};

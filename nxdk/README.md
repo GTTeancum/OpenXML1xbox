@@ -74,6 +74,12 @@ independently calculated vertices, matching title metadata, and entry into gener
 a real kernel timer/DPC. `python nxdk/check-preparation.py` also checks that
 preparing an already prepared tree preserves all generated source contents.
 
+File read/write, directory enumeration, and file/device control adapters also
+bridge guest I/O APC callbacks on the issuing native thread. A target test
+performs a real asynchronous read from `guest.xbe`, dispatches its completion
+into generated C, checks register preservation, and verifies that 80 failed
+requests do not exhaust the callback table. Save-game round trips remain untested.
+
 The native CPU feature path exposed a missing `LOOP` counter decrement in
 the original generated SSE skinning routine. XboxRecomp commit `cd49783`
 fixes the generator; preparation applies the same correction to the copied

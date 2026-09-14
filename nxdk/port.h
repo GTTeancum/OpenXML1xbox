@@ -8,6 +8,8 @@ uint32_t port_section_control(uint32_t address,int load);
 void port_init_thread(uint32_t stack_bytes);
 void port_cleanup_thread(void);
 int port_selftest(void);
+void port_cleanup_io_apcs(void);
+extern volatile uint32_t port_io_apc_completed,port_io_apc_result;
 void port_patch_imports(void);
 void *port_guest_pointer(uint32_t address);
 extern uint8_t port_xbe_header[65536];

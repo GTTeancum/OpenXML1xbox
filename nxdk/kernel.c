@@ -4,6 +4,42 @@
 #include "recomp_types.h"
 #define ARG(n) MEM32(g_esp+4u*(n))
 #define ARG64(n) ((uint64_t)ARG(n)|((uint64_t)ARG((n)+1)<<32))
+
+/* User I/O APCs are delivered on the issuing thread at an alertable wait.
+   Preserve its guest registers through port_call_guest, rather than handing
+   the kernel a pointer into the original machine-code data image. */
+typedef struct IoApcBridge {
+    volatile LONG used;
+    PKTHREAD owner;
+    uint32_t routine,context;
+} IoApcBridge;
+static IoApcBridge io_apc_slots[64];
+volatile uint32_t port_io_apc_completed,port_io_apc_result;
+static IoApcBridge *io_apc_begin(uint32_t routine,uint32_t context)
+{
+    for(unsigned i=0;i<64;++i){
+        IoApcBridge *slot=&io_apc_slots[i];
+        if(InterlockedCompareExchange(&slot->used,1,0)==0){
+            slot->owner=KeGetCurrentThread();slot->routine=routine;slot->context=context;return slot;
+        }
+    }
+    return NULL;
+}
+static void NTAPI io_apc_callback(void *opaque,PIO_STATUS_BLOCK status,ULONG reserved)
+{
+    IoApcBridge *slot=opaque;
+    if(!slot->used||slot->owner!=KeGetCurrentThread())nxdk_port_fail("I/O APC thread mismatch",__FILE__,__LINE__);
+    uint32_t routine=slot->routine,args[]={slot->context,(uint32_t)(uintptr_t)status,reserved};
+    InterlockedExchange(&slot->used,0);
+    port_io_apc_result=port_call_guest(routine,args,3);
+    ++port_io_apc_completed;
+}
+void port_cleanup_io_apcs(void)
+{
+    PKTHREAD thread=KeGetCurrentThread();
+    for(unsigned i=0;i<64;++i)if(io_apc_slots[i].used&&io_apc_slots[i].owner==thread)
+        InterlockedExchange(&io_apc_slots[i].used,0);
+}
 typedef struct PortThread {uint32_t start,context1,context2,system,tls;} PortThread;
 static DWORD WINAPI guest_thread(void *opaque)
 {

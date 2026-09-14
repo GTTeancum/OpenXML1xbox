@@ -58,6 +58,7 @@ done:
 }
 void port_cleanup_thread(void)
 {
+    port_cleanup_io_apcs();
     if(guest_stack)VirtualFree(guest_stack,0,MEM_RELEASE);
     free(guest_tib);free(guest_tls);
     guest_stack=guest_tib=guest_tls=NULL;
