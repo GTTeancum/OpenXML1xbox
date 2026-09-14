@@ -110,6 +110,10 @@ target_include_directories(kernel-directory-test PRIVATE external/xboxrecomp/src
 target_link_libraries(kernel-directory-test PRIVATE xboxrecomp)
 
 add_executable(xaudio2-dsp-queue-test tests/xaudio2_dsp_queue_test.c)
+add_executable(audio-device-recovery-test tests/audio_device_recovery_test.c)
+target_include_directories(audio-device-recovery-test PRIVATE src external/xboxrecomp/src/apu)
+add_executable(audio-device-live-test tests/audio_device_live_test.c)
+target_include_directories(audio-device-live-test PRIVATE src external/xboxrecomp/src/apu)
 add_executable(worker-lifetime-test tests/worker_lifetime_test.c)
 add_executable(texture-wire-cache-test tests/texture_wire_cache_test.c)
 target_include_directories(texture-wire-cache-test PRIVATE src)

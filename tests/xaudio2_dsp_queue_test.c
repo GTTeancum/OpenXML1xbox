@@ -18,6 +18,14 @@ static IXAudio2SourceVoiceVtbl source_vtable;
 static const BYTE *queued[12];
 static BYTE snapshots[12][4096];
 static UINT32 queued_bytes[12], queue_count;
+static DWORD wait_result=WAIT_TIMEOUT;
+static int completion_at_timeout;
+static DWORD fake_wait(HANDLE event,DWORD timeout) {
+    (void)event;(void)timeout;
+    if(completion_at_timeout) --queue_count;
+    if(wait_result==WAIT_FAILED) SetLastError(ERROR_INVALID_HANDLE);
+    return wait_result;
+}
 
 #define CHECK(test) do { if (!(test)) { \
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #test); failures++; \
@@ -89,6 +97,11 @@ static HRESULT fake_submit(const XAUDIO2_BUFFER *buffer)
 #define CoInitializeEx(...) fake_com_init()
 #define CoUninitialize() ((void)--com_refs)
 #define XAudio2Create(out, ...) fake_create(out)
+#undef IXAudio2_RegisterForCallbacks
+#define IXAudio2_RegisterForCallbacks(...) S_OK
+#undef IXAudio2_UnregisterForCallbacks
+#define IXAudio2_UnregisterForCallbacks(...) ((void)0)
+#define WaitForSingleObject(event,timeout) fake_wait(event,timeout)
 #undef IXAudio2_CreateMasteringVoice
 #define IXAudio2_CreateMasteringVoice(engine, out, ...) fake_master(out)
 #undef IXAudio2_CreateSourceVoice
@@ -136,6 +149,13 @@ int main(void) {
     CHECK(!xa2_submit_samples(&pcm[0][0],257));
     CHECK(!xa2_submit_samples(NULL,256));
     CHECK(!xa2_submit_samples(&pcm[0][0],0));
+    CHECK(!xa2_wait_for_buffer(0) && !xa2_get_error());
+    completion_at_timeout=1;
+    CHECK(xa2_wait_for_buffer(0) && !xa2_get_error());
+    completion_at_timeout=0;queue_count=12;
+    wait_result=WAIT_FAILED;CHECK(!xa2_wait_for_buffer(0));
+    CHECK(xa2_get_error()==(int32_t)HRESULT_FROM_WIN32(ERROR_INVALID_HANDLE));
+    wait_result=WAIT_TIMEOUT;g_xa2_voice_error=0;
     for(int j=0;j<30;++j) {
         for(unsigned i=0;i<11;++i) {
             queued[i]=queued[i+1]; queued_bytes[i]=queued_bytes[i+1];
@@ -145,7 +165,11 @@ int main(void) {
         CHECK(xa2_submit_samples(&pcm[0][0],256)); check_queued();
         CHECK(starts==1);
     }
-    xa2_shutdown(); reset(); starts=0; CHECK(xa2_init());
+    cb_critical(&g_xa2_engine_callback,XAUDIO2_E_DEVICE_INVALIDATED);
+    CHECK(xa2_get_error()==(int32_t)XAUDIO2_E_DEVICE_INVALIDATED);
+    CHECK(!xa2_submit_samples(&pcm[0][0],256));
+    xa2_shutdown(); CHECK(com_refs==0); reset(); starts=0; CHECK(xa2_init());
+    CHECK(!xa2_get_error());
     start_result=E_FAIL;
     for(int i=0;i<6;++i) CHECK(xa2_submit_samples(&pcm[0][0],256));
     CHECK(starts==1 && queue_count==6);

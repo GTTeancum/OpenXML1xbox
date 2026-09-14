@@ -6,6 +6,7 @@
 #include <string.h>
 #include <windows.h>
 #include "apu_xaudio2.h"
+#include "audio_device_recovery.h"
 extern void xbox_SetDeviceInterruptLine(uint32_t vector,int asserted);
 void recomp_apu_irq_level(int asserted) { xbox_SetDeviceInterruptLine(5,asserted); }
 int xml1_apu_wants_gp_capture(void) {
@@ -115,12 +116,9 @@ void recomp_apu_dsp_output(const int16_t *samples,unsigned frames) {
         }
         initialized=1;
     }
-    if(frames!=256||!xa2_is_active()) { fprintf(stderr,"[FATAL APU OUTPUT] invalid frame count or inactive XAudio2\n"); _exit(4); }
-    unsigned retries=0;
-    while(!xa2_submit_samples(samples,(int)frames)) {
-        if(++retries>100) { fprintf(stderr,"[FATAL APU OUTPUT] XAudio2 submission stalled\n"); _exit(4); }
-        if(!xa2_wait_for_buffer(100)) { fprintf(stderr,"[FATAL APU OUTPUT] XAudio2 completion timeout/device error\n"); _exit(4); }
-    }
+    static xml1_audio_device_state output_device;
+    if(frames!=256) { fprintf(stderr,"[FATAL APU OUTPUT] invalid frame count\n"); _exit(4); }
+    if(!xml1_audio_submit(&output_device,samples,frames)) return;
     for(unsigned i=0;i<frames*2;++i) {
         int value=samples[i]; unsigned magnitude=value<0?(unsigned)-value:(unsigned)value;
         nonzero+=value!=0; clipped+=value==-32768||value==32767;

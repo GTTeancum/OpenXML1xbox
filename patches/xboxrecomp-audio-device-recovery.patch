@@ -1,0 +1,167 @@
+--- a/src/apu/apu_xaudio2.c
++++ b/src/apu/apu_xaudio2.c
+@@ -46,6 +46,14 @@
+ static int                     g_xa2_started = 0;
+ static HANDLE g_xa2_buffer_event;
+ static volatile LONG g_xa2_voice_error;
++static int g_xa2_engine_registered;
++static __declspec(thread) int g_xa2_thread_com;
++static void STDMETHODCALLTYPE cb_engine_noop(IXAudio2EngineCallback *self) { (void)self; }
++static void STDMETHODCALLTYPE cb_critical(IXAudio2EngineCallback *self,HRESULT error) {
++    (void)self;InterlockedExchange(&g_xa2_voice_error,(LONG)error);SetEvent(g_xa2_buffer_event);
++}
++static IXAudio2EngineCallbackVtbl g_xa2_engine_callbacks={cb_engine_noop,cb_engine_noop,cb_critical};
++static IXAudio2EngineCallback g_xa2_engine_callback={&g_xa2_engine_callbacks};
+ static void STDMETHODCALLTYPE cb_pass_start(IXAudio2VoiceCallback *self,UINT32 bytes) { (void)self;(void)bytes; }
+ static void STDMETHODCALLTYPE cb_noop(IXAudio2VoiceCallback *self) { (void)self; }
+ static void STDMETHODCALLTYPE cb_buffer_start(IXAudio2VoiceCallback *self,void *context) { (void)self;(void)context; }
+@@ -57,7 +65,6 @@
+ int xa2_init(void)
+ {
+     HRESULT hr;
+-    int com_initialized;
+     WAVEFORMATEX wfx = { 0 };
+ 
+     if (g_xa2_initialized) return 1;
+@@ -67,7 +74,7 @@
+         fprintf(stderr, "[XA2] CoInitializeEx failed: 0x%08lX\n", hr);
+         return 0;
+     }
+-    com_initialized = SUCCEEDED(hr);
++    g_xa2_thread_com = SUCCEEDED(hr);
+ 
+     hr = XAudio2Create(&g_xa2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+     if (FAILED(hr) || !g_xa2) {
+@@ -92,6 +99,9 @@
+     g_xa2_buffer_event=CreateEventW(NULL,FALSE,FALSE,NULL);
+     g_xa2_voice_error=0;
+     if(!g_xa2_buffer_event) goto fail;
++    hr=IXAudio2_RegisterForCallbacks(g_xa2,&g_xa2_engine_callback);
++    if(FAILED(hr)) goto fail;
++    g_xa2_engine_registered=1;
+     hr = IXAudio2_CreateSourceVoice(g_xa2, &g_xa2_source,
+         &wfx, 0, XAUDIO2_DEFAULT_FREQ_RATIO, &g_xa2_callback, NULL, NULL);
+     if (FAILED(hr)) {
+@@ -121,13 +131,15 @@
+ 
+ fail:
+     xa2_shutdown();
+-    /* Failed initialization still runs on the COM-initializing thread. */
+-    if (com_initialized) CoUninitialize();
+     return 0;
+ }
+ 
+ void xa2_shutdown(void)
+ {
++    if(g_xa2 && g_xa2_engine_registered) {
++        IXAudio2_UnregisterForCallbacks(g_xa2,&g_xa2_engine_callback);
++        g_xa2_engine_registered=0;
++    }
+     if (g_xa2_source) {
+         IXAudio2SourceVoice_Stop(g_xa2_source, 0, XAUDIO2_COMMIT_NOW);
+         IXAudio2SourceVoice_FlushSourceBuffers(g_xa2_source);
+@@ -148,6 +160,9 @@
+     g_xa2_initialized = 0;
+     g_xa2_started = 0;
+     if(g_xa2_buffer_event) { CloseHandle(g_xa2_buffer_event); g_xa2_buffer_event=NULL; }
++    /* Recovery can run on the producer thread. Balance only this thread's
++     * COM initialization; never uninitialize another thread's apartment. */
++    if(g_xa2_thread_com) { CoUninitialize();g_xa2_thread_com=0; }
+ }
+ 
+ int xa2_wait_for_buffer(unsigned timeout_ms) {
+@@ -155,9 +170,17 @@
+     if(!g_xa2_source || InterlockedCompareExchange(&g_xa2_voice_error,0,0)) return 0;
+     IXAudio2SourceVoice_GetState(g_xa2_source,&state,XAUDIO2_VOICE_NOSAMPLESPLAYED);
+     if(state.BuffersQueued<XA2_NUM_BUFS) return 1;
+-    return WaitForSingleObject(g_xa2_buffer_event,timeout_ms)==WAIT_OBJECT_0 &&
+-        !InterlockedCompareExchange(&g_xa2_voice_error,0,0);
+-}
++    DWORD result=WaitForSingleObject(g_xa2_buffer_event,timeout_ms);
++    if(result==WAIT_FAILED)
++        InterlockedExchange(&g_xa2_voice_error,(LONG)HRESULT_FROM_WIN32(GetLastError()));
++    if(InterlockedCompareExchange(&g_xa2_voice_error,0,0)) return 0;
++    /* A callback can race the wait deadline. Queue ownership, not an event
++     * notification or timeout alone, decides whether a slot is reusable. */
++    IXAudio2SourceVoice_GetState(g_xa2_source,&state,XAUDIO2_VOICE_NOSAMPLESPLAYED);
++    return state.BuffersQueued<XA2_NUM_BUFS;
++}
++
++int32_t xa2_get_error(void) { return (int32_t)InterlockedCompareExchange(&g_xa2_voice_error,0,0); }
+ 
+ int xa2_is_active(void)
+ {
+@@ -212,7 +235,11 @@
+     xbuf.pAudioData = (const BYTE *)g_xa2_bufs[idx];
+ 
+     hr = IXAudio2SourceVoice_SubmitSourceBuffer(g_xa2_source, &xbuf, NULL);
+-    if (FAILED(hr)) return 0;
++    if (FAILED(hr)) {
++        InterlockedExchange(&g_xa2_voice_error,(LONG)hr);
++        SetEvent(g_xa2_buffer_event);
++        return 0;
++    }
+ 
+     g_xa2_next_buf = (idx + 1) % XA2_NUM_BUFS;
+     g_xa2_frames_written++;
+@@ -241,6 +268,7 @@
+ int  xa2_is_active(void)                              { return 0; }
+ int  xa2_submit_samples(const int16_t *s, int n)      { (void)s; (void)n; return 0; }
+ int xa2_wait_for_buffer(unsigned timeout_ms) { (void)timeout_ms; return 0; }
++int32_t xa2_get_error(void) { return 0; }
+ int  xa2_get_buffer_size(void)                        { return 0; }
+ 
+ #endif /* _WIN32 */
+--- a/src/apu/apu_xaudio2.h
++++ b/src/apu/apu_xaudio2.h
+@@ -17,8 +17,10 @@
+ 
+ /* Submit interleaved stereo 16-bit samples. Returns 1 if accepted. */
+ int xa2_submit_samples(const int16_t *samples, int num_samples);
+-/* Wait for actual source-buffer completion; returns 0 on timeout/device error. */
++/* Wait for queue space. A timeout is retryable; query xa2_get_error separately. */
+ int xa2_wait_for_buffer(unsigned timeout_ms);
++/* Last backend HRESULT (zero when no device/API failure has been reported). */
++int32_t xa2_get_error(void);
+ 
+ /* Get the preferred buffer size in samples. */
+ int xa2_get_buffer_size(void);
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -225,7 +225,12 @@
+         fprintf(stderr, "[APU] Using XAudio2 audio backend\n");
+         return;
+     }
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++    fprintf(stderr, "[APU] Default audio output unavailable; native DSP output will retry\n");
++    return;
++#else
+     fprintf(stderr, "[APU] XAudio2 unavailable, falling back to waveOut\n");
++#endif
+ 
+     WAVEFORMATEX wfx = { 0 };
+     wfx.wFormatTag      = WAVE_FORMAT_PCM;
+--- a/tests/xaudio2/test_main.c
++++ b/tests/xaudio2/test_main.c
+@@ -91,6 +91,10 @@
+ #define CoInitializeEx(...) fake_com_init()
+ #define CoUninitialize() ((void)--com_refs)
+ #define XAudio2Create(out, ...) fake_create(out)
++#undef IXAudio2_RegisterForCallbacks
++#define IXAudio2_RegisterForCallbacks(...) S_OK
++#undef IXAudio2_UnregisterForCallbacks
++#define IXAudio2_UnregisterForCallbacks(...) ((void)0)
+ #undef IXAudio2_CreateMasteringVoice
+ #define IXAudio2_CreateMasteringVoice(engine, out, ...) fake_master(out)
+ #undef IXAudio2_CreateSourceVoice
+@@ -168,6 +172,10 @@
+         check_queued();
+     }
+     submit_result = S_OK;
++    CHECK(xa2_get_error()==(int32_t)E_FAIL);
++    xa2_shutdown();reset();CHECK(xa2_init());
++    CHECK(!xa2_get_error());
++    CHECK(xa2_submit_samples(&samples[0][0], 1024) == 1);
+     CHECK(xa2_submit_samples(&samples[0][0], 1024) == 1);
+     CHECK(xa2_submit_samples(&samples[0][0], 1024) == 1);
+     CHECK(xa2_submit_samples(&samples[0][0], 1024) == 0);

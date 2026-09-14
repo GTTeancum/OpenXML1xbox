@@ -3,11 +3,16 @@
 Connect an XInput-compatible controller, then double-click `Play XML1.cmd` in
 the repository root. This opens the optimized build in a native 1920x1080 DX8
 window with audio and real controller input. No automated input is enabled.
-The default session limit is 30 minutes; `scripts/playtest.ps1 -Minutes 60`
-allows a longer session. Close the game window to stop early, including audio.
+Human sessions have no time limit. An optional `scripts/playtest.ps1 -Minutes 60`
+sets a limit for a deliberately bounded test. Close the game window to stop, including audio.
 An independent process monitor handles this even if the game thread is blocked.
 See [combat freeze correction](COMBAT-FREEZE.md) for the latest regression
 evidence and remaining human checks.
+
+Headphone disconnections and default-device changes now use audio recovery.
+Short handoffs retain the pending PCM block; failed/stalled endpoints are reopened.
+If no output exists, gameplay continues silently while retrying once per second.
+See [audio device recovery](AUDIO-DEVICE-RECOVERY.md) for tests and limitations.
 
 The default is 1080p with the original game's widescreen framing. To use 720p,
 run `./scripts/playtest.ps1 -Resolution 720p`. Both modes render through system
