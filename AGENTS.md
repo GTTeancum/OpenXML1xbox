@@ -1,5 +1,15 @@
 # OpenXML1xbox
 
+## NXDK branch override
+
+On `nxdk-port`, the accepted task is the native original-Xbox proof of concept.
+Read `nxdk/README.md`, `nxdk/HANDOFF.md`, and `nxdk/AGENTS.md` before continuing.
+Their NXDK target/build/staging instructions supersede the inherited Windows
+delivery requirements below. The original active OpenXML1xbox checkout remains
+untouched. Do not interpret historical Windows status as the NXDK status.
+
+## Inherited project instructions
+
 - Goal: an X-Men Legends original Xbox to Windows port with a genuine Xbox-era Windows Direct3D 8 backend. DX8 is mandatory; substituting D3D11/12 or a wrapper is not an accepted deliverable.
 - XboxRecomp's existing D3D11 backend is an upstream baseline only. Building its libraries does not establish a game port or the required DX8 renderer.
 - Prioritize measured progress toward playable XML1 and mod support. Record blockers and evidence; do not promise delivery dates from architecture alone.

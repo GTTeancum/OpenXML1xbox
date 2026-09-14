@@ -1,5 +1,13 @@
 # OpenXML1xbox
 
+**On branch `nxdk-port`, the target is native original Xbox using 32-bit NXDK.**
+The proof of concept has reached XML1's first street scene and combat in XEMU.
+Start with the [NXDK build/runtime guide](nxdk/README.md) and
+[handoff, reproduction requirements, results, and remaining work](nxdk/HANDOFF.md).
+The NXDK target does not link the Windows renderer described below.
+
+## Inherited Windows project documentation
+
 X-Men Legends (original Xbox) to Windows feasibility project using
 [XboxRecomp](https://github.com/sp00nznet/xboxrecomp).
 

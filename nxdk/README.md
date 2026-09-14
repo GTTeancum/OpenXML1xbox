@@ -1,5 +1,8 @@
 # XML1 NXDK target
 
+See [HANDOFF.md](HANDOFF.md) for the published checkpoint, private input
+requirements, source map, measured results, and prioritized remaining work.
+
 This fork compiles the existing XML1 generated C into a native original-Xbox
 XBE using NXDK's `i386-pc-win32`, `pentium3` target. It has reached the first
 street scene in xemu, with movement, enemy attacks, player attacks, HUD,
