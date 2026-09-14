@@ -1,0 +1,81 @@
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -2525,7 +2525,14 @@
+     if (!ansi_str_va) return NULL;
+     buf_va = BRIDGE_MEM32(ansi_str_va + 4);
+     if (!buf_va) return NULL;
+-    return (const char*)XBOX_TO_NATIVE(buf_va);
++    /* XDK directory searches pass a counted prefix of "directory\\*".
++     * The byte after Length need not be NUL or part of the object name. */
++    static RECOMP_TLS char path[65536];
++    uint16_t length=BRIDGE_MEM16(ansi_str_va);
++    if(length>BRIDGE_MEM16(ansi_str_va+2)) return NULL;
++    memcpy(path,XBOX_TO_NATIVE(buf_va),length);
++    path[length]='\0';
++    return path;
+ }
+ 
+ /* Write NTSTATUS + Information into Xbox IO_STATUS_BLOCK */
+@@ -2629,7 +2636,9 @@
+     name->Buffer        = (PCHAR)path;
+     name->Length        = path ? (USHORT)strlen(path) : 0;
+     name->MaximumLength = (USHORT)(name->Length + 1);
+-    oa->RootDirectory = NULL;
++    uint32_t root = obj_attrs_va ? BRIDGE_MEM32(obj_attrs_va) : 0;
++    /* -3 is the XDK DOS-device namespace, not a file handle. */
++    oa->RootDirectory = root && root != 0xFFFFFFFDu ? bridge_resolve_handle(root) : NULL;
+     oa->ObjectName    = name;
+     oa->Attributes    = 0;
+ }
+@@ -2656,6 +2665,7 @@
+     st = xbox_NtCreateFile(&h, access, &oa, &ios, NULL,
+                            file_attrs, share, disposition, options);
+ 
++    if (getenv("XML1_TRACE_DIRECTORY")) fprintf(stderr, "[FILE OPEN] path=%s root=%08X access=%08X share=%u disposition=%u options=%08X status=%08X\n", name.Buffer, obj_attrs_va ? BRIDGE_MEM32(obj_attrs_va) : 0, access, share, disposition, options, (unsigned)st);
+     if (NT_SUCCESS(st)) {
+         bridge_write_handle(handle_va, h);
+         bridge_write_iostatus(iostatus_va, ios.Status, (uint32_t)ios.Information);
+@@ -3194,6 +3204,7 @@
+     bridge_build_oa(STACK_ARG(0), &oa, &name);
+     if (!name.Buffer) { g_eax = STATUS_OBJECT_PATH_NOT_FOUND; return; }
+     g_eax = (uint32_t)xbox_NtDeleteFile(&oa);
++    if (getenv("XML1_TRACE_DIRECTORY")) fprintf(stderr,"[FILE DELETE] path=%s status=%08X\n", name.Buffer,g_eax);
+ }
+ 
+ /* ── NtQueryDirectoryFile (ordinal 207, 10 args = 40 bytes) ─ */
+@@ -3222,6 +3233,15 @@
+     g_eax = (uint32_t)xbox_NtQueryDirectoryFile(handle, NULL, NULL, NULL, &ios,
+                 XBOX_TO_NATIVE(info_va), length, (XBOX_FILE_INFORMATION_CLASS)info_class,
+                 pfn, (BOOLEAN)restart);
++    if(getenv("XML1_TRACE_DIRECTORY")) {
++        fprintf(stderr,"[DIRECTORY] handle=%p class=%u restart=%u filter=%.*s status=%08X bytes=%llu",
++            handle,info_class,restart,pfn?pfn->Length:0,pfn?pfn->Buffer:"",g_eax,(unsigned long long)ios.Information);
++        if(!g_eax && length>=64) {
++            XBOX_FILE_DIRECTORY_INFORMATION *entry=XBOX_TO_NATIVE(info_va);
++            fprintf(stderr," attrs=%08X name=%.*s",entry->FileAttributes,(int)entry->FileNameLength,entry->FileName);
++        }
++        fputc('\n',stderr);
++    }
+     bridge_write_iostatus(ios_va, ios.Status, (uint32_t)ios.Information);
+ }
+ 
+--- a/src/kernel/kernel_file.c
++++ b/src/kernel/kernel_file.c
+@@ -114,6 +114,17 @@
+     const char* xbox_path = get_xbox_path(ObjectAttributes);
+     if (!xbox_path)
+         return FALSE;
++    if (ObjectAttributes->RootDirectory && xbox_path[0] != '\\' &&
++        !(xbox_path[0] && xbox_path[1] == ':')) {
++        /* XDeleteSaveGame opens each child relative to its save directory. */
++        DWORD used = GetFinalPathNameByHandleW(ObjectAttributes->RootDirectory,
++            win_path, buf_size, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
++        if (!used || used >= buf_size || used + 1 >= buf_size) return FALSE;
++        if (win_path[used - 1] != L'\\') win_path[used++] = L'\\';
++        int count = MultiByteToWideChar(CP_ACP, 0, xbox_path, -1,
++            win_path + used, (int)(buf_size - used));
++        return count != 0;
++    }
+     return xbox_translate_path(xbox_path, win_path, buf_size);
+ }
+ 

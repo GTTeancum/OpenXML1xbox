@@ -70,7 +70,7 @@ static void test_file_input(uint32_t frame) {
     /* Direction-only commands retain their one-second duration. Buttons and
      * movement can be combined, with the ordinary short button pulse. */
     for(unsigned i=0;i<8;++i) if(state.bAnalogButtons[i]) duration=300;
-    if(state.wButtons) duration=300;
+    if(state.wButtons) duration=(state.wButtons&0x000F)?50:300;
     test_input_id=id; test_release_tick=duration?GetTickCount64()+duration:0;
     xml1_input_test_state(0,1,&state);
     fprintf(stderr,"[INPUT FILE] id=%u frame=%u action=%s duration_ms=%u (process-local only)\n",id,frame,action,duration);

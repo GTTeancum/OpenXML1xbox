@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--sequence', type=Path, help='JSON list of [seconds, action] process-local commands; @capture ID requests a native frame')
     parser.add_argument('--input-file', type=Path, help='Process-local input commands only')
     parser.add_argument('--capture-pcm', action='store_true')
+    parser.add_argument('--trace-directory', action='store_true')
     parser.add_argument('--profile', action='store_true', help='Sample game thread after 70 seconds; do not use for acceptance FPS')
     args = parser.parse_args()
     if not 1 <= args.seconds <= 1800:
@@ -46,6 +47,7 @@ def main():
     env.update(XML1_TEST_PAD='1', XML1_TEST_GAME_DIR=str(data), RECOMP_WATCHDOG_SECS=str(args.seconds))
     if args.input_file:
         env['XML1_TEST_INPUT_FILE'] = str(args.input_file.resolve())
+    if args.trace_directory: env['XML1_TRACE_DIRECTORY']='1'
     if args.profile:
         env.update(XML1_NATIVE_PROFILE='1', XML1_PROFILE_DELAY_MS='70000')
     if args.capture_pcm:

@@ -18,7 +18,7 @@
 
 ### 1. Multi-level smoke tests with 1–4 players
 
-- [ ] Establish a named level/player-count matrix covering several levels,
+- [ ] Establish a named 1080p, 16:9 level/player-count matrix covering several levels,
       interiors/exteriors, heavy combat, and scripted transitions.
 - [ ] Test each selected level with 1, 2, 3, and 4 local players: loading,
       independent controls, character selection, camera/HUD ownership, combat,
@@ -102,12 +102,13 @@ Dependency: coordinate control configuration with item 6.
 
 ### 7. Save listing and loading after restart
 
-- [ ] Save, confirm the load-menu entry, close/reopen the game, load the save,
+- [x] Save, confirm the load-menu entry, close/reopen the game, load the save,
       and confirm restored progress.
-- [ ] Verify multiple saves and overwriting an existing save safely.
+- [x] Verify multiple saves and overwriting an existing save safely.
 
-The directory-query ABI regression passes; the full human cycle is unconfirmed.
-Preserve existing saves before tests. See [playtesting](docs/HUMAN-PLAYTEST.md).
+Native 1080p tests confirmed listing, restored Central Park progress, a second save,
+overwrite, and loading the overwritten slot after restarting the game. Original
+saves were preserved. See [validation evidence](docs/PERFORMANCE-SAVES-AUDIO.md).
 
 ### 8. Audio continuity and device recovery
 
@@ -121,7 +122,7 @@ recovery needs confirmation. See [audio recovery](docs/AUDIO-DEVICE-RECOVERY.md)
 
 ### 9. HD presentation and window behavior
 
-- [ ] Check HUD, menus, FMVs, effects, and transitions at 720p/1080p for clipping,
+- [ ] Check HUD, menus, FMVs, effects, and transitions at 1080p, 16:9 for clipping,
       incorrect framing, missing elements, and visual regressions.
 - [ ] Confirm live title-bar FPS and the normal mouse cursor in human play.
 
