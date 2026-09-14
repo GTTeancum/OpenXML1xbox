@@ -1,0 +1,84 @@
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -1020,10 +1020,13 @@
+ #define XC_PARENTAL_PASSWORD      XC_P_CONTROL_PASSWORD
+ 
+ /* Video standard flags in XC_VIDEO */
+-#define XC_VIDEO_FLAGS_WIDESCREEN   0x01
+-#define XC_VIDEO_FLAGS_HDTV         0x02
++#define XC_VIDEO_FLAGS_WIDESCREEN   0x00010000
++#define XC_VIDEO_FLAGS_HDTV_720p    0x00020000
++#define XC_VIDEO_FLAGS_HDTV_1080i   0x00040000
++#define XC_VIDEO_FLAGS_HDTV_480p    0x00080000
++#define XC_VIDEO_FLAGS_HDTV         (XC_VIDEO_FLAGS_HDTV_480p | XC_VIDEO_FLAGS_HDTV_720p)
+ #define XC_VIDEO_FLAGS_PAL_I        0x04
+-#define XC_VIDEO_FLAGS_LETTERBOX    0x10
++#define XC_VIDEO_FLAGS_LETTERBOX    0x00100000
+ 
+ /* Unknown ordinals - stub */
+ VOID    __stdcall xbox_Unknown_8(void);
+--- a/src/kernel/kernel_hal.c
++++ b/src/kernel/kernel_hal.c
+@@ -475,7 +475,8 @@
+          * the region reported by ExQueryNonVolatileSetting. */
+         *Result = AV_PACK_HDTV
+                 | (AV_STANDARD_NTSC_M << AV_STANDARD_SHIFT)
+-                | AV_REFRESH_60Hz;
++                | AV_REFRESH_60Hz
++                | XC_VIDEO_FLAGS_WIDESCREEN | XC_VIDEO_FLAGS_HDTV;
+         break;
+ 
+     case AV_OPTION_QUERY_MODE:
+@@ -578,8 +579,8 @@
+             *DataValue = 0x60;
+             break;
+         case SMC_CMD_AV_PACK:
+-            /* HDTV/Component pack */
+-            *DataValue = AV_PACK_HDTV;
++            /* Raw SMC mode1 denotes HDTV; AV_PACK_HDTV is the decoded enum4. */
++            *DataValue = 1;
+             break;
+         case SMC_CMD_CPU_TEMP:
+             *DataValue = 40; /* 40 degrees C */
+@@ -676,11 +677,9 @@
+     g_disk_serial
+ };
+ 
+-/*
+- * Video mode the SMC reported at boot. 0 lets title code fall back to querying
+- * the AV pack, which we answer properly in AvGetSavedDataAddress/SMBus.
+- */
+-ULONG xbox_HalBootSMCVideoMode = 0;
++/* SMC mode1 denotes the HDTV AV pack (the AV pack enumeration itself is4).
++ * Original XGetVideoFlags masks out HD flags unless this boot value is1. */
++ULONG xbox_HalBootSMCVideoMode = 1;
+ 
+ /*
+  * IDE channel object. Real kernels export a device object for the ATA channel;
+--- a/src/kernel/kernel_xbox.c
++++ b/src/kernel/kernel_xbox.c
+@@ -145,7 +145,8 @@
+         break;
+ 
+     case XC_VIDEO:
+-        /* NTSC with widescreen and HDTV support enabled */
++        /* Dashboard flags use bits16..23. XGetVideoFlags shifts by16;
++         * low-byte values silently disable widescreen and HD selection. */
+         if (ValueLength >= sizeof(ULONG)) {
+             *(PULONG)Value = XC_VIDEO_FLAGS_WIDESCREEN | XC_VIDEO_FLAGS_HDTV;
+             if (Type) *Type = 4; /* REG_DWORD */
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -230,9 +230,9 @@
+      * this to convert ticks to time gets a division by zero if it is left 0. */
+     BRIDGE_MEM32(XBOX_KERNEL_DATA_BASE + KDATA_TIME_INCREMENT) = 0x2710;
+ 
+-    /* HalBootSMCVideoMode (ordinal 356) - SMC video mode word from boot. 0 is
+-     * "no video mode reported", which titles treat as auto-detect. */
+-    BRIDGE_MEM32(XBOX_KERNEL_DATA_BASE + KDATA_BOOT_SMC_VIDEO) = 0;
++    /* The translated XGetVideoFlags reads this guest export, not the host
++     * variable. Keep raw SMC pack detection identical through both paths. */
++    BRIDGE_MEM32(XBOX_KERNEL_DATA_BASE + KDATA_BOOT_SMC_VIDEO) = xbox_HalBootSMCVideoMode;
+ 
+     /* IdexChannelObject is a structure, not an opaque pointer. Guest file-close
+      * code walks DeviceQueue.DeviceListHead at +0x28. Host-backed synchronous

@@ -1,4 +1,7 @@
-param([ValidateRange(1,120)][int]$Minutes = 30)
+param(
+    [ValidateRange(1,120)][int]$Minutes = 30,
+    [ValidateSet('720p','1080p')][string]$Resolution = '1080p'
+)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $gameExe = Join-Path $projectRoot 'build/optimized/Release/xml1-boot-probe.exe'
@@ -19,6 +22,9 @@ $settings = @{
     XML1_LIVE_DX8 = '1'
     XML1_DX8_VISIBLE = '1'
     XML1_DX8_NO_CAPTURE = '1'
+    XML1_DX8_RESOLUTION = $(if ($Resolution -eq '1080p') { '1920x1080' } else { '1280x720' })
+    XML1_DX8_NO_WIRE_CACHE = $null
+    XML1_DX8_NO_STATE_CACHE = $null
     XML1_APU = '1'
     XML1_DSP_JIT = $null
     RECOMP_WATCHDOG_SECS = [string]($Minutes * 60)
@@ -33,6 +39,7 @@ foreach ($name in $settings.Keys) {
 }
 $log = Join-Path $projectRoot ('build/human-playtest-{0}.log' -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
 Write-Host 'OpenXML1 human playtest: connect an XInput controller before starting.'
+Write-Host "Native DX8 output: $Resolution, original widescreen framing."
 Write-Host 'A: light attack/select | B: heavy attack/back | X: grab/use | Y: jump'
 Write-Host 'LB: health potion | RB: energy potion | RT + face button: power'
 Write-Host "Start: pause. Session limit: $Minutes minutes. Log: $log"

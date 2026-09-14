@@ -53,9 +53,12 @@ remaining work and the 30-hour cutoff.
 ## Human playtest
 
 Connect an XInput controller and double-click `Play XML1.cmd` in this repository.
-It opens the optimized native DX8 build with audio, real controller input, and a
-30-minute session limit. See `docs/HUMAN-PLAYTEST.md` for controls and feedback
-targets. Human playability and full graphics/audio fidelity remain unverified.
+It opens the optimized native DX8 build at 1920x1080 progressive, with the game's
+original widescreen framing, audio, real controller input, and a 30-minute
+session limit. Run `./scripts/playtest.ps1 -Resolution 720p` for 1280x720 output.
+See `docs/HD-OUTPUT.md` for resolution and performance evidence.
+See `docs/HUMAN-PLAYTEST.md` for controls and feedback
+targets. Full graphics/audio fidelity remains unverified.
 
 ## Import the ISO
 

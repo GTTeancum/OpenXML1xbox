@@ -1,5 +1,12 @@
 # Recording OpenXML1 gameplay
 
+HD update: the launcher now defaults to native 1920x1080 progressive with the
+game's original widescreen view; 1280x720 is selectable. The initial 4:3 advice
+below describes the earlier 640x480 build. Preserve 16:9 when recording the HD
+build. This change leaves the user's OBS source, scene and profile settings
+untouched; OBS's configured recording resolution is separate from the game's
+backbuffer resolution. See [HD output](HD-OUTPUT.md).
+
 Use OBS for the first 15-20 minute proof video. A custom recorder remains possible, but would add GPU readback, encoding queues, shutdown recovery and audio/video clock work to a port that still has timing issues. OBS also records the audio as heard during play, whereas simply muxing the existing pre-device PCM dump can hide output starvation.
 
 Installed OBS version checked from obs64.exe: 32.1.1. No OBS settings were changed and neither OBS nor the game was launched for this assessment.

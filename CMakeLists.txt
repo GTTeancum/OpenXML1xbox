@@ -111,6 +111,11 @@ target_link_libraries(kernel-directory-test PRIVATE xboxrecomp)
 
 add_executable(xaudio2-dsp-queue-test tests/xaudio2_dsp_queue_test.c)
 add_executable(worker-lifetime-test tests/worker_lifetime_test.c)
+add_executable(texture-wire-cache-test tests/texture_wire_cache_test.c)
+target_include_directories(texture-wire-cache-test PRIVATE src)
+add_executable(video-settings-test tests/video_settings_test.c)
+target_include_directories(video-settings-test PRIVATE external/xboxrecomp/src/kernel)
+target_link_libraries(video-settings-test PRIVATE xboxrecomp)
 target_include_directories(worker-lifetime-test PRIVATE src)
 if(OPENXML1_BUILD_BOOT_PROBE)
     add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/fence-wait-fixture.inc"

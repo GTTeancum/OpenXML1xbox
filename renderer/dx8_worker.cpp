@@ -30,6 +30,7 @@ static bool pump_playtest_window() {
 // Xbox-to-PC graphics bridge. This probe does not run or render game code.
 int main(int argc, char** argv) {
     const bool replayMode = argc == 4 && std::strcmp(argv[1], "--replay") == 0;
+    const bool benchmarkMode = argc == 4 && std::strcmp(argv[1], "--benchmark") == 0;
     const bool vblankMode = argc == 3 && std::strcmp(argv[1], "--vblank-stream") == 0;
     const bool liveMode = vblankMode || (argc == 3 && std::strcmp(argv[1], "--stream") == 0);
     const char* visibleEnv = std::getenv("XML1_DX8_VISIBLE");
@@ -39,8 +40,8 @@ int main(int argc, char** argv) {
         std::freopen(vblankMode?"build/dx8-vblank-errors.log":"build/dx8-live-errors.log","wb",stderr);
         std::setvbuf(stdout,nullptr,_IONBF,0);
     }
-    if (!replayMode && !liveMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
-        std::fprintf(stderr, "Usage: xml1-dx8-worker --probe | --replay packet.bin capture.bmp\n");
+    if (!replayMode && !benchmarkMode && !liveMode && (argc != 2 || std::strcmp(argv[1], "--probe") != 0)) {
+        std::fprintf(stderr, "Usage: xml1-dx8-worker --probe | --replay packet.bin capture.bmp | --benchmark packet.bin iterations\n");
         return 2;
     }
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
@@ -67,7 +68,16 @@ int main(int argc, char** argv) {
     wc.lpszClassName = L"OpenXML1DX8Probe";
     RegisterClassW(&wc);
     const DWORD windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
-    RECT client = {0, 0, 640, 480};
+    unsigned render_width=liveMode&&!vblankMode?1280:640,render_height=liveMode&&!vblankMode?720:480;
+    const char* resolution=vblankMode?nullptr:std::getenv("XML1_DX8_RESOLUTION");
+    if(resolution) {
+        if(!std::strcmp(resolution,"1280x720")) {render_width=1280;render_height=720;}
+        else if(!std::strcmp(resolution,"1920x1080")) {render_width=1920;render_height=1080;}
+        else if(!std::strcmp(resolution,"640x480")) {render_width=640;render_height=480;}
+        else {std::fprintf(stderr,"Unsupported XML1_DX8_RESOLUTION\n");return 2;}
+    }
+    output_width=render_width;output_height=render_height;
+    RECT client = {0, 0, (LONG)render_width, (LONG)render_height};
     AdjustWindowRect(&client, windowStyle, FALSE);
     HWND window = CreateWindowW(wc.lpszClassName, visible ? L"OpenXML1 - DX8 Playtest" : L"XML1 D3D8 probe", windowStyle,
         CW_USEDEFAULT, CW_USEDEFAULT, client.right-client.left, client.bottom-client.top,
@@ -76,8 +86,8 @@ int main(int argc, char** argv) {
     D3DDISPLAYMODE mode = {};
     api->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode);
     std::printf("Native display refresh: %u Hz\n",mode.RefreshRate);
-    pp.BackBufferWidth = 640;
-    pp.BackBufferHeight = 480;
+    pp.BackBufferWidth = render_width;
+    pp.BackBufferHeight = render_height;
     pp.BackBufferFormat = mode.Format;
     pp.BackBufferCount = 1;
     pp.SwapEffect = D3DSWAPEFFECT_DISCARD;
@@ -90,10 +100,25 @@ int main(int argc, char** argv) {
     hr = api->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window,
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE, &pp, &device);
     std::printf("%s D3D8 HAL device creation: %08lx\n", visible ? "Visible playtest" : "Hidden", static_cast<unsigned long>(hr));
+    std::printf("Native backbuffer: %ux%u\n",render_width,render_height);
     if (device && visible) ShowWindow(window, SW_SHOWNORMAL);
     if (device && replayMode) {
         try { replay(device,argv[2],argv[3]); }
         catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
+    }
+    if(device && benchmarkMode) {
+        quiet_replay=true;
+        unsigned iterations=(unsigned)std::strtoul(argv[3],nullptr,10);
+        if(!iterations || iterations>10000) return 2;
+        try {
+            LARGE_INTEGER start,end,frequency; QueryPerformanceFrequency(&frequency);
+            for(unsigned i=0;i<5;++i) replay(device,argv[2],nullptr);
+            QueryPerformanceCounter(&start);
+            for(unsigned i=0;i<iterations;++i) replay(device,argv[2],nullptr);
+            QueryPerformanceCounter(&end);
+            double ms=1000.0*(end.QuadPart-start.QuadPart)/frequency.QuadPart/iterations;
+            std::printf("[DX8 BENCHMARK] iterations=%u mean_ms=%.3f render_fps=%.2f\n",iterations,ms,1000.0/ms);
+        } catch(const std::exception& error) {std::fprintf(stderr,"%s\n",error.what());hr=E_FAIL;}
     }
     if (device && liveMode) {
         try {
@@ -103,6 +128,8 @@ int main(int argc, char** argv) {
             FILE* input=fd>=0?_fdopen(fd,"rb"):nullptr;
             if (!input) throw std::runtime_error("Cannot read graphics pipe");
             unsigned frame=1;
+            LARGE_INTEGER fps_start,fps_previous,fps_frequency;QueryPerformanceFrequency(&fps_frequency);
+            QueryPerformanceCounter(&fps_start);fps_previous=fps_start;double max_frame_ms=0;
             for (unsigned sequence=1;;++sequence) {
                 if (visible) {
                     // The producer waits for each acknowledgement before
@@ -143,6 +170,14 @@ int main(int argc, char** argv) {
                 DWORD ack=sequence,written=0;
                 if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                 if (presented) {
+                    LARGE_INTEGER now;QueryPerformanceCounter(&now);
+                    double frame_ms=1000.0*(now.QuadPart-fps_previous.QuadPart)/fps_frequency.QuadPart;
+                    if(frame_ms>max_frame_ms)max_frame_ms=frame_ms;fps_previous=now;
+                    if(frame%120==0) {
+                        double seconds=(double)(now.QuadPart-fps_start.QuadPart)/fps_frequency.QuadPart;
+                        std::printf("[DX8 FPS] frame=%u fps=%.2f mean_ms=%.3f max_frame_ms=%.3f output=%ux%u\n",frame,120.0/seconds,1000.0*seconds/120,max_frame_ms,render_width,render_height);
+                        fps_start=now;max_frame_ms=0;
+                    }
                     if (frame==1||frame%60==0) {std::printf("Presented live frame %u\n",frame);report_texture_cache(frame);}
                     ++frame;
                 }

@@ -17,15 +17,15 @@ static volatile LONG requests;
 static DWORD WINAPI renderer_peer(void *parameter) {
     HANDLE peer=(HANDLE)parameter;
     for(DWORD ack=1;;++ack) {
-        unsigned char command[12]; DWORD bytes=0,received=0;
-        while(received<12) {
-            if(!ReadFile(peer,command+received,12-received,&bytes,NULL) || !bytes) {
+        unsigned char command[32]; DWORD bytes=0,received=0;
+        while(received<32) {
+            if(!ReadFile(peer,command+received,32-received,&bytes,NULL) || !bytes) {
                 if(!received) { CloseHandle(peer); return 0; }
                 ExitProcess(79);
             }
             received+=bytes;
         }
-        if(memcmp(command,"XMLDX8F6\0\0\0\0",12)) ExitProcess(80);
+        if(memcmp(command,"XMLDX8S2",8) || memcmp(command+20,"XMLDX8F8\0\0\0\0",12)) ExitProcess(80);
         uint32_t before=MEM32(completion_va),tag=MEM32(tag_va);
         /* Until this peer acknowledges, the real bridge must not publish the
          * newly issued fence or its NV2A tag, even while the caller is waiting. */
@@ -85,7 +85,7 @@ int main(void) {
     if(!ConnectNamedPipe(pipe,NULL) && GetLastError()!=ERROR_PIPE_CONNECTED) return 13;
     HANDLE thread=CreateThread(NULL,0,renderer_peer,peer,0,NULL);
     if(!thread)return 14;
-    enabled=1;frames=1015;
+    enabled=1;frames=1015;source_dimensions[0]=640;source_dimensions[1]=480;
     const uint32_t cases[][5]={
         {0x23EB,0x23E9,0x23EB,1,1}, /* Captured combat: wait on current fence. */
         {0x23EB,0x23E7,0x23E9,1,0}, /* Deferred issued fence. */

@@ -1,13 +1,17 @@
 # Human playtest
 
 Connect an XInput-compatible controller, then double-click `Play XML1.cmd` in
-the repository root. This opens the optimized build in a native 640x480 DX8
+the repository root. This opens the optimized build in a native 1920x1080 DX8
 window with audio and real controller input. No automated input is enabled.
 The default session limit is 30 minutes; `scripts/playtest.ps1 -Minutes 60`
 allows a longer session. Close the game window to stop early, including audio.
 An independent process monitor handles this even if the game thread is blocked.
 See [combat freeze correction](COMBAT-FREEZE.md) for the latest regression
 evidence and remaining human checks.
+
+The default is 1080p with the original game's widescreen framing. To use 720p,
+run `./scripts/playtest.ps1 -Resolution 720p`. Both modes render through system
+Direct3D 8. See [HD output and performance](HD-OUTPUT.md) for measured results.
 
 Use A to select Begin Story. Start skips the intro movies or pauses gameplay.
 Left stick moves; A is light attack, B heavy attack, X grab/use, Y jump.
@@ -17,12 +21,14 @@ uses an assigned power. B resumes from pause. The pause menu can enable the map.
 Please check whether movement/combat feel normal, enemies can be defeated,
 the route beyond the first encounter is passable, and music/dialogue/effects
 sound correct. Report stutters, missing graphics, or incorrect map behavior
-with the approximate location and action. Current measured short intervals
-are about 33 FPS in combat and 43 FPS near the start; human mode has not yet
-been benchmarked. Avoid standing beside burning wreckage: it causes damage.
+with the approximate location and action. Performance varies by scene and output
+resolution; the current measurements are recorded in `HD-OUTPUT.md`.
+Avoid standing beside burning wreckage: it causes damage.
 
 Logs are saved to `build/human-playtest-YYYYMMDD-HHMMSS.log`; native renderer
-captures remain in `build/dx8-live-frame-*.bmp`. Renderer logs and capture names
+periodic screenshots are disabled during human play to avoid GPU readback and
+disk-write stalls. Diagnostic captures use `build/dx8-live-frame-*.bmp`.
+Renderer logs and capture names
 are reused between runs. Full level completion and graphics/audio fidelity
 have not been established. This is a diagnostic playtest build.
 

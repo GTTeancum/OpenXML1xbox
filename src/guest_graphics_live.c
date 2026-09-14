@@ -5,6 +5,7 @@
 #include "light_state.h"
 #include "shared_completion.h"
 #include "worker_lifetime.h"
+#include "texture_wire_cache.h"
 #include "../external/xboxrecomp/src/d3d/d3d8_swizzle.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -22,6 +23,9 @@ static int material_valid;
 static unsigned char *packet;
 static size_t used, capacity;
 static uint32_t draws, frames;
+static uint32_t source_dimensions[2];
+static xml1_texture_wire_cache texture_wire;
+static uint32_t wire_reset_pending=1;
 unsigned xml1_graphics_frame_number(void) { return frames; }
 static uint32_t sequence;
 static int frame_geometry;
@@ -30,6 +34,13 @@ static FILE *capture_stream;
 static unsigned capture_request_id;
 static size_t capture_stream_bytes;
 static void capture_next_frame(void) {
+    if(frames==240 && getenv("XML1_CAPTURE_MOVIE_PACKET")) {
+        capture_stream=fopen("build/movie-frame241.bin","wb");
+        if(!capture_stream) fatal("cannot capture movie packet");
+        capture_stream_bytes=0;
+        xml1_texture_wire_reset(&texture_wire);wire_reset_pending=1;
+        return;
+    }
     const char *path=getenv("XML1_DX8_CAPTURE_REQUEST");
     if(!path||!*path) return;
     FILE *request=fopen(path,"rb");
@@ -45,6 +56,9 @@ static void capture_next_frame(void) {
     capture_stream=fopen(output,"wbx");
     if(!capture_stream) fatal("cannot create exclusive DX8 frame capture");
     capture_request_id=id; capture_stream_bytes=0;
+    /* An explicit reset starts every capture with fresh definitions, so it
+     * remains independently replayable despite reuse during ordinary play. */
+    xml1_texture_wire_reset(&texture_wire);wire_reset_pending=1;
     fprintf(stderr,"[DX8 FRAME CAPTURE] begin id=%u frame=%u path=%s\n",id,frames+1,output);
 }
 static void flush_completed_work(uint32_t device);
@@ -85,6 +99,11 @@ static void append_texture(uint32_t address,unsigned width,unsigned height,uint3
     size_t total=xml1_texture_bytes(width,height,packed);
     if(!total) fatal("invalid mip chain");
     const unsigned char *pixels=guest(address,total);
+    static int wire_enabled=-1;
+    if(wire_enabled<0) wire_enabled=getenv("XML1_DX8_NO_WIRE_CACHE")==NULL;
+    uint32_t token=wire_enabled?xml1_texture_wire_token(&texture_wire,address,width,height,packed,pixels,total):0;
+    append(&token,4);
+    if(token && !(token&XML1_WIRE_TEXTURE_DEFINE)) return;
     unsigned format=packed&255;
     for(unsigned level=0;level<xml1_texture_levels(packed);++level) {
         size_t bytes=xml1_texture_level_bytes(width,height,format);
@@ -179,7 +198,16 @@ void xml1_graphics_live_observe(uint32_t va) {
     if (va==0x35AE90) {
         if (a[0]>=10) fatal("invalid transform");
         memcpy(matrices[a[0]],guest(a[1],64),64); matrix_mask|=1u<<a[0];
-    } else if (va==0x35BA10) memcpy(viewport,guest(a[0],24),24);
+    } else if (va==0x35BA10) {
+        memcpy(viewport,guest(a[0],24),24);
+        /* Device creation first uses an INT_MAX viewport sentinel. Record the
+         * first concrete full viewport, after the game selects its mode. */
+        if(!source_dimensions[0] && !viewport[0] && !viewport[1] &&
+           viewport[2] && viewport[2]<=4096 && viewport[3] && viewport[3]<=4096) {
+            source_dimensions[0]=viewport[2];source_dimensions[1]=viewport[3];
+            fprintf(stderr,"[DX8 GUEST MODE] %ux%u\n",source_dimensions[0],source_dimensions[1]);
+        }
+    }
     else if (va==0x35AFB0) { memcpy(material,guest(a[0],68),68); material_valid=1; }
     else if (va==0x35BC40) {
         xml1_light *light=xml1_light_find(&light_state,a[0]);
@@ -315,6 +343,13 @@ static void receive_ack(void) {
         fatal("graphics acknowledgement failed");
     ++sequence;
 }
+static void send_frame_mode(void) {
+    if(!source_dimensions[0] || !source_dimensions[1]) fatal("missing guest display dimensions");
+    /* One acknowledgement covers the envelope and following command. Resets
+     * occur only at frame boundaries, before any texture references are used. */
+    uint32_t mode[3]={source_dimensions[0],source_dimensions[1],wire_reset_pending};
+    send_bytes("XMLDX8S2",8);send_bytes(mode,sizeof(mode));wire_reset_pending=0;
+}
 static void flush_completed_work(uint32_t device) {
     LARGE_INTEGER started,locked,finished,frequency;
     QueryPerformanceCounter(&started);
@@ -322,7 +357,7 @@ static void flush_completed_work(uint32_t device) {
     QueryPerformanceCounter(&locked);
     uint32_t *d=guest(device,0x938);
     uint32_t fence=d[0x2c/4]-2;
-    send_bytes("XMLDX8F6",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+    send_frame_mode();send_bytes("XMLDX8F8",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
     QueryPerformanceCounter(&finished); QueryPerformanceFrequency(&frequency);
     static unsigned timing_reports;
     if(timing_reports++<12) fprintf(stderr,"[DX8 FLUSH TIME] draws=%u queue_ms=%.3f submit_ms=%.3f\n",draws,
@@ -367,11 +402,11 @@ static void ordered_clear(const uint32_t *a) {
     const void *rects=a[0]?guest(a[1],(size_t)a[0]*16):NULL;
     if(pipe==INVALID_HANDLE_VALUE) connect_worker();
     if(draws) {
-        send_bytes("XMLDX8F6",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+        send_frame_mode();send_bytes("XMLDX8F8",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
         draws=0; used=0;
     }
     uint32_t header[5]={a[2],a[3],a[4],a[5],a[0]};
-    send_bytes("XMLDX8C4",8); send_bytes(header,sizeof(header));
+    send_frame_mode();send_bytes("XMLDX8C4",8); send_bytes(header,sizeof(header));
     if(a[0]) send_bytes(rects,(size_t)a[0]*16);
     receive_ack();
     xml1_fair_leave(&transport_lock);
@@ -388,12 +423,7 @@ void xml1_graphics_swap(void) {
             frames+1,d[0x2c/4],*(uint32_t*)guest(d[0x30/4],4),draws);
     }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
-    send_bytes("XMLDX8R6",8); send_bytes(&draws,4); send_bytes(packet,used);
-    if(frames==240 && getenv("XML1_CAPTURE_MOVIE_PACKET")) {
-        FILE *out=fopen("build/movie-frame241.bin","wb");
-        if(!out) fatal("cannot capture movie packet");
-        fwrite("XMLDX8R6",1,8,out); fwrite(&draws,4,1,out); fwrite(packet,1,used,out); fclose(out);
-    }
+    send_frame_mode();send_bytes("XMLDX8R8",8); send_bytes(&draws,4); send_bytes(packet,used);
     receive_ack();
     if(capture_stream) {
         if(fclose(capture_stream)) fatal("DX8 frame capture close failed");
@@ -401,9 +431,13 @@ void xml1_graphics_swap(void) {
         fprintf(stderr,"[DX8 FRAME CAPTURE] complete id=%u frame=%u bytes=%zu\n",capture_request_id,frames+1,capture_stream_bytes);
     }
     ++frames;
+    if(texture_wire.full) {xml1_texture_wire_reset(&texture_wire);wire_reset_pending=1;}
     capture_next_frame();
     xml1_input_test_frame(frames);
-    if (frames==1||frames%60==0) fprintf(stderr,"[DX8 LIVE] presented frame=%u draws=%u bytes=%zu\n",frames,draws,used);
+    if (frames==1||frames%60==0) {
+        fprintf(stderr,"[DX8 LIVE] presented frame=%u draws=%u bytes=%zu\n",frames,draws,used);
+        fprintf(stderr,"[DX8 WIRE] requests=%llu references=%llu avoided_bytes=%llu\n",texture_wire.requests,texture_wire.references,texture_wire.avoided_bytes);
+    }
     draws=0; used=0; frame_geometry=0;
     /* Return only after the native renderer has consumed the submitted frame. */
     g_eax=0; g_esp+=8;
