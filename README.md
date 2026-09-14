@@ -8,6 +8,8 @@ The game uses a separate 32-bit renderer linked to system d3d8.dll. Native splas
 FMV, menu and level-1 images have been captured. Full graphics/audio correctness
 and sustained gameplay are still being validated; this is not a finished port.
 
+See [TODO.md](TODO.md) for the current work and verification checklist.
+
 ## Setup
 
 Requires Git, Python 3.12, CMake and Visual Studio 2022 with Desktop C++ tools.
