@@ -1,0 +1,704 @@
+[
+  {
+    "name": "NtClose",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtQueryVolumeInformationFile",
+    "kind": "native-wrapper",
+    "argument_words": 5,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtOpenFile",
+    "kind": "native-wrapper",
+    "argument_words": 6,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlInitAnsiString",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtWriteFile",
+    "kind": "native-wrapper",
+    "argument_words": 8,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "HalDiskCachePartitionCount",
+    "kind": "native-data"
+  },
+  {
+    "name": "NtReadFile",
+    "kind": "native-wrapper",
+    "argument_words": 8,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "IoCreateSymbolicLink",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtQuerySymbolicLinkObject",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtOpenSymbolicLinkObject",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "IoDeleteSymbolicLink",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlNtStatusToDosError",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtFsControlFile",
+    "kind": "native-wrapper",
+    "argument_words": 10,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtSetInformationFile",
+    "kind": "native-wrapper",
+    "argument_words": 5,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeQuerySystemTime",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtCreateFile",
+    "kind": "native-wrapper",
+    "argument_words": 9,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtQueryFullAttributesFile",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtQueryDirectoryFile",
+    "kind": "native-wrapper",
+    "argument_words": 10,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlAnsiStringToUnicodeString",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlUnicodeStringToAnsiString",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtDuplicateObject",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtWaitForSingleObject",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtQueryInformationFile",
+    "kind": "native-wrapper",
+    "argument_words": 5,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtFlushBuffersFile",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtDeviceIoControlFile",
+    "kind": "native-wrapper",
+    "argument_words": 10,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "ObfDereferenceObject",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "FASTCALL"
+  },
+  {
+    "name": "ObReferenceObjectByHandle",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "IoFileObjectType",
+    "kind": "native-data"
+  },
+  {
+    "name": "MmFreeSystemMemory",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmAllocateSystemMemory",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "XcSHAUpdate",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "XcSHAInit",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "XcSHAFinal",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "XboxHDKey",
+    "kind": "native-data"
+  },
+  {
+    "name": "XboxSignatureKey",
+    "kind": "native-data"
+  },
+  {
+    "name": "XboxAlternateSignatureKeys",
+    "kind": "native-data"
+  },
+  {
+    "name": "MmPersistContiguousMemory",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmAllocateContiguousMemory",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "LaunchDataPage",
+    "kind": "native-data"
+  },
+  {
+    "name": "MmFreeContiguousMemory",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "HalReturnToFirmware",
+    "kind": "unsupported"
+  },
+  {
+    "name": "ExQueryNonVolatileSetting",
+    "kind": "native-wrapper",
+    "argument_words": 5,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmAllocateContiguousMemoryEx",
+    "kind": "native-wrapper",
+    "argument_words": 5,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmQueryAllocationSize",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmSetAddressProtect",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmQueryAddressProtect",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlLeaveCriticalSection",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlEnterCriticalSection",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeSetBasePriorityThread",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "PsThreadObjectType",
+    "kind": "native-data"
+  },
+  {
+    "name": "KeQueryBasePriorityThread",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeSetDisableBoostThread",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtSuspendThread",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtResumeThread",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlRaiseException",
+    "kind": "unsupported"
+  },
+  {
+    "name": "NtYieldExecution",
+    "kind": "native-wrapper",
+    "argument_words": 0,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "PsTerminateSystemThread",
+    "kind": "manual"
+  },
+  {
+    "name": "PsCreateSystemThreadEx",
+    "kind": "manual"
+  },
+  {
+    "name": "NtCreateEvent",
+    "kind": "native-wrapper",
+    "argument_words": 4,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "ExEventObjectType",
+    "kind": "native-data"
+  },
+  {
+    "name": "NtSetEvent",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtClearEvent",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtCreateSemaphore",
+    "kind": "native-wrapper",
+    "argument_words": 4,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtReleaseSemaphore",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtCreateMutant",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtReleaseMutant",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtWaitForSingleObjectEx",
+    "kind": "native-wrapper",
+    "argument_words": 4,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtWaitForMultipleObjectsEx",
+    "kind": "native-wrapper",
+    "argument_words": 6,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeDelayExecutionThread",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtFreeVirtualMemory",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtAllocateVirtualMemory",
+    "kind": "native-wrapper",
+    "argument_words": 5,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlCompareMemoryUlong",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlInitializeCriticalSection",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "NtQueryVirtualMemory",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "HalBootSMCVideoMode",
+    "kind": "native-data"
+  },
+  {
+    "name": "XboxHardwareInfo",
+    "kind": "native-data"
+  },
+  {
+    "name": "HalRegisterShutdownNotification",
+    "kind": "manual"
+  },
+  {
+    "name": "XeImageFileName",
+    "kind": "native-data"
+  },
+  {
+    "name": "XboxKrnlVersion",
+    "kind": "native-data"
+  },
+  {
+    "name": "RtlEqualString",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "XeLoadSection",
+    "kind": "unsupported"
+  },
+  {
+    "name": "XeUnloadSection",
+    "kind": "unsupported"
+  },
+  {
+    "name": "KeSetTimer",
+    "kind": "native-wrapper",
+    "argument_words": 4,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KfLowerIrql",
+    "kind": "manual"
+  },
+  {
+    "name": "KeRaiseIrqlToDpcLevel",
+    "kind": "manual"
+  },
+  {
+    "name": "HalInitiateShutdown",
+    "kind": "unsupported"
+  },
+  {
+    "name": "KeInitializeTimerEx",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeInitializeDpc",
+    "kind": "manual"
+  },
+  {
+    "name": "KeSetEvent",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "IdexChannelObject",
+    "kind": "native-data"
+  },
+  {
+    "name": "KeWaitForSingleObject",
+    "kind": "native-wrapper",
+    "argument_words": 5,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "XcHMAC",
+    "kind": "native-wrapper",
+    "argument_words": 7,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "AvGetSavedDataAddress",
+    "kind": "native-wrapper",
+    "argument_words": 0,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "AvSendTVEncoderOption",
+    "kind": "native-wrapper",
+    "argument_words": 4,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "AvSetDisplayMode",
+    "kind": "native-wrapper",
+    "argument_words": 6,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "AvSetSavedDataAddress",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeInsertQueueDpc",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "HalReadWritePCISpace",
+    "kind": "native-wrapper",
+    "argument_words": 6,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeConnectInterrupt",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeInitializeInterrupt",
+    "kind": "manual"
+  },
+  {
+    "name": "HalGetInterruptVector",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeDisconnectInterrupt",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "DbgPrint",
+    "kind": "unsupported"
+  },
+  {
+    "name": "MmClaimGpuInstanceMemory",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeStallExecutionProcessor",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KfRaiseIrql",
+    "kind": "manual"
+  },
+  {
+    "name": "KeSaveFloatingPointState",
+    "kind": "manual"
+  },
+  {
+    "name": "KeRestoreFloatingPointState",
+    "kind": "manual"
+  },
+  {
+    "name": "ExQueryPoolBlockSize",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "ExAllocatePoolWithTag",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "ExFreePool",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeRemoveQueueDpc",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeCancelTimer",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeSynchronizeExecution",
+    "kind": "manual"
+  },
+  {
+    "name": "MmLockUnlockBufferPages",
+    "kind": "native-wrapper",
+    "argument_words": 3,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmGetPhysicalAddress",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "RtlUnwind",
+    "kind": "unsupported"
+  },
+  {
+    "name": "KeBugCheck",
+    "kind": "unsupported"
+  },
+  {
+    "name": "IofCompleteRequest",
+    "kind": "unsupported"
+  },
+  {
+    "name": "MmQueryStatistics",
+    "kind": "native-wrapper",
+    "argument_words": 1,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "IoCreateDevice",
+    "kind": "unsupported"
+  },
+  {
+    "name": "IoInvalidDeviceRequest",
+    "kind": "unsupported"
+  },
+  {
+    "name": "RtlTimeToTimeFields",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "KeTickCount",
+    "kind": "native-data"
+  },
+  {
+    "name": "RtlTimeFieldsToTime",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "IoStartPacket",
+    "kind": "unsupported"
+  },
+  {
+    "name": "IoStartNextPacket",
+    "kind": "unsupported"
+  },
+  {
+    "name": "IoMarkIrpMustComplete",
+    "kind": "unsupported"
+  },
+  {
+    "name": "HalIsResetOrShutdownPending",
+    "kind": "native-wrapper",
+    "argument_words": 0,
+    "convention": "NTAPI"
+  },
+  {
+    "name": "MmLockUnlockPhysicalPage",
+    "kind": "native-wrapper",
+    "argument_words": 2,
+    "convention": "NTAPI"
+  }
+]

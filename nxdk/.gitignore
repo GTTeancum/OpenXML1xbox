@@ -1,0 +1,6 @@
+bin/
+*.map
+*.c.d
+tools/cxbe/cxbe
+tools/cxbe/*.o
+__pycache__/
