@@ -1,25 +1,157 @@
 # X-Men Legends 1 XboxRecomp TODO
 
-1. **Smoke test various levels with 1–4 players.** Cover loading, combat, powers, character selection, camera/HUD behavior, joining/leaving, and scripted transitions. Record results by level and player count, including a complete level 1 run.
+## Summary
 
-2. **Keep FPS consistently above 30 at 1080p.** Profile and improve heavy combat, effects, transitions, and multiplayer without reducing resolution or fidelity. Verify frame times during sustained gameplay, including with OBS recording.
+1. **Smoke test various levels with 1–4 players.**
+2. **Keep FPS consistently above 30 at 1080p.**
+3. **Add an option to run assetsfb.zip loose.**
+4. **Support .pkgb manifests and loose resources instead of .fb bundles.**
+5. **Integrate a PC options menu.**
+6. **Integrate mouse and keyboard controls.**
+7. **Verify save listing and loading.**
+8. **Verify clean audio and headphone recovery.**
+9. **Finish HD and window-behavior checks.**
+10. **Validate long recordings and update documentation.**
+11. **Plan the 32-bit/original-Xbox return path.**
+12. **Document mod hooks and upstream reusable fixes.**
 
-3. **Add an option to run assetsfb.zip loose.** Load its extracted directory tree without rebuilding the ZIP. Document configuration, search precedence, fallback behavior, and folder layout; verify packaged and loose modes.
+## Detailed work
 
-4. **Support .pkgb manifests and loose resources instead of .fb bundles.** Build on loose ZIP support with a repeatable conversion and loading workflow. Use the XML2 examples in `C:/Games/X-Men Legends II/`, especially `build.ini` and `Packages/generated`, and verify edited resources work without rebuilding bundles.
+### 1. Multi-level smoke tests with 1–4 players
 
-5. **Integrate a PC options menu.** Match X-Men Legends II's PC options and behavior, themed as X-Men Legends 1 XboxRecomp. Include working display, graphics, audio, and control settings with persistence, defaults, and controller/mouse/keyboard navigation.
+- [ ] Establish a named level/player-count matrix covering several levels,
+      interiors/exteriors, heavy combat, and scripted transitions.
+- [ ] Test each selected level with 1, 2, 3, and 4 local players: loading,
+      independent controls, character selection, camera/HUD ownership, combat,
+      powers, pause/resume, joining/leaving where supported, and level exit.
+- [ ] Complete level 1 through its exit; successful subway traversal alone
+      does not establish full level completion.
+- [ ] Record pass/fail per matrix cell and reproducible defects with locations,
+      builds, logs, and native visual evidence where useful.
 
-6. **Integrate mouse and keyboard controls.** Provide gameplay and menu controls, rebinding, sensitivity settings, saved preferences, and appropriate input prompts. Verify focus changes and mixed-device local multiplayer.
+### 2. Consistently above 30 FPS at 1080p
 
-7. **Verify save listing and loading.** Confirm saves appear immediately and after restarting, restore the correct progress, and support multiple saves and overwriting. The directory-query fix still needs a complete human save/load check.
+- [ ] Profile actual 1920×1080 gameplay, including heavy combat, effects,
+      scripted transitions, and the 1–4 player test matrix.
+- [ ] Remove measured bottlenecks without reducing rendering resolution,
+      changing game speed, or sacrificing graphics/audio correctness.
+- [ ] Demonstrate sustained gameplay above 30 FPS using frame-time traces;
+      an average above 30 is insufficient. Report slow frames and stalls,
+      with loading measured separately from active gameplay.
+- [ ] Repeat representative tests with OBS recording enabled; report its cost,
+      hardware, settings, build, and test duration.
 
-8. **Verify clean audio and headphone recovery.** Test 15–20 minutes of combat and transitions for crackle, stutter, missing sounds, and A/V drift. Confirm physically disconnecting/reconnecting headphones preserves gameplay and restores sound.
+Short entrance tests measured about 37 FPS at 1080p; sustained combat and
+multiplayer performance remain unproven. See [HD output](docs/HD-OUTPUT.md).
 
-9. **Finish HD and window-behavior checks.** Review HUD, menus, FMVs, effects, and transitions at 720p/1080p. Confirm the title-bar FPS counter and normal mouse cursor during human play.
+### 3. Optional loose assetsfb.zip contents
 
-10. **Validate long recordings and update documentation.** Check a 15–20 minute OBS recording for synchronization, recording lag, and automatic MP4 finalization. Add the public YouTube URL when supplied and update outdated project status claims.
+- [ ] Add a documented option to load the extracted assetsfb.zip directory
+      tree while retaining packaged mode as an option.
+- [ ] Define path resolution, search precedence, fallback behavior, and
+      missing-file diagnostics so modders can identify the asset being loaded.
+- [ ] Verify boot, menus, saves, and representative levels in both modes;
+      demonstrate an edited loose asset without rebuilding the ZIP.
+- [ ] Document extraction, folder layout, configuration, and switching modes.
 
-11. **Plan the 32-bit/original-Xbox return path.** Identify runtime, compiler, memory, and platform requirements. Preserve compatible game data and mod formats while isolating Windows-only features.
+Reference: `C:/Games/X-Men Legends II/build.ini` and the installed XML2 layout.
+The inspected build.ini declares build/language settings; it does not establish
+a loose-mode switch. Investigate the actual loading behavior before choosing one.
 
-12. **Document mod hooks and upstream reusable fixes.** Provide gameplay/script extension points that survive regeneration, a repeatable mod example, and suitable XboxRecomp pull requests after checking existing branches and PRs.
+### 4. PKGB manifests and loose resources instead of FB bundles
+
+Dependency: item 3 establishes the outer archive's loose mode first.
+
+- [ ] Document XML1 .fb contents and XML2 .pkgb package definitions, resource
+      types, dependency order, and filename resolution.
+- [ ] Provide repeatable conversion from .fb bundles to .pkgb manifests plus
+      loose resources, with validation and actionable error messages.
+- [ ] Integrate manifest loading and document precedence and compatibility
+      with packaged content.
+- [ ] Verify characters, maps, effects, scripts, and shared packages; edit a
+      loose resource and reload without rebuilding its .fb bundle.
+
+Reference: `C:/Games/X-Men Legends II/Packages/generated`, including
+`common_ents.PKGB` and character/map subdirectories. The inspected PKGB is a
+binary package definition containing resource types and filenames, not plain
+text. Retain the XML2-compatible manifest workflow.
+
+### 5. Integrated PC options menu
+
+- [ ] Inventory XML2 PC options and behavior from the installed reference,
+      including display, graphics, audio, and controls; track parity explicitly.
+- [ ] Integrate corresponding options into normal XML1 menus with XML1 styling
+      and X-Men Legends 1 XboxRecomp branding.
+- [ ] Implement functioning settings, apply/cancel, defaults, persistence, and
+      clear handling of settings that require restarting.
+- [ ] Verify 720p/1080p layouts and controller/mouse/keyboard navigation,
+      including returning safely to gameplay.
+
+Dependency: coordinate control configuration with item 6.
+
+### 6. Mouse and keyboard controls
+
+- [ ] Establish XML2-style defaults for gameplay and menus, including movement,
+      attacks, powers, character switching, and pause.
+- [ ] Implement mouse interaction and applicable camera/aim behavior after
+      checking XML2; support sensitivity and rebinding.
+- [ ] Persist bindings, expose them through PC options, and handle conflicts
+      and input prompts when switching between keyboard/mouse and controller.
+- [ ] Verify focus loss, cursor capture/release, and mixed-device local play
+      without stuck inputs or one player's input affecting another player.
+- [ ] Obtain a human gameplay check using the actual keyboard and mouse.
+
+### 7. Save listing and loading after restart
+
+- [ ] Save, confirm the load-menu entry, close/reopen the game, load the save,
+      and confirm restored progress.
+- [ ] Verify multiple saves and overwriting an existing save safely.
+
+The directory-query ABI regression passes; the full human cycle is unconfirmed.
+Preserve existing saves before tests. See [playtesting](docs/HUMAN-PLAYTEST.md).
+
+### 8. Audio continuity and device recovery
+
+- [ ] Verify 15–20 minutes of combat/transitions without crackle, stutter,
+      missing sounds, or A/V drift; record reproducible remaining defects.
+- [ ] Physically disconnect/reconnect headphones during gameplay; confirm the
+      game survives, follows the default output, and resumes sound.
+
+Simulated device-loss and native engine-restart tests passed; physical headphone
+recovery needs confirmation. See [audio recovery](docs/AUDIO-DEVICE-RECOVERY.md).
+
+### 9. HD presentation and window behavior
+
+- [ ] Check HUD, menus, FMVs, effects, and transitions at 720p/1080p for clipping,
+      incorrect framing, missing elements, and visual regressions.
+- [ ] Confirm live title-bar FPS and the normal mouse cursor in human play.
+
+### 10. Long recording and current documentation
+
+- [ ] Verify a full 15–20 minute OBS take for audio sync, recording lag, and
+      automatic MP4 finalization when the game closes.
+- [ ] Add the user's public YouTube proof URL when supplied.
+- [ ] Reconcile stale current-status claims in README/supporting docs while
+      retaining historical diagnostics as history.
+
+The approximately 4m36s take verified auto-stop and was uploaded publicly by the
+user. See [recording](docs/RECORDING.md).
+
+### 11. Future 32-bit and original-Xbox return path
+
+- [ ] Assess a 32-bit game runtime and document toolkit, compiler, memory, and
+      platform requirements for an original-Xbox build.
+- [ ] Define a staged implementation/validation plan preserving compatible
+      game data and mod formats, with Windows-only features isolated.
+
+The current Windows game is 64-bit with a separate 32-bit DX8 renderer; no
+hardware port is implemented. See [Xbox return path](docs/XBOX-RETURN.md).
+
+### 12. Durable mod hooks and reusable upstream fixes
+
+- [ ] Document gameplay/script extension points that survive regeneration,
+      with a reproducible mod example and validation workflow.
+- [ ] Review local patches against upstream branches/PRs and submit suitable
+      isolated toolkit fixes with reproducible evidence.
+
+See [upstream review](docs/UPSTREAM-REVIEW.md).
