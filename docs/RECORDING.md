@@ -1,5 +1,17 @@
 # Recording OpenXML1 gameplay
 
+Current setup: OBS canvas and recording output are 1920x1080 at 30 FPS, and
+the XML1 Game Capture source is enabled. The previous settings were backed up
+under `work/obs-before-1080p-20260913-204145`.
+
+The human launcher automatically asks OBS to stop/finalize an active recording
+when the game process exits, including window close or a crash. OBS stays open.
+Recording still starts manually. This requires the existing local OBS WebSocket
+server; its password remains in OBS's own configuration. Connection failures
+produce a launcher warning without interfering with game shutdown. Check the
+connection without affecting a recording using
+`.venv/Scripts/python.exe scripts/stop-obs-recording.py --check`.
+
 HD update: the launcher now defaults to native 1920x1080 progressive with the
 game's original widescreen view; 1280x720 is selectable. The initial 4:3 advice
 below describes the earlier 640x480 build. Preserve 16:9 when recording the HD

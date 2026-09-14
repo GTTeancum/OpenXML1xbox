@@ -46,6 +46,7 @@ Write-Host "Start: pause. Log: $log"
 if ($Minutes) { Write-Host "Session limit: $Minutes minutes." }
 else { Write-Host 'No session time limit.' }
 Write-Host 'Close the game window to stop the game and its audio.'
+Write-Host 'Any active OBS recording will also be stopped and finalized when the game exits.'
 Push-Location $projectRoot
 try {
     # Native stderr is diagnostic output, not a PowerShell terminating error.
@@ -53,6 +54,10 @@ try {
     & $gameExe *> $log
     $gameExit = $LASTEXITCODE
     Write-Host "Playtest ended (exit $gameExit). Log: $log"
+    $obsHelper = Join-Path $PSScriptRoot 'stop-obs-recording.py'
+    $pythonExe = Join-Path $projectRoot '.venv/Scripts/python.exe'
+    & $pythonExe $obsHelper
+    if ($LASTEXITCODE -ne 0) { Write-Warning 'OBS auto-stop failed. Check OBS and stop recording manually if needed.' }
     Write-Host 'Exit 3 is the session time limit; other failures should be reported with the log.'
 } finally {
     Pop-Location

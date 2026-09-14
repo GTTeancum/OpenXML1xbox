@@ -6,6 +6,9 @@ window with audio and real controller input. No automated input is enabled.
 Human sessions have no time limit. An optional `scripts/playtest.ps1 -Minutes 60`
 sets a limit for a deliberately bounded test. Close the game window to stop, including audio.
 An independent process monitor handles this even if the game thread is blocked.
+When launched through `Play XML1.cmd` or `scripts/playtest.ps1`, game exit also
+stops and finalizes any active OBS recording through the local WebSocket API.
+Start recording manually; the launcher does not start recordings or close OBS.
 See [combat freeze correction](COMBAT-FREEZE.md) for the latest regression
 evidence and remaining human checks.
 
