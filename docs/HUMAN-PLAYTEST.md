@@ -18,6 +18,12 @@ The default is 1080p with the original game's widescreen framing. To use 720p,
 run `./scripts/playtest.ps1 -Resolution 720p`. Both modes render through system
 Direct3D 8. See [HD output and performance](HD-OUTPUT.md) for measured results.
 
+The title bar shows actual presented FPS, refreshed every half second. It counts
+completed presents, excluding intermediate draw batches. The window class now
+supplies the standard arrow cursor so hovering does not retain a startup busy
+cursor. The existing OBS XML1 source uses class matching and can follow the
+changing title; its settings were preserved.
+
 Use A to select Begin Story. Start skips the intro movies or pauses gameplay.
 Left stick moves; A is light attack, B heavy attack, X grab/use, Y jump.
 LB consumes a health potion and RB an energy potion. RT plus a face button

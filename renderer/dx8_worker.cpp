@@ -12,8 +12,24 @@ typedef BOOL WINBOOL;
 #include <fcntl.h>
 
 static bool user_closed = false;
+static constexpr UINT_PTR fps_title_timer = 1;
+static ULONGLONG fps_title_started;
+static unsigned fps_title_frames;
 static LRESULT CALLBACK playtest_window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     if (message == WM_CLOSE) { user_closed = true; return 0; }
+    if (message == WM_TIMER && wparam == fps_title_timer) {
+        ULONGLONG now = GetTickCount64();
+        ULONGLONG elapsed = now - fps_title_started;
+        if (elapsed) {
+            char title[96];
+            std::snprintf(title, sizeof(title), "OpenXML1 - DX8 Playtest | %.1f FPS",
+                1000.0 * fps_title_frames / elapsed);
+            SetWindowTextA(window, title);
+            fps_title_started = now;
+            fps_title_frames = 0;
+        }
+        return 0;
+    }
     return DefWindowProcW(window, message, wparam, lparam);
 }
 
@@ -65,6 +81,9 @@ int main(int argc, char** argv) {
     WNDCLASSW wc = {};
     wc.lpfnWndProc = playtest_window_proc;
     wc.hInstance = GetModuleHandleW(nullptr);
+    // A null class cursor leaves the previous cursor in place over the client
+    // area, including Windows' busy cursor inherited during startup.
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wc.lpszClassName = L"OpenXML1DX8Probe";
     RegisterClassW(&wc);
     const DWORD windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
@@ -101,7 +120,12 @@ int main(int argc, char** argv) {
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE, &pp, &device);
     std::printf("%s D3D8 HAL device creation: %08lx\n", visible ? "Visible playtest" : "Hidden", static_cast<unsigned long>(hr));
     std::printf("Native backbuffer: %ux%u\n",render_width,render_height);
-    if (device && visible) ShowWindow(window, SW_SHOWNORMAL);
+    if (device && visible) {
+        fps_title_started = GetTickCount64();
+        SetWindowTextA(window, "OpenXML1 - DX8 Playtest | 0.0 FPS");
+        SetTimer(window, fps_title_timer, 500, nullptr);
+        ShowWindow(window, SW_SHOWNORMAL);
+    }
     if (device && replayMode) {
         try { replay(device,argv[2],argv[3]); }
         catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
@@ -170,6 +194,7 @@ int main(int argc, char** argv) {
                 DWORD ack=sequence,written=0;
                 if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                 if (presented) {
+                    if (visible) ++fps_title_frames;
                     LARGE_INTEGER now;QueryPerformanceCounter(&now);
                     double frame_ms=1000.0*(now.QuadPart-fps_previous.QuadPart)/fps_frequency.QuadPart;
                     if(frame_ms>max_frame_ms)max_frame_ms=frame_ms;fps_previous=now;
@@ -188,7 +213,7 @@ int main(int argc, char** argv) {
     if(texture_requests) report_texture_cache(0);
     clear_texture_cache();
     if (device) device->Release();
-    if (window) DestroyWindow(window);
+    if (window) { KillTimer(window, fps_title_timer); DestroyWindow(window); }
     UnregisterClassW(wc.lpszClassName, wc.hInstance);
     api->Release();
     FreeLibrary(library);
