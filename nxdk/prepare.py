@@ -85,6 +85,32 @@ for p in gen.glob('recomp_*.c'):
     text=re.sub(pattern,r'\1\n#if defined(NXDK)\n    PortRegisterBank *const _port_regs=port_acquire_register_bank();\n#endif\n',text)
     p.write_text(text)
 
+# Apply the LOOP fix to the existing output without regenerating gameplay.
+p=gen/'recomp_0055.c';text=p.read_text()
+old='if (_flags /* loop: loop */) goto loc_0024059D;'
+new='ecx = (uint32_t)(ecx - 1u);\n    if (ecx != 0) goto loc_0024059D; /* LOOP preserves flags */'
+if old in text:p.write_text(text.replace(old,new))
+elif new not in text:raise SystemExit('Unexpected SSE skinning LOOP shape')
+
+# Restore verified native instructions removed by the desktop lift. Keep
+# accidental instruction decodes in embedded data out of this whitelist.
+for filename,anchor,instructions in [
+    ('recomp_0046.c','void sub_001F0F70(void)',{'cpuid':'__asm__ volatile("cpuid" : "+a"(eax), "=b"(ebx), "+c"(ecx), "=d"(edx));'}),
+    ('recomp_0095.c','loc_00360E9C:',{'wbinvd':'__asm__ volatile("wbinvd" ::: "memory");'}),
+    ('recomp_0036.c','loc_001A36D8:',{'cli':'__asm__ volatile("cli" ::: "memory");','sti':'__asm__ volatile("sti" ::: "memory");'}),
+    ('recomp_0102.c','void sub_003C57E6(void)',{'cli':'__asm__ volatile("cli" ::: "memory");','sti':'__asm__ volatile("sti" ::: "memory");'})]:
+    p=gen/filename;text=p.read_text();at=text.index(anchor)
+    start=text.rfind('void ',0,at+5);end=text.index('\n}\n',at)+3
+    body=text[start:end]
+    for mnemonic,statement in instructions.items():
+        marker=f'/* NXDK native {mnemonic} */'
+        if marker in body:continue
+        original=f'/* TODO: {mnemonic}  */'
+        if original not in body:raise SystemExit(f'Missing expected {mnemonic} in {filename}')
+        body=body.replace(original,f'#if defined(NXDK)\n    {marker}\n    {statement}\n#else\n    {original}\n#endif')
+    updated=text[:start]+body+text[end:]
+    if updated!=text:p.write_text(updated)
+
 # Local tool copy; never modify the shared C:/nxdk installation.
 p=gen/'recomp_0034.c';text=p.read_text()
 marker='port_audio_creation_result(g_eax,MEM32(0x58A514));'
@@ -114,6 +140,7 @@ with (out/'imports.inc').open('w') as f:
     for item in analysis['kernel_imports']:
         f.write('{%su, %du, "%s"},\n'%(item['thunk_addr'],item['ordinal'],item['name']))
 manifest={'source_snapshot':'387e90d','xboxrecomp_snapshot':'eac02c2',
+          'loop_fix_commit':'cd49783',
           'entry':analysis['entry_point'],'title_id':analysis['title_id'],
           'files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in gen.glob('*.c')}}
 (out/'generated-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

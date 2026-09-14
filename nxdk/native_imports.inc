@@ -64,8 +64,6 @@ static void bridge_RtlCompareMemoryUlong(void) { g_eax=(uint32_t)(uintptr_t)RtlC
 static void bridge_RtlInitializeCriticalSection(void) { RtlInitializeCriticalSection((PRTL_CRITICAL_SECTION)(uintptr_t)ARG(1));g_esp+=8; }
 static void bridge_NtQueryVirtualMemory(void) { g_eax=(uint32_t)(uintptr_t)NtQueryVirtualMemory((PVOID)(uintptr_t)ARG(1),(PMEMORY_BASIC_INFORMATION)(uintptr_t)ARG(2));g_esp+=12; }
 static void bridge_RtlEqualString(void) { g_eax=(uint32_t)(uintptr_t)RtlEqualString((PSTRING)(uintptr_t)ARG(1),(PSTRING)(uintptr_t)ARG(2),(BOOLEAN)(uintptr_t)ARG(3));g_esp+=16; }
-static void bridge_XeLoadSection(void) { nxdk_port_fail("kernel: XeLoadSection",__FILE__,__LINE__); }
-static void bridge_XeUnloadSection(void) { nxdk_port_fail("kernel: XeUnloadSection",__FILE__,__LINE__); }
 static void bridge_KeSetTimer(void) { g_eax=(uint32_t)(uintptr_t)KeSetTimer((PKTIMER)(uintptr_t)ARG(1),(LARGE_INTEGER){.QuadPart=ARG64(2)},(PKDPC)(uintptr_t)ARG(4));g_esp+=20; }
 static void bridge_HalInitiateShutdown(void) { nxdk_port_fail("kernel: HalInitiateShutdown",__FILE__,__LINE__); }
 static void bridge_KeInitializeTimerEx(void) { KeInitializeTimerEx((PKTIMER)(uintptr_t)ARG(1),(TIMER_TYPE)(uintptr_t)ARG(2));g_esp+=12; }
@@ -189,8 +187,8 @@ case 291:return bridge_RtlInitializeCriticalSection;
 case 217:return bridge_NtQueryVirtualMemory;
 case 47:return bridge_shutdown_notification;
 case 279:return bridge_RtlEqualString;
-case 327:return bridge_XeLoadSection;
-case 328:return bridge_XeUnloadSection;
+case 327:return bridge_load_section;
+case 328:return bridge_unload_section;
 case 149:return bridge_KeSetTimer;
 case 161:return bridge_lower_irql;
 case 129:return bridge_raise_dpc;

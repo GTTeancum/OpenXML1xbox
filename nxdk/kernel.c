@@ -30,6 +30,8 @@ static void bridge_create_thread(void)
     port_log("PsCreateSystemThreadEx -> %08lx\n",(unsigned long)g_eax);g_esp+=44;
 }
 static void bridge_exit_thread(void) {uint32_t result=ARG(1);port_log("GUEST THREAD EXIT %08lx\n",(unsigned long)result);port_cleanup_thread();ExitThread(result);}
+static void bridge_load_section(void){g_eax=port_section_control(ARG(1),1);g_esp+=8;}
+static void bridge_unload_section(void){g_eax=port_section_control(ARG(1),0);g_esp+=8;}
 typedef struct ShutdownBridge {HAL_SHUTDOWN_REGISTRATION native;uint32_t guest,callback;} ShutdownBridge;
 static ShutdownBridge shutdown_slots[16];
 static void NTAPI shutdown_callback(PHAL_SHUTDOWN_REGISTRATION registration)

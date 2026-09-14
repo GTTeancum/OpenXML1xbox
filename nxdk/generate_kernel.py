@@ -35,6 +35,7 @@ HalIsResetOrShutdownPending'''.split())
 data=set('HalDiskCachePartitionCount IoFileObjectType XboxHDKey XboxSignatureKey XboxAlternateSignatureKeys LaunchDataPage PsThreadObjectType ExEventObjectType HalBootSMCVideoMode XboxHardwareInfo XeImageFileName XboxKrnlVersion IdexChannelObject KeTickCount'.split())
 manual={'PsCreateSystemThreadEx':'bridge_create_thread','PsTerminateSystemThread':'bridge_exit_thread'}
 manual['HalRegisterShutdownNotification']='bridge_shutdown_notification'
+manual.update({'XeLoadSection':'bridge_load_section','XeUnloadSection':'bridge_unload_section'})
 manual['KeInitializeDpc']='bridge_initialize_dpc'
 manual.update({'KfLowerIrql':'bridge_lower_irql','KfRaiseIrql':'bridge_raise_irql','KeRaiseIrqlToDpcLevel':'bridge_raise_dpc'})
 manual.update({'KeInitializeInterrupt':'bridge_initialize_interrupt','KeSynchronizeExecution':'bridge_synchronize'})

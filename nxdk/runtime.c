@@ -13,8 +13,9 @@ PortRegisterBank *volatile port_interrupt_register_bank;
 volatile uint32_t g_icall_trace[ICALL_TRACE_SIZE], g_icall_trace_idx;
 volatile uint64_t g_icall_count;
 uint32_t port_last_call;
-static RECOMP_TLS jmp_buf jump_slots[16];
-static RECOMP_TLS uint32_t jump_keys[16];
+static RECOMP_TLS jmp_buf jump_slots[32];
+static RECOMP_TLS uint32_t jump_keys[32];
+static RECOMP_TLS unsigned jump_count;
 char port_log_buffer[65536];
 volatile uint32_t port_log_length;
 
@@ -23,12 +24,14 @@ void port_log(const char *format, ...)
     char buffer[1024]; va_list args;
     va_start(args, format); vsnprintf(buffer,sizeof(buffer),format,args); va_end(args);
     size_t len=strlen(buffer);
+    uint32_t flags;__asm__ volatile("pushfl; popl %0; cli":"=r"(flags)::"memory");
     if(port_log_length+len<sizeof(port_log_buffer)) {
         memcpy(port_log_buffer+port_log_length,buffer,len+1);
         port_log_length+=len;
     }
+    __asm__ volatile("pushl %0; popfl"::"r"(flags):"memory","cc");
     __asm__ volatile("outb %0, %1" :: "a"((uint8_t)3), "Nd"((uint16_t)0x3fb));
-    /* COM1 is captured by the dedicated test emulator's serial file. */
+    /* Also emit to COM1 where supported; the memory log is authoritative. */
     for (const char *p=buffer; *p; ++p) {
         __asm__ volatile("outb %0, %1" :: "a"((uint8_t)*p), "Nd"((uint16_t)0x3f8));
     }
@@ -41,6 +44,9 @@ _Noreturn void nxdk_port_fail(const char *reason,const char *file,int line)
              reason,file,line,(unsigned long)port_last_call,(unsigned long)g_esp,
              (unsigned long)g_eax,(unsigned long)g_ecx,(unsigned long)g_edx);
     for(unsigned i=0;i<ICALL_TRACE_SIZE;++i) port_log("ICALL %08lx\n",(unsigned long)g_icall_trace[(g_icall_trace_idx+i)&15]);
+    /* Sleeping or taking video locks here would replace the first failure
+       with a second kernel fault. Leave the memory log readable and halt. */
+    if(KeGetCurrentIrql()>=DISPATCH_LEVEL)for(;;)__asm__ volatile("cli; hlt");
     debugPrint("STOP: %s\nlast call %08lx\n",reason,(unsigned long)port_last_call);
     for(;;) Sleep(1000);
 }
@@ -60,13 +66,22 @@ void recomp_debug_service(uint32_t service,uint32_t arg)
 }
 jmp_buf *recomp_setjmp_slot(uint32_t va)
 {
-    for(unsigned i=0;i<16;++i) if(jump_keys[i]==va || !jump_keys[i]) { jump_keys[i]=va; return &jump_slots[i]; }
-    nxdk_port_fail("setjmp slot exhaustion",__FILE__,__LINE__);
+    if(port_interrupt_register_bank||!va)nxdk_port_fail("setjmp requires a normal guest thread and buffer",__FILE__,__LINE__);
+    for(unsigned i=0;i<jump_count;++i)if(jump_keys[i]==va)return &jump_slots[i];
+    if(jump_count==32)nxdk_port_fail("setjmp slot exhaustion",__FILE__,__LINE__);
+    jump_keys[jump_count]=va;return &jump_slots[jump_count++];
 }
 int recomp_guest_longjmp(uint32_t va,uint32_t value)
 {
-    /* Until the guest saved-register layout is restored, stop rather than unwind incorrectly. */
-    nxdk_port_fail("guest longjmp not implemented",__FILE__,__LINE__);
+    if(port_interrupt_register_bank)nxdk_port_fail("longjmp from interrupt context",__FILE__,__LINE__);
+    for(unsigned i=jump_count;i;--i)if(jump_keys[i-1]==va){
+        /* Follow the Xbox CRT jump-buffer layout. SEH cleanup requires the
+           separate exception bridge; do not silently skip registered handlers. */
+        if(MEM32(va+0x18)!=MEM32(g_fs_base))nxdk_port_fail("longjmp across SEH frames requires unwind bridge",__FILE__,__LINE__);
+        g_ebp=g_seh_ebp=MEM32(va);g_ebx=MEM32(va+4);g_edi=MEM32(va+8);g_esi=MEM32(va+12);g_esp=MEM32(va+16)+4;
+        jump_count=i;longjmp(jump_slots[i-1],value?(int)value:1);
+    }
+    nxdk_port_fail("longjmp without active native setjmp",__FILE__,__LINE__);
 }
 static void guest_memmove(void)
 {

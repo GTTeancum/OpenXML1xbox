@@ -6,7 +6,8 @@ SDL is not linked into this target.
 `tools/cxbe` is copied from the installed NXDK cxbe source and retains its
 source copyright/SPDX notices. It is GPL-2.0-or-later; a copy of GPL v2 is
 in `licenses/cxbe-GPL-2.0.txt`. The local changes preserve the linked PE
-base and use the memory installed in the machine. This host build tool is
+base, use the memory installed in the machine, and import original title
+identity from a private input executable. This host build tool is
 not linked into the Xbox executable.
 
 `capture-native.py` was copied from the existing local OpenJKDF2ogx testing

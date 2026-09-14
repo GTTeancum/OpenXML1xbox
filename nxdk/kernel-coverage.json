@@ -447,11 +447,11 @@
   },
   {
     "name": "XeLoadSection",
-    "kind": "unsupported"
+    "kind": "manual"
   },
   {
     "name": "XeUnloadSection",
-    "kind": "unsupported"
+    "kind": "manual"
   },
   {
     "name": "KeSetTimer",

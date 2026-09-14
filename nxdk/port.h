@@ -4,6 +4,7 @@
 void port_log(const char *format, ...);
 void port_screen(const char *message);
 int port_load_xbe(const char *path);
+uint32_t port_section_control(uint32_t address,int load);
 void port_init_thread(uint32_t stack_bytes);
 void port_cleanup_thread(void);
 int port_selftest(void);

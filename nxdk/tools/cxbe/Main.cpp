@@ -11,6 +11,37 @@
 
 #include <string.h>
 
+// Preserve the original title's identity and save/network key material while
+// retaining the new executable's name and homebrew media/region permissions.
+static bool ImportTitleCertificate(Xbe *target, const char *path)
+{
+    FILE *file = fopen(path, "rb");
+    if(!file) return false;
+    uint32 header[0x178 / 4] = {};
+    Xbe::Certificate original = {};
+    bool valid = fread(header, sizeof(header), 1, file) == 1 &&
+                 header[0] == 0x48454258 && header[0x118 / 4] >= header[0x104 / 4];
+    if(valid)
+    {
+        uint32 offset = header[0x118 / 4] - header[0x104 / 4];
+        valid = offset < 0x10000 && fseek(file, offset, SEEK_SET) == 0 &&
+                fread(&original, sizeof(original), 1, file) == 1 &&
+                original.dwSize >= sizeof(original);
+    }
+    fclose(file);
+    if(!valid) return false;
+    Xbe::Certificate &cert = target->m_Certificate;
+    cert.dwTitleId = original.dwTitleId;
+    cert.dwGameRatings = original.dwGameRatings;
+    cert.dwDiskNumber = original.dwDiskNumber;
+    cert.dwVersion = original.dwVersion;
+    memcpy(cert.dwAlternateTitleId, original.dwAlternateTitleId, sizeof(cert.dwAlternateTitleId));
+    memcpy(cert.bzLanKey, original.bzLanKey, sizeof(cert.bzLanKey));
+    memcpy(cert.bzSignatureKey, original.bzSignatureKey, sizeof(cert.bzSignatureKey));
+    memcpy(cert.bzTitleAlternateSignatureKey, original.bzTitleAlternateSignatureKey, sizeof(cert.bzTitleAlternateSignatureKey));
+    return true;
+}
+
 // program entry point
 int main(int argc, char *argv[])
 {
@@ -22,6 +53,7 @@ int main(int argc, char *argv[])
     char szMode[OPTION_LEN + 1] = "retail";
     char szLogo[OPTION_LEN + 1] = "";
     char szDebugPath[OPTION_LEN + 1] = "";
+    char szTitleCert[OPTION_LEN + 1] = "";
     bool bRetail;
 
     const char *program = argv[0];
@@ -30,7 +62,8 @@ int main(int argc, char *argv[])
         { szExeFilename, NULL, "exefile" },         { szXbeFilename, "OUT", "filename" },
         { szDumpFilename, "DUMPINFO", "filename" }, { szXbeTitle, "TITLE", "title" },
         { szMode, "MODE", "{debug|retail}" },       { szLogo, "LOGO", "filename" },
-        { szDebugPath, "DEBUGPATH", "path" },       { NULL }
+        { szDebugPath, "DEBUGPATH", "path" },       { szTitleCert, "TITLECERT", "original-xbe" },
+        { NULL }
     };
 
     if(ParseOptions(argv, argc, options, szErrorMessage))
@@ -91,6 +124,12 @@ int main(int argc, char *argv[])
         }
 
         Xbe *XbeFile = new Xbe(ExeFile, szXbeTitle, bRetail, LogoPtr, szDebugPath);
+
+        if(szTitleCert[0] && !ImportTitleCertificate(XbeFile, szTitleCert))
+        {
+            strncpy(szErrorMessage, "Unable to import original title certificate", ERROR_LEN);
+            goto cleanup;
+        }
 
         if(XbeFile->GetError() != 0)
         {
