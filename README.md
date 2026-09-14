@@ -8,7 +8,8 @@ The game uses a separate 32-bit renderer linked to system d3d8.dll. Native splas
 FMV, menu and level-1 images have been captured. Full graphics/audio correctness
 and sustained gameplay are still being validated; this is not a finished port.
 
-See [TODO.MD](TODO.MD) for the canonical open-work register and acceptance checklists.
+See [TODO.MD](TODO.MD) for the project summary and detailed work.
+See [headless testing](docs/PERFORMANCE-SAVES-AUDIO.md) for invisible native DX8 runs with `--muted`.
 
 ## Setup
 

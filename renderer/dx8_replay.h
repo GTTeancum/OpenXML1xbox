@@ -29,7 +29,7 @@ struct TextureEntry {
 };
 static std::vector<TextureEntry> texture_cache;
 static size_t texture_cache_bytes;
-static uint64_t texture_requests,texture_hits;
+static uint64_t texture_requests,texture_hits,completion_waits;
 static bool quiet_replay;
 static unsigned output_width=640,output_height=480,source_width=640,source_height=480;
 static DWORD scale_coordinate(DWORD value,unsigned output,unsigned source) {
@@ -62,6 +62,7 @@ static void clear_texture_cache() {
     texture_cache.clear(); texture_cache_bytes=0;
 }
 static void report_texture_cache(unsigned frame) {
+    std::printf("[DX8 COMPLETION] waits=%llu\n",completion_waits);
     std::printf("[DX8 TEXTURES] frame=%u requests=%llu hits=%llu retained=%zu bytes=%zu\n",
         frame,texture_requests,texture_hits,texture_cache.size(),texture_cache_bytes);
     std::printf("[DX8 STATE] requests=%llu calls=%llu\n",state_requests,state_calls);
@@ -168,7 +169,7 @@ static void complete_rendering(IDirect3DDevice8* device) {
     D3DLOCKED_RECT lock={};
     HRESULT hr=surface->LockRect(&lock,nullptr,D3DLOCK_READONLY);
     if (SUCCEEDED(hr)) hr=surface->UnlockRect();
-    surface->Release(); checked(hr);
+    surface->Release(); checked(hr); ++completion_waits;
 }
 static void wait_native_vblank(IDirect3DDevice8* device) {
         D3DRASTER_STATUS raster={};
@@ -186,6 +187,7 @@ static void wait_native_vblank(IDirect3DDevice8* device) {
 }
 static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capture, bool live=false) {
     static bool frame_open=false;
+    static bool completion_pending=false;
     auto read = [&](void* dst, size_t bytes) {
         if (std::fread(dst,1,bytes,file) != bytes) throw std::runtime_error("Truncated replay");
     };
@@ -207,7 +209,7 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         wait_native_vblank(device);
         return false;
     }
-    if(!std::memcmp(magic,"XMLDX8C4",8)) {
+    if(!std::memcmp(magic,"XMLDX8C4",8) || !std::memcmp(magic,"XMLDX8C5",8)) {
         uint32_t clear[5]; read(clear,sizeof(clear));
         if((clear[0]&~0xF3u)||((clear[0]&0xF0)!=0&&(clear[0]&0xF0)!=0xF0)||clear[4]>4096)
             throw std::runtime_error("Unsupported clear command");
@@ -224,7 +226,11 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         DWORD flags=((clear[0]&0xF0)?D3DCLEAR_TARGET:0)|((clear[0]&1)?D3DCLEAR_ZBUFFER:0)|((clear[0]&2)?D3DCLEAR_STENCIL:0);
         float depth; std::memcpy(&depth,&clear[2],4);
         checked(device->Clear(clear[4],clear[4]?rects.data():nullptr,flags,clear[1],depth,clear[3]));
-        complete_rendering(device);
+        // C4 retains its historical completion acknowledgement. C5 only
+        // acknowledges ordered submission; an explicit F8 fence or R8 swap
+        // still performs the GPU completion barrier before publishing a fence.
+        if(magic[7]=='4') {complete_rendering(device);completion_pending=false;}
+        else completion_pending=true;
         return false;
     }
     const bool version8=magic[7]=='8';
@@ -237,9 +243,12 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
     const bool flush=!std::memcmp(magic,"XMLDX8F",7);
     if ((!flush && std::memcmp(magic,"XMLDX8R",7)) || (!version2 && magic[7]!='1')) throw std::runtime_error("Invalid replay version");
     uint32_t count; read(&count,4);
-    /* Every preceding clear/draw batch completes before its acknowledgement.
-     * An empty flush submits no work, so that completion already covers it. */
-    if (flush && !count) return false;
+    /* A submitted C5 clear is still pending even with no recorded draws.
+     * Never publish a guest fence until that native clear has completed. */
+    if (flush && !count) {
+        if(completion_pending) {complete_rendering(device);completion_pending=false;}
+        return false;
+    }
     if ((!live && !count && !frame_open) || count>10000) throw std::runtime_error("Invalid draw count");
     if (!frame_open) checked(device->Clear(0,nullptr,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL,0,1.0f,0));
     frame_open=true;
@@ -268,17 +277,17 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         IDirect3DTexture8* second_texture=second_header[0]?read_wire_texture(device,file,second_header[0],second_header[1],second_header[2],version7):nullptr;
         std::vector<unsigned char> vb(vertices*stride); read(vb.data(),vb.size());
         viewport=output_viewport(viewport);
-        checked(device->SetViewport(&viewport));
-        checked(device->SetTransform(D3DTS_WORLD,&matrices[0]));
-        checked(device->SetTransform(D3DTS_VIEW,&matrices[1]));
-        checked(device->SetTransform(D3DTS_PROJECTION,&matrices[2]));
-        if(version4) for(unsigned i=0;i<2;++i) checked(device->SetTransform((D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0+i),&texture_matrices[i]));
-        checked(device->SetVertexShader(header[4])); checked(device->SetPixelShader(0));
+        cached_viewport(device,&viewport);
+        cached_transform(device,D3DTS_WORLD,&matrices[0]);
+        cached_transform(device,D3DTS_VIEW,&matrices[1]);
+        cached_transform(device,D3DTS_PROJECTION,&matrices[2]);
+        if(version4) for(unsigned i=0;i<2;++i) cached_transform(device,(D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0+i),&texture_matrices[i]);
+        cached_shader(device,header[4],false); cached_shader(device,0,true);
         auto state=[&](D3DRENDERSTATETYPE type,DWORD value){ cached_render_state(device,type,value); };
         state(D3DRS_LIGHTING,rs[102]); state(D3DRS_SPECULARENABLE,rs[103]);
         if(version3) {
             if(rs[137]||rs[141]) throw std::runtime_error("Unsupported vertex blend or two-sided lighting");
-            checked(device->SetMaterial(&material));
+            cached_material(device,&material);
             for(unsigned i=0;i<32;++i) {
                 if(light_mask&(1u<<i)) cached_light(device,i,&lights[i]);
                 cached_light_enable(device,i,(light_mask&(1u<<i))!=0);
@@ -322,11 +331,11 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         if (!live && !quiet_replay) std::printf("Replayed game draw %u: %u vertices, %ux%u format %u\n",n+1,vertices,width,height,header[3]);
     }
     checked(device->EndScene());
-    if (flush) { complete_rendering(device); return false; }
+    if (flush) { complete_rendering(device); completion_pending=false; return false; }
     if (capture) capture_backbuffer(device,capture);
     else complete_rendering(device);
     if (live) checked(device->Present(nullptr,nullptr,nullptr,nullptr));
-    frame_open=false;
+    frame_open=false;completion_pending=false;
     if(!version8) clear_wire_textures();
     return true;
 }

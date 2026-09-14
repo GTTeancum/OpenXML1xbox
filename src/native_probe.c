@@ -52,7 +52,8 @@ static BOOL CALLBACK profile_read(HANDLE process,DWORD64 address,PVOID buffer,DW
 static DWORD WINAPI profile(LPVOID unused) {
     (void)unused;
     uint64_t addresses[200][16]={0};
-    Sleep(5000);
+    const char *delay=getenv("XML1_PROFILE_DELAY_MS");
+    Sleep(delay?(DWORD)strtoul(delay,NULL,10):5000);
     for(unsigned n=0;n<200;++n) {
         CONTEXT context={0}; context.ContextFlags=CONTEXT_FULL;
         profile_stack_size=0;

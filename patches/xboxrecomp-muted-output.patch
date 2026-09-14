@@ -1,0 +1,31 @@
+--- a/src/apu/apu_xaudio2.c
++++ b/src/apu/apu_xaudio2.c
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include <stdint.h>
++#include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include "apu_xaudio2.h"
+@@ -89,6 +90,20 @@
+         goto fail;
+     }
+ 
++#ifdef RECOMP_APU_NATIVE_DSP_OUTPUT
++    /* Mute only this engine's final output. Keep original PCM, queue callbacks,
++     * DSP work and device recovery identical to audible playback. */
++    const char *muted = getenv("XML1_MUTED");
++    if (muted && !strcmp(muted, "1")) {
++        hr = IXAudio2MasteringVoice_SetVolume(g_xa2_master, 0.0f, XAUDIO2_COMMIT_NOW);
++        if (FAILED(hr)) {
++            fprintf(stderr, "[XA2] Cannot silence mastering voice: 0x%08lX\n", hr);
++            goto fail;
++        }
++        fprintf(stderr, "[XA2] Muted mastering output; PCM and pacing preserved\n");
++    }
++#endif
++
+     wfx.wFormatTag      = WAVE_FORMAT_PCM;
+     wfx.nChannels       = XA2_CHANNELS;
+     wfx.nSamplesPerSec  = XA2_SAMPLE_RATE;

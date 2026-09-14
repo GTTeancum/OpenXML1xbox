@@ -22,7 +22,7 @@ assert len(draw) == texture_at + 16 + 4*24
 def command(magic, records):
     return magic + struct.pack('<I', len(records)) + b''.join(records)
 
-def render(name, data, *, disabled=False, resolution='640x480', error=None):
+def render(name, data, *, disabled=False, resolution='640x480', error=None, completions=None):
     source = root/f'build/wire-{name}.bin'
     output = source.with_suffix('.bmp')
     source.write_bytes(data)
@@ -37,6 +37,8 @@ def render(name, data, *, disabled=False, resolution='640x480', error=None):
         assert run.returncode != 0 and error in run.stderr, run.stdout+run.stderr
         return
     assert run.returncode == 0, run.stdout+run.stderr
+    if completions is not None:
+        assert f'[DX8 COMPLETION] waits={completions}\n' in run.stdout, run.stdout
     return output.read_bytes()
 
 changed = bytearray(draw)
@@ -114,3 +116,17 @@ for resolution in ('1280x720', '1920x1080'):
     print(f'PASS: {resolution} native backbuffer, scaled viewport and ordered clear')
 render('invalid-mode', dimensions(0,720)+v7, error='Invalid source dimensions')
 print('PASS: invalid source dimensions rejected')
+
+for resolution in ('1280x720','1920x1080'):
+    completed = scaled_scene(1)
+    submitted = completed.replace(b'XMLDX8C4',b'XMLDX8C5')
+    assert render('clear-completed-'+resolution,completed,resolution=resolution) == render('clear-submitted-'+resolution,submitted,resolution=resolution)
+    print('PASS: ordered C5 clear matches completed C4 clear at '+resolution)
+
+# A submission-only clear must complete at an empty fence, exactly once.
+clear_only = b'XMLDX8C5' + struct.pack('<5I',0xf0,0xffe04020,0x3f800000,0,0)
+empty_fence = command(b'XMLDX8F8',[])
+finish = command(b'XMLDX8R6',[draw])
+render('pending-clear-empty-fence',dimensions(640,480)+clear_only+empty_fence+empty_fence+finish,completions=1)
+render('pending-clear-present',dimensions(640,480)+clear_only+finish,completions=0)
+print('PASS: empty fence completes a submitted clear once; captures still synchronize full frame')

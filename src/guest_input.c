@@ -43,6 +43,10 @@ static void test_file_input(uint32_t frame) {
         char *next=strchr(part,'+'); if(next) *next=0;
         if(!strcmp(part,"a")) state.bAnalogButtons[XBOX_BUTTON_A]=255;
         else if(!strcmp(part,"start")) state.wButtons=XBOX_GAMEPAD_START;
+        else if(!strcmp(part,"dpadup")) state.wButtons|=XBOX_GAMEPAD_DPAD_UP;
+        else if(!strcmp(part,"dpaddown")) state.wButtons|=XBOX_GAMEPAD_DPAD_DOWN;
+        else if(!strcmp(part,"dpadleft")) state.wButtons|=XBOX_GAMEPAD_DPAD_LEFT;
+        else if(!strcmp(part,"dpadright")) state.wButtons|=XBOX_GAMEPAD_DPAD_RIGHT;
         else if(!strcmp(part,"right")) {state.sThumbLX=32767;duration=1000;}
         else if(!strcmp(part,"left")) {state.sThumbLX=-32767;duration=1000;}
         else if(!strcmp(part,"up")) {state.sThumbLY=32767;duration=1000;}

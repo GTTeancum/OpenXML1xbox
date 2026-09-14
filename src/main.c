@@ -535,6 +535,26 @@ static BOOL load_xbe(const char *path, void **out_data, size_t *out_size)
 /* Console entry point (for debugging -- lets you see printf output) */
 int main(int argc, char **argv)
 {
+    for (int i=1; i<argc; ++i) {
+        if (!strcmp(argv[i], "--headless")) {
+            _putenv_s("XML1_LIVE_DX8", "1");
+            _putenv_s("XML1_DX8_VISIBLE", "0");
+            _putenv_s("XML1_DX8_NO_CAPTURE", "1");
+            _putenv_s("XML1_APU", "1");
+            _putenv_s("XML1_DX8_RESOLUTION", "1920x1080");
+        } else if (!strcmp(argv[i], "--muted")) {
+            _putenv_s("XML1_MUTED", "1");
+        } else if (!strcmp(argv[i], "--help")) {
+            puts("Usage: xml1-boot-probe [--headless] [--muted]\n"
+                 "  --headless  Hidden native DX8 rendering at 1080p with full audio processing.\n"
+                 "  --muted     Silence this game's output; preserve DSP and audio pacing.");
+            return 0;
+        } else if (strcmp(argv[i], "--memory-query-test") &&
+                   strcmp(argv[i], "--irql-test") && strcmp(argv[i], "--swizzle-test")) {
+            fprintf(stderr, "Unknown argument: %s\n", argv[i]);
+            return 2;
+        }
+    }
     s_memory_query_test = argc == 2 && strcmp(argv[1], "--memory-query-test") == 0;
     s_irql_test = argc == 2 && strcmp(argv[1], "--irql-test") == 0;
     s_swizzle_test = argc == 2 && strcmp(argv[1], "--swizzle-test") == 0;

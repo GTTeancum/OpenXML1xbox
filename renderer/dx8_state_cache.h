@@ -34,3 +34,31 @@ static void cached_light_enable(IDirect3DDevice8* device,unsigned index,bool ena
     if(state_cache_enabled() && known[index] && values[index]==enabled) return;
     checked(device->LightEnable(index,enabled));values[index]=enabled;known[index]=true;++state_calls;
 }
+
+static void cached_viewport(IDirect3DDevice8* device,const D3DVIEWPORT8* value) {
+    static D3DVIEWPORT8 previous={}; static bool known=false;
+    ++state_requests;
+    if(state_cache_enabled() && known && !std::memcmp(&previous,value,sizeof(*value))) return;
+    checked(device->SetViewport(value)); previous=*value;known=true;++state_calls;
+}
+static void cached_transform(IDirect3DDevice8* device,D3DTRANSFORMSTATETYPE type,const D3DMATRIX* value) {
+    static D3DMATRIX previous[512]={}; static bool known[512]={};
+    unsigned index=(unsigned)type;
+    if(index>=512) throw std::runtime_error("Transform exceeds cache");
+    ++state_requests;
+    if(state_cache_enabled() && known[index] && !std::memcmp(&previous[index],value,sizeof(*value))) return;
+    checked(device->SetTransform(type,value));previous[index]=*value;known[index]=true;++state_calls;
+}
+static void cached_material(IDirect3DDevice8* device,const D3DMATERIAL8* value) {
+    static D3DMATERIAL8 previous={}; static bool known=false;
+    ++state_requests;
+    if(state_cache_enabled() && known && !std::memcmp(&previous,value,sizeof(*value))) return;
+    checked(device->SetMaterial(value));previous=*value;known=true;++state_calls;
+}
+static void cached_shader(IDirect3DDevice8* device,DWORD value,bool pixel) {
+    static DWORD previous[2]={}; static bool known[2]={};
+    unsigned index=pixel?1:0; ++state_requests;
+    if(state_cache_enabled() && known[index] && previous[index]==value) return;
+    checked(pixel?device->SetPixelShader(value):device->SetVertexShader(value));
+    previous[index]=value;known[index]=true;++state_calls;
+}

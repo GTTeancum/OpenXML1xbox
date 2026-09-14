@@ -406,7 +406,7 @@ static void ordered_clear(const uint32_t *a) {
         draws=0; used=0;
     }
     uint32_t header[5]={a[2],a[3],a[4],a[5],a[0]};
-    send_frame_mode();send_bytes("XMLDX8C4",8); send_bytes(header,sizeof(header));
+    send_frame_mode();send_bytes("XMLDX8C5",8); send_bytes(header,sizeof(header));
     if(a[0]) send_bytes(rects,(size_t)a[0]*16);
     receive_ack();
     xml1_fair_leave(&transport_lock);

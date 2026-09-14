@@ -3,7 +3,7 @@
 ## Summary
 
 1. Smoke test various levels with 1–4 players.
-2. Keep FPS consistently above 30 at 1080p.
+2. Reach 40+ FPS across various levels at 1080p.
 3. Add an option to run assetsfb.zip loose.
 4. Support .pkgb manifests and loose resources instead of .fb bundles.
 5. Integrate a PC options menu.
@@ -28,14 +28,14 @@
 - [ ] Record pass/fail per matrix cell and reproducible defects with locations,
       builds, logs, and native visual evidence where useful.
 
-### 2. Consistently above 30 FPS at 1080p
+### 2. 40+ FPS across various levels at 1080p
 
 - [ ] Profile actual 1920×1080 gameplay, including heavy combat, effects,
       scripted transitions, and the 1–4 player test matrix.
 - [ ] Remove measured bottlenecks without reducing rendering resolution,
       changing game speed, or sacrificing graphics/audio correctness.
-- [ ] Demonstrate sustained gameplay above 30 FPS using frame-time traces;
-      an average above 30 is insufficient. Report slow frames and stalls,
+- [ ] Demonstrate sustained gameplay at 40+ FPS using frame-time traces;
+      an overall average hiding slow levels is insufficient. Report slow frames and stalls,
       with loading measured separately from active gameplay.
 - [ ] Repeat representative tests with OBS recording enabled; report its cost,
       hardware, settings, build, and test duration.

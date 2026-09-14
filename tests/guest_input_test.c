@@ -112,6 +112,13 @@ int main(void) {
     xml1_input_test_frame(1101); REQUIRE(call(0x3C0398,2,args)==0);
     for(unsigned j=0;j<8;++j) REQUIRE(memory[0x60000A+j]==0);
     REQUIRE(*(int16_t *)(memory+0x600012)==0 && *(int16_t *)(memory+0x600014)==0);
+    const char *dpads[]={"dpadup","dpaddown","dpadleft","dpadright"};
+    for(unsigned i=0;i<4;++i) {
+        command=fopen(command_path,"wb"); REQUIRE(command); fprintf(command,"%u %s\n",21+i,dpads[i]); fclose(command);
+        xml1_input_test_frame(1150+i); REQUIRE(call(0x3C0398,2,args)==0);
+        REQUIRE(*(uint16_t *)(memory+0x600008)==(1u<<i));
+        REQUIRE(*(int16_t *)(memory+0x600012)==0 && *(int16_t *)(memory+0x600014)==0);
+    }
     REQUIRE(DeleteFileA(command_path));
     puts("PASS: file commands wait for complete lines, apply once, release buttons and stay process-local");
     memset(memory + 0x600100, 0, 70);

@@ -8,7 +8,8 @@
 
 static HRESULT com_result, create_result, master_result, source_result;
 static HRESULT start_result, submit_result;
-static int starts;
+static int starts, mute_calls;
+static HRESULT mute_result;
 static int com_refs, releases, master_destroys, source_destroys, failures;
 static IXAudio2 engine;
 static IXAudio2MasteringVoice master;
@@ -93,6 +94,12 @@ static HRESULT fake_submit(const XAUDIO2_BUFFER *buffer)
     return S_OK;
 }
 
+static HRESULT fake_volume(float volume) {
+    CHECK(volume == 0.0f); ++mute_calls; return mute_result;
+}
+#undef IXAudio2MasteringVoice_SetVolume
+#define IXAudio2MasteringVoice_SetVolume(voice, volume, ...) fake_volume(volume)
+
 /* Replace only external APIs; compile the real backend, including its ring. */
 #define CoInitializeEx(...) fake_com_init()
 #define CoUninitialize() ((void)--com_refs)
@@ -138,7 +145,8 @@ static void reset(void)
 int main(void) {
     master_vtable.DestroyVoice=destroy_master; source_vtable.DestroyVoice=destroy_source;
     master.lpVtbl=&master_vtable; source.lpVtbl=&source_vtable;
-    reset(); CHECK(xa2_init()); CHECK(starts==0);
+    _putenv_s("XML1_MUTED", "1");
+    reset(); CHECK(xa2_init()); CHECK(starts==0); CHECK(mute_calls==1);
     int16_t pcm[256][2];
     for(int i=0;i<12;++i) {
         memset(pcm,i+1,sizeof(pcm));
@@ -169,13 +177,18 @@ int main(void) {
     CHECK(xa2_get_error()==(int32_t)XAUDIO2_E_DEVICE_INVALIDATED);
     CHECK(!xa2_submit_samples(&pcm[0][0],256));
     xa2_shutdown(); CHECK(com_refs==0); reset(); starts=0; CHECK(xa2_init());
-    CHECK(!xa2_get_error());
+    CHECK(!xa2_get_error()); CHECK(mute_calls==2);
     start_result=E_FAIL;
     for(int i=0;i<6;++i) CHECK(xa2_submit_samples(&pcm[0][0],256));
     CHECK(starts==1 && queue_count==6);
     CHECK(!xa2_wait_for_buffer(0));
     CHECK(!xa2_submit_samples(&pcm[0][0],256));
     CHECK(queue_count==6); xa2_shutdown();
+    reset(); mute_result=E_FAIL; CHECK(!xa2_init()); CHECK(!g_xa2_initialized);
+    CHECK(g_xa2_master==NULL && g_xa2_source==NULL);
+    mute_result=S_OK; _putenv_s("XML1_MUTED", "");
+    int prior_mutes=mute_calls; reset(); CHECK(xa2_init());
+    CHECK(mute_calls==prior_mutes); xa2_shutdown();
     printf("Native DSP queue regression: %d failures; priming, capacity, backpressure, ring lifetime, start failure; no audio device\n",failures);
     return failures?1:0;
 }
