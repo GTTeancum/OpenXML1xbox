@@ -20,7 +20,8 @@ def main():
     parser.add_argument('--input-file', type=Path, help='Process-local input commands only')
     parser.add_argument('--capture-pcm', action='store_true')
     parser.add_argument('--trace-directory', action='store_true')
-    parser.add_argument('--profile', action='store_true', help='Sample game thread after 70 seconds; do not use for acceptance FPS')
+    parser.add_argument('--profile-delay', type=int, default=70, help='Seconds before diagnostic stack sampling')
+    parser.add_argument('--profile', action='store_true', help='Sample game thread; do not use for acceptance FPS')
     args = parser.parse_args()
     if not 1 <= args.seconds <= 1800:
         parser.error('--seconds must be between 1 and 1800')
@@ -49,7 +50,7 @@ def main():
         env['XML1_TEST_INPUT_FILE'] = str(args.input_file.resolve())
     if args.trace_directory: env['XML1_TRACE_DIRECTORY']='1'
     if args.profile:
-        env.update(XML1_NATIVE_PROFILE='1', XML1_PROFILE_DELAY_MS='70000')
+        env.update(XML1_NATIVE_PROFILE='1', XML1_PROFILE_DELAY_MS=str(max(0,args.profile_delay)*1000))
     if args.capture_pcm:
         env['XML1_CAPTURE_DSP_PCM'] = '1'
     events=json.loads(args.sequence.read_text()) if args.sequence else []
@@ -101,7 +102,7 @@ def main():
             if args.capture_pcm:
                 for name in ('apu-dsp-output.pcm', 'apu-dsp-output.csv'):
                     source = ROOT / 'build' / name
-                    if source.exists():
+                    if source.exists() and source.stat().st_mtime >= started_wall:
                         shutil.copy2(source, output / name)
     print(f'Exit {result}: 3 means diagnostic time bound, not acceptance. Evidence: {output}', flush=True)
     return 0 if result in (0, 3) else result

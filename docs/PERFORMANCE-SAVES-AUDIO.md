@@ -87,3 +87,35 @@ work/headless-20260913-225452 then launched a fresh process, selected Game 2,
 loaded the overwritten slot, and restored the Central Park level with Wolverine
 at level 2. Native capture 9110/frame 3076 confirms active gameplay after load.
 The kernel directory/relative-delete regression and process-local input tests pass.
+
+## Additional levels and diagnostic overhead
+
+- HAARP interior (haarp/int/haarp2_1), work/headless-20260913-225654:
+  34 post-entry windows measured 48.57-49.17 FPS; worst frame 40.875 ms.
+  Movement worked. Zero empty audio queues; maximum submit gap 15.789 ms.
+  At 177.958 seconds wall time, 178 seconds of original PCM had been submitted,
+  consistent with queue priming rather than accumulating drift.
+- HAARP exterior (haarp/ext/haarp_ext01), work/headless-20260913-230021:
+  loaded its original dialogue and supported movement. Post-movement windows
+  fell as low as 28.55 FPS, with 142 queue-empty observations across the run.
+  This run fails the sustained performance/audio target.
+- A diagnostic repeat, work/headless-20260913-230510, sampled disabled movie
+  timeline/graphics tracing in ordinary guest ABI calls. The normal path now
+  skips these diagnostic checks while preserving native graphics observation;
+  XML1_TRACE_GRAPHICS or the existing individual tracing flags restore them.
+- Unprofiled repeat work/headless-20260913-230955 improved recent windows to
+  above 40 FPS, but still recorded 12 queue-empty observations. Captures and
+  concurrent workloads prevent treating this as clean-audio acceptance.
+- Xemu and OpenJPB were also consuming CPU during testing. Neither was stopped.
+- The extended New York navigation run work/headless-20260913-231335 was
+  aborted after the test character was defeated. It included captures and
+  compilation interference and does not qualify as a sustained combat soak.
+
+The Windows native audio recovery regression still passes: 600 blocks accepted
+through critical-error and stopped-engine recovery in 4156 ms. Physical device
+handoff and perceptual crackle acceptance remain separate human checks.
+
+Reusable save-path fixes were submitted as XboxRecomp PR #53:
+https://github.com/sp00nznet/xboxrecomp/pull/53 (commit 0472a59).
+The isolated upstream synthetic-memory CTest fails before and passes after the
+fix. No game assets or generated game code are included.

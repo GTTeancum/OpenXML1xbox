@@ -52,6 +52,20 @@ static void dump_region(const char *path, uint32_t va, size_t bytes)
 }
 void xml1_graphics_observe(uint32_t va)
 {
+    /* This hook runs at every guest ABI call, including tight non-graphics
+     * loops on several threads. Disabled tracing must not take a shared
+     * interlocked cache line or walk the diagnostic address checks. */
+    static RECOMP_TLS int diagnostics = -1;
+    if (diagnostics < 0) {
+        diagnostics = getenv("XML1_TRACE_GRAPHICS") || getenv("XML1_TRACE_ADX") ||
+            getenv("XML1_TRACE_SUBWAY") || getenv("XML1_MOVIE_TIMELINE") ||
+            getenv("XML1_MOVIE_WATCH") || getenv("XML1_CAPTURE_MOVIE_SOURCE") ||
+            getenv("XML1_TRACE_D3D");
+    }
+    if (!diagnostics) {
+        if (va >= 0x0035ADA0 && va < 0x0036F300) xml1_graphics_live_observe(va);
+        return;
+    }
     /* Read-only CRI audio diagnostics. Addresses come from error-string
        references and call targets in the supplied executable. */
     static int adx_trace=-1;

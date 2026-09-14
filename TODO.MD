@@ -40,8 +40,9 @@
 - [ ] Repeat representative tests with OBS recording enabled; report its cost,
       hardware, settings, build, and test duration.
 
-Short entrance tests measured about 37 FPS at 1080p; sustained combat and
-multiplayer performance remain unproven. See [HD output](docs/HD-OUTPUT.md).
+Recent New York and HAARP interior windows exceed 40 FPS at 1080p, but exterior
+stalls, sustained combat, and multiplayer performance remain open. See
+[performance evidence](docs/PERFORMANCE-SAVES-AUDIO.md).
 
 ### 3. Optional loose assetsfb.zip contents
 
