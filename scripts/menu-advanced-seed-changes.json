@@ -1,0 +1,1353 @@
+{
+  "source_sha256": "81b3eda2bb47f7731c413397008535d4b27ce6eaebb7ed6857ef70a436b75c5b",
+  "purpose": "Native Advanced Options seed before binding-focus authoring.",
+  "operations": [
+    {
+      "path": [],
+      "tag": "MENU",
+      "name": null,
+      "set": {
+        "name": "options_controller_xbox",
+        "animonopen": "false",
+        "animonclose": "false",
+        "fadeout": "false"
+      },
+      "remove": [
+        "no_stack",
+        "type",
+        "updownonly"
+      ]
+    },
+    {
+      "path": [
+        4
+      ],
+      "tag": "item",
+      "name": "track01",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        5
+      ],
+      "tag": "item",
+      "name": "track02",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        6
+      ],
+      "tag": "item",
+      "name": "helpbar",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        7
+      ],
+      "tag": "item",
+      "name": "helpbar_hinge_left",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        8
+      ],
+      "tag": "item",
+      "name": "helpbar_hinge_right",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        14
+      ],
+      "tag": "item",
+      "name": "title_bracket_top",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        15
+      ],
+      "tag": "item",
+      "name": "controls_hinge01",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        16
+      ],
+      "tag": "item",
+      "name": "controls_hinge02",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        17
+      ],
+      "tag": "item",
+      "name": "options_bracket_top",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        18
+      ],
+      "tag": "item",
+      "name": "title",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        19
+      ],
+      "tag": "item",
+      "name": "title_light",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "animate",
+        "model"
+      ]
+    },
+    {
+      "path": [
+        21
+      ],
+      "tag": "item",
+      "name": "controls_screen",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        25
+      ],
+      "tag": "item",
+      "name": "options_screen",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        26
+      ],
+      "tag": "item",
+      "name": "accept",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        27
+      ],
+      "tag": "item",
+      "name": "accept_light",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "animate",
+        "model"
+      ]
+    },
+    {
+      "path": [
+        38
+      ],
+      "tag": "item",
+      "name": "label_options",
+      "set": {
+        "text": "Advanced Options",
+        "style": "STYLE_SMALL",
+        "enabled": "true"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        40
+      ],
+      "tag": "item",
+      "name": "label_effects_volume",
+      "set": {
+        "text": "Loading...",
+        "style": "STYLE_MENU",
+        "enabled": "true",
+        "usecmd": "pcnative_resolution",
+        "gamevar": "pcnative_resolution",
+        "right": "label_button07",
+        "focusmodel": "ui/models/m_options_sound_select",
+        "focusitemname": "options_fxvol_focus"
+      },
+      "remove": [
+        "animtext_scene",
+        "desctext2",
+        "leftcmd",
+        "rightcmd"
+      ]
+    },
+    {
+      "path": [
+        40
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        41
+      ],
+      "tag": "item",
+      "name": "label_music_volume",
+      "set": {
+        "text": "Loading...",
+        "style": "STYLE_MENU",
+        "enabled": "true",
+        "usecmd": "pcnative_window",
+        "gamevar": "pcnative_window",
+        "focusmodel": "ui/models/m_options_sound_select",
+        "focusitemname": "options_musicvol_focus"
+      },
+      "remove": [
+        "animtext_scene",
+        "desctext2",
+        "leftcmd",
+        "rightcmd"
+      ]
+    },
+    {
+      "path": [
+        41
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        42
+      ],
+      "tag": "item",
+      "name": "label_combat_music",
+      "set": {
+        "text": "Loading...",
+        "style": "STYLE_MENU",
+        "enabled": "true",
+        "usecmd": "pcnative_player",
+        "gamevar": "pcnative_player",
+        "focusmodel": "ui/models/m_options_combatmusic_select",
+        "focusitemname": "options_combatmusic_focus"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        42
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        43
+      ],
+      "tag": "item",
+      "name": "label_view_angle",
+      "set": {
+        "text": "Loading...",
+        "style": "STYLE_MENU",
+        "enabled": "true",
+        "usecmd": "pcnative_sensitivity",
+        "gamevar": "pcnative_sensitivity",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "view_angle_focus"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        43
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        44
+      ],
+      "tag": "item",
+      "name": "label_view_cycle",
+      "set": {
+        "text": "Loading...",
+        "style": "STYLE_MENU",
+        "enabled": "true",
+        "usecmd": "pcnative_invert",
+        "gamevar": "pcnative_invert",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "view_cycle_focus"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        44
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        45
+      ],
+      "tag": "item",
+      "name": "label_view_follow",
+      "set": {
+        "text": "Loading...",
+        "style": "STYLE_MENU",
+        "enabled": "true",
+        "usecmd": "pcnative_sharing",
+        "gamevar": "pcnative_sharing",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "view_follow_focus"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        45
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        49
+      ],
+      "tag": "item",
+      "name": "label_accept",
+      "set": {
+        "text": "Apply",
+        "style": "STYLE_MENU",
+        "usecmd": "pcnative_apply",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "enabled": "true",
+        "focusmodel": "ui/models/m_pda_option_focus",
+        "focusitemname": "accept_focus"
+      },
+      "remove": [
+        "animtext_scene",
+        "desctext2"
+      ]
+    },
+    {
+      "path": [
+        49
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        39
+      ],
+      "tag": "item",
+      "name": "label_controls",
+      "set": {
+        "text": "X-Men Legends 1 XboxRecomp",
+        "style": "STYLE_SMALL",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        59
+      ],
+      "tag": "item",
+      "name": "label_button01",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowname_0_0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        65
+      ],
+      "tag": "item",
+      "name": "label_button07",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowkey_0_0",
+        "usecmd": "pcnative_rowbind_0_0",
+        "up": "pc_scroll_prev",
+        "down": "label_button08",
+        "left": "label_effects_volume",
+        "right": "pc_secondary0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        60
+      ],
+      "tag": "item",
+      "name": "label_button02",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowname_1_0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        66
+      ],
+      "tag": "item",
+      "name": "label_button08",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowkey_1_0",
+        "usecmd": "pcnative_rowbind_1_0",
+        "up": "label_button07",
+        "down": "label_button09",
+        "left": "label_effects_volume",
+        "right": "pc_secondary1"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        61
+      ],
+      "tag": "item",
+      "name": "label_button03",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowname_2_0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        67
+      ],
+      "tag": "item",
+      "name": "label_button09",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowkey_2_0",
+        "usecmd": "pcnative_rowbind_2_0",
+        "up": "label_button08",
+        "down": "label_button10",
+        "left": "label_effects_volume",
+        "right": "pc_secondary2"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        62
+      ],
+      "tag": "item",
+      "name": "label_button04",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowname_3_0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        68
+      ],
+      "tag": "item",
+      "name": "label_button10",
+      "set": {
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "gamevar": "pcnative_rowkey_3_0",
+        "usecmd": "pcnative_rowbind_3_0",
+        "up": "label_button09",
+        "down": "label_button11",
+        "left": "label_effects_volume",
+        "right": "pc_secondary3"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        9
+      ],
+      "tag": "item",
+      "name": "desctext1",
+      "set": {
+        "style": "STYLE_DESC",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        10
+      ],
+      "tag": "item",
+      "name": "desctext2",
+      "set": {
+        "style": "STYLE_DESC",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        11
+      ],
+      "tag": "item",
+      "name": "desctext3",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "style"
+      ]
+    },
+    {
+      "path": [
+        12
+      ],
+      "tag": "item",
+      "name": "desctext4",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "style"
+      ]
+    },
+    {
+      "path": [
+        13
+      ],
+      "tag": "item",
+      "name": "desctext5",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "style"
+      ]
+    },
+    {
+      "path": [
+        20
+      ],
+      "tag": "item",
+      "name": "title_focus",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        22
+      ],
+      "tag": "item",
+      "name": "controls",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        23
+      ],
+      "tag": "item",
+      "name": "controls_light",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        24
+      ],
+      "tag": "item",
+      "name": "controls_focus",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        28
+      ],
+      "tag": "item",
+      "name": "accept_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "animate",
+        "model"
+      ]
+    },
+    {
+      "path": [
+        29
+      ],
+      "tag": "item",
+      "name": "view_angle_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        30
+      ],
+      "tag": "item",
+      "name": "view_cycle_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        31
+      ],
+      "tag": "item",
+      "name": "view_follow_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        32
+      ],
+      "tag": "item",
+      "name": "view_shake_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        33
+      ],
+      "tag": "item",
+      "name": "subtitles_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        34
+      ],
+      "tag": "item",
+      "name": "options_fxvol_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        35
+      ],
+      "tag": "item",
+      "name": "options_musicvol_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        36
+      ],
+      "tag": "item",
+      "name": "options_combatmusic_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        37
+      ],
+      "tag": "item",
+      "name": "options_vibration_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        46
+      ],
+      "tag": "item",
+      "name": "label_view_shake",
+      "set": {
+        "enabled": "true",
+        "text": "Defaults",
+        "usecmd": "pcnative_defaults",
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "view_shake_focus"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        46
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        47
+      ],
+      "tag": "item",
+      "name": "label_subtitles",
+      "set": {
+        "enabled": "true",
+        "text": "Cancel",
+        "usecmd": "pcnative_cancel;closemenu",
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "subtitles_focus"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        47
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        48
+      ],
+      "tag": "item",
+      "name": "label_vibration",
+      "set": {
+        "text": "Loading...",
+        "style": "STYLE_MENU",
+        "enabled": "true",
+        "gamevar": "pcnative_keyboard",
+        "usecmd": "pcnative_keyboard",
+        "focusmodel": "ui/models/m_options_combatmusic_select",
+        "focusitemname": "options_vibration_focus"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        48
+      ],
+      "children": []
+    },
+    {
+      "path": [
+        50
+      ],
+      "tag": "item",
+      "name": "fx_vol",
+      "set": {
+        "type": "MENU_ITEM_MODEL",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "color",
+        "gamevar",
+        "parallelogram"
+      ]
+    },
+    {
+      "path": [
+        51
+      ],
+      "tag": "item",
+      "name": "music_vol",
+      "set": {
+        "type": "MENU_ITEM_MODEL",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "color",
+        "gamevar",
+        "parallelogram"
+      ]
+    },
+    {
+      "path": [
+        52
+      ],
+      "tag": "item",
+      "name": "combat_music",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "gamevar",
+        "style",
+        "textalignx",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        53
+      ],
+      "tag": "item",
+      "name": "view_angle",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "gamevar",
+        "style",
+        "textalignx",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        54
+      ],
+      "tag": "item",
+      "name": "view_cycle",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "gamevar",
+        "style",
+        "textalignx",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        55
+      ],
+      "tag": "item",
+      "name": "view_follow",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "gamevar",
+        "style",
+        "textalignx",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        56
+      ],
+      "tag": "item",
+      "name": "view_shake",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "gamevar",
+        "style",
+        "textalignx"
+      ]
+    },
+    {
+      "path": [
+        57
+      ],
+      "tag": "item",
+      "name": "subtitles",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "gamevar",
+        "style",
+        "textalignx",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        58
+      ],
+      "tag": "item",
+      "name": "vibration",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "gamevar",
+        "style",
+        "textalignx",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        63
+      ],
+      "tag": "item",
+      "name": "label_button05",
+      "set": {
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "gamevar": "pcnative_rowname_4_0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        64
+      ],
+      "tag": "item",
+      "name": "label_button06",
+      "set": {
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "gamevar": "pcnative_rowname_5_0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        69
+      ],
+      "tag": "item",
+      "name": "label_button11",
+      "set": {
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "gamevar": "pcnative_rowkey_4_0",
+        "usecmd": "pcnative_rowbind_4_0",
+        "up": "label_button10",
+        "down": "label_button12",
+        "left": "label_effects_volume",
+        "right": "pc_secondary4"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        70
+      ],
+      "tag": "item",
+      "name": "label_button12",
+      "set": {
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "text": "...",
+        "style": "STYLE_SMALL",
+        "gamevar": "pcnative_rowkey_5_0",
+        "usecmd": "pcnative_rowbind_5_0",
+        "up": "label_button11",
+        "down": "label_stick02",
+        "left": "label_effects_volume",
+        "right": "pc_secondary5"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        71
+      ],
+      "tag": "item",
+      "name": "label_stick01",
+      "set": {
+        "enabled": "true",
+        "textalignx": "TEXT_ALIGN_LEFT",
+        "style": "STYLE_SMALL",
+        "text": "...",
+        "gamevar": "pcnative_rowname_6_0"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        72
+      ],
+      "tag": "item",
+      "name": "label_stick02",
+      "set": {
+        "enabled": "true",
+        "style": "STYLE_SMALL",
+        "text": "...",
+        "gamevar": "pcnative_rowkey_6_0",
+        "usecmd": "pcnative_rowbind_6_0",
+        "up": "label_button12",
+        "down": "pc_scroll_next",
+        "left": "label_effects_volume",
+        "right": "pc_secondary6"
+      },
+      "remove": [
+        "animtext_scene"
+      ]
+    },
+    {
+      "path": [
+        73
+      ],
+      "tag": "item",
+      "name": "label_click01",
+      "set": {
+        "hide": "true",
+        "enabled": "false",
+        "textalignx": "TEXT_ALIGN_LEFT"
+      },
+      "remove": [
+        "animtext_scene",
+        "style",
+        "text"
+      ]
+    },
+    {
+      "path": [
+        74
+      ],
+      "tag": "item",
+      "name": "label_click02",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "style",
+        "text"
+      ]
+    },
+    {
+      "path": [
+        75
+      ],
+      "tag": "item",
+      "name": "controls_list",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "spacing"
+      ]
+    },
+    {
+      "path": [
+        76
+      ],
+      "tag": "item",
+      "name": "controls_list2",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "spacing"
+      ]
+    },
+    {
+      "path": [],
+      "children": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        21,
+        25,
+        26,
+        27,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        49,
+        39,
+        59,
+        65,
+        60,
+        66,
+        61,
+        67,
+        62,
+        68,
+        9,
+        10,
+        11,
+        12,
+        13,
+        20,
+        22,
+        23,
+        24,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        46,
+        47,
+        48,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        63,
+        64,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        "<item name=\"pc_secondary0\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_rowkey_0_1\" usecmd=\"pcnative_rowbind_0_1\" up=\"pc_scroll_prev\" down=\"pc_secondary1\" left=\"label_button07\" right=\"label_button07\" />",
+        "<item name=\"pc_secondary1\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_rowkey_1_1\" usecmd=\"pcnative_rowbind_1_1\" up=\"pc_secondary0\" down=\"pc_secondary2\" left=\"label_button08\" right=\"label_button08\" />",
+        "<item name=\"pc_secondary2\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_rowkey_2_1\" usecmd=\"pcnative_rowbind_2_1\" up=\"pc_secondary1\" down=\"pc_secondary3\" left=\"label_button09\" right=\"label_button09\" />",
+        "<item name=\"pc_secondary3\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_rowkey_3_1\" usecmd=\"pcnative_rowbind_3_1\" up=\"pc_secondary2\" down=\"pc_secondary4\" left=\"label_button10\" right=\"label_button10\" />",
+        "<item name=\"pc_secondary4\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_rowkey_4_1\" usecmd=\"pcnative_rowbind_4_1\" up=\"pc_secondary3\" down=\"pc_secondary5\" left=\"label_button11\" right=\"label_button11\" />",
+        "<item name=\"pc_secondary5\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_rowkey_5_1\" usecmd=\"pcnative_rowbind_5_1\" up=\"pc_secondary4\" down=\"pc_secondary6\" left=\"label_button12\" right=\"label_button12\" />",
+        "<item name=\"pc_secondary6\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_rowkey_6_1\" usecmd=\"pcnative_rowbind_6_1\" up=\"pc_secondary5\" down=\"pc_scroll_next\" left=\"label_stick02\" right=\"label_stick02\" />",
+        "<item name=\"pc_header_action\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"Action\" enabled=\"true\" />",
+        "<item name=\"pc_header_primary\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"Primary\" enabled=\"true\" />",
+        "<item name=\"pc_header_secondary\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"Secondary\" enabled=\"true\" />",
+        "<item name=\"pc_scroll_prev\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"Previous\" enabled=\"true\" usecmd=\"pcnative_scroll_prev\" up=\"label_stick02\" down=\"label_button07\" right=\"pc_scroll_next\" left=\"label_effects_volume\" />",
+        "<item name=\"pc_scroll_next\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"Next\" enabled=\"true\" usecmd=\"pcnative_scroll_next\" up=\"label_stick02\" down=\"label_button07\" left=\"pc_scroll_prev\" />",
+        "<item name=\"pc_scroll_range\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_scroll\" />",
+        "<item name=\"pc_status\" style=\"STYLE_SMALL\" textalignx=\"TEXT_ALIGN_LEFT\" text=\"...\" enabled=\"true\" gamevar=\"pcnative_status\" />"
+      ]
+    }
+  ]
+}

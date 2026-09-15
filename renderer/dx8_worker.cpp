@@ -15,8 +15,46 @@ static bool user_closed = false;
 static constexpr UINT_PTR fps_title_timer = 1;
 static ULONGLONG fps_title_started;
 static unsigned fps_title_frames;
+static unsigned captured_mouse_buttons;
 static LRESULT CALLBACK playtest_window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     if (message == WM_CLOSE) { user_closed = true; return 0; }
+    if(message==WM_SETFOCUS || message==WM_KILLFOCUS) {
+        xml1_pc_channel_focus(message==WM_SETFOCUS);return 0;
+    }
+    if(message==WM_KEYDOWN || message==WM_KEYUP || message==WM_SYSKEYDOWN || message==WM_SYSKEYUP) {
+        bool down=message==WM_KEYDOWN || message==WM_SYSKEYDOWN;
+        // Alt+F4 and other system shortcuts remain normal window behavior.
+        if(message==WM_SYSKEYDOWN || message==WM_SYSKEYUP)return DefWindowProcW(window,message,wparam,lparam);
+        if(!down || !(lparam&(1u<<30)))pc_ui::input_key((unsigned)wparam,down);
+        return 0;
+    }
+    if(message==WM_MOUSEMOVE || message==WM_LBUTTONDOWN || message==WM_LBUTTONUP ||
+       message==WM_RBUTTONDOWN || message==WM_RBUTTONUP || message==WM_MBUTTONDOWN || message==WM_MBUTTONUP) {
+        int x=(short)LOWORD(lparam),y=(short)HIWORD(lparam);
+        unsigned key=message==WM_LBUTTONDOWN || message==WM_LBUTTONUP?VK_LBUTTON:
+            message==WM_RBUTTONDOWN || message==WM_RBUTTONUP?VK_RBUTTON:
+            message==WM_MBUTTONDOWN || message==WM_MBUTTONUP?VK_MBUTTON:0;
+        bool down=message==WM_LBUTTONDOWN || message==WM_RBUTTONDOWN || message==WM_MBUTTONDOWN;
+        if(key) {if(down)captured_mouse_buttons|=key;else captured_mouse_buttons&=~key;}
+        if(down)SetCapture(window);
+        pc_ui::input_mouse(x,y,key,down,0);
+        if(key && !down && !(wparam&(MK_LBUTTON|MK_RBUTTON|MK_MBUTTON)) && GetCapture()==window)ReleaseCapture();
+        return 0;
+    }
+    if(message==WM_CAPTURECHANGED) {
+        xml1_pc_channel_key(VK_LBUTTON,0);xml1_pc_channel_key(VK_RBUTTON,0);xml1_pc_channel_key(VK_MBUTTON,0);
+        // ReleaseCapture after a normal button-up must retain the queued click.
+        // Only an unexpected transfer while a button is down cancels a drag.
+        if(captured_mouse_buttons)xml1_pc_channel_pointer_cancel();
+        captured_mouse_buttons=0;
+        return 0;
+    }
+    if(message==WM_MOUSEWHEEL) {
+        POINT point={(short)LOWORD(lparam),(short)HIWORD(lparam)};ScreenToClient(window,&point);
+        int wheel=(short)HIWORD(wparam);
+        pc_ui::input_mouse(point.x,point.y,0,false,wheel);
+        return 0;
+    }
     if (message == WM_TIMER && wparam == fps_title_timer) {
         ULONGLONG now = GetTickCount64();
         ULONGLONG elapsed = now - fps_title_started;
@@ -86,7 +124,13 @@ int main(int argc, char** argv) {
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wc.lpszClassName = L"OpenXML1DX8Probe";
     RegisterClassW(&wc);
-    const DWORD windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+    Xml1PcInputSnapshot initial_input={};
+    bool pc_connected=liveMode && !vblankMode && std::getenv("XML1_PC_INPUT_CHANNEL");
+    if(pc_connected && (!xml1_pc_channel_connect() || !xml1_pc_channel_read(&initial_input,1))) {
+        std::fprintf(stderr,"Cannot connect PC input channel\n");return 2;
+    }
+    bool borderless=visible && pc_connected && initial_input.settings.fullscreen;
+    const DWORD windowStyle = borderless?WS_POPUP:WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
     unsigned render_width=liveMode&&!vblankMode?1280:640,render_height=liveMode&&!vblankMode?720:480;
     const char* resolution=vblankMode?nullptr:std::getenv("XML1_DX8_RESOLUTION");
     if(resolution) {
@@ -96,11 +140,20 @@ int main(int argc, char** argv) {
         else {std::fprintf(stderr,"Unsupported XML1_DX8_RESOLUTION\n");return 2;}
     }
     output_width=render_width;output_height=render_height;
+    pc_ui::client_width=render_width;pc_ui::client_height=render_height;
     RECT client = {0, 0, (LONG)render_width, (LONG)render_height};
     AdjustWindowRect(&client, windowStyle, FALSE);
     HWND window = CreateWindowW(wc.lpszClassName, visible ? L"OpenXML1 - DX8 Playtest" : L"XML1 D3D8 probe", windowStyle,
         CW_USEDEFAULT, CW_USEDEFAULT, client.right-client.left, client.bottom-client.top,
         nullptr, nullptr, wc.hInstance, nullptr);
+    if(borderless) {
+        MONITORINFO monitor={};monitor.cbSize=sizeof(monitor);
+        if(!GetMonitorInfoW(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&monitor))return 2;
+        const RECT &r=monitor.rcMonitor;
+        SetWindowPos(window,nullptr,r.left,r.top,r.right-r.left,r.bottom-r.top,SWP_NOZORDER|SWP_NOACTIVATE);
+        // Mouse coordinates are client pixels; scale hit targets to this size.
+        pc_ui::client_width=r.right-r.left;pc_ui::client_height=r.bottom-r.top;
+    }
     D3DPRESENT_PARAMETERS pp = {};
     D3DDISPLAYMODE mode = {};
     api->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode);
@@ -114,12 +167,37 @@ int main(int argc, char** argv) {
     pp.Windowed = TRUE;
     pp.EnableAutoDepthStencil = TRUE;
     pp.AutoDepthStencilFormat = D3DFMT_D24S8;
-    pp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+    unsigned fsaa_modes=1;
+    const unsigned sample_counts[]={2,4,8};
+    for(unsigned count:sample_counts) {
+        auto samples=static_cast<D3DMULTISAMPLE_TYPE>(count);
+        if(SUCCEEDED(api->CheckDeviceMultiSampleType(0,D3DDEVTYPE_HAL,mode.Format,TRUE,samples)) &&
+           SUCCEEDED(api->CheckDeviceMultiSampleType(0,D3DDEVTYPE_HAL,D3DFMT_D24S8,TRUE,samples)))
+            fsaa_modes|=1u<<count;
+    }
+    if(pc_connected)xml1_pc_channel_set_fsaa_modes(fsaa_modes);
+    unsigned fsaa=pc_connected?initial_input.settings.fsaa:0;
+    if(fsaa>8 || !(fsaa_modes&(1u<<fsaa))) {
+        std::fprintf(stderr,"Saved FSAA %ux is unsupported by this DX8 device\n",fsaa);
+        xml1_pc_channel_close();DestroyWindow(window);api->Release();FreeLibrary(library);return 2;
+    }
+    pp.MultiSampleType=static_cast<D3DMULTISAMPLE_TYPE>(fsaa);
+    pp.Flags = fsaa?0:D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
     IDirect3DDevice8* device = nullptr;
     hr = api->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window,
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE, &pp, &device);
     std::printf("%s D3D8 HAL device creation: %08lx\n", visible ? "Visible playtest" : "Hidden", static_cast<unsigned long>(hr));
     std::printf("Native backbuffer: %ux%u\n",render_width,render_height);
+    std::printf("Native FSAA: %u; supported mask=%08x\n",fsaa,fsaa_modes);
+    if(device && fsaa) {
+        // Fail before consuming any guest work if this driver cannot resolve
+        // its multisampled surface for the mandatory completion/capture path.
+        try { checked(device->Clear(0,nullptr,D3DCLEAR_TARGET,0,1,0));complete_rendering(device); }
+        catch(const std::exception &error) {
+            std::fprintf(stderr,"FSAA readback initialization failed: %s\n",error.what());
+            native_readback.clear();device->Release();device=nullptr;hr=E_FAIL;
+        }
+    }
     if (device && visible) {
         fps_title_started = GetTickCount64();
         SetWindowTextA(window, "OpenXML1 - DX8 Playtest | 0.0 FPS");
@@ -212,6 +290,8 @@ int main(int argc, char** argv) {
     }
     if(texture_requests) report_texture_cache(0);
     clear_texture_cache();
+    native_readback.clear();
+    xml1_pc_channel_close();
     if (device) device->Release();
     if (window) { KillTimer(window, fps_title_timer); DestroyWindow(window); }
     UnregisterClassW(wc.lpszClassName, wc.hInstance);

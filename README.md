@@ -1,104 +1,102 @@
 # OpenXML1xbox
 
-X-Men Legends (original Xbox) to Windows feasibility project using
-[XboxRecomp](https://github.com/sp00nznet/xboxrecomp).
+A Windows recompilation of the original Xbox **X-Men Legends**, built with
+[XboxRecomp](https://github.com/sp00nznet/xboxrecomp) and a native Windows
+**Direct3D 8** renderer.
 
-**Required final renderer: genuine Windows Direct3D 8 / Xbox-era DX8.**
-The game uses a separate 32-bit renderer linked to system d3d8.dll. Native splash,
-FMV, menu and level-1 images have been captured. Full graphics/audio correctness
-and sustained gameplay are still being validated; this is not a finished port.
+**[Download 0.8b prerelease](https://github.com/GTTeancum/OpenXML1xbox/releases/tag/0.8b)**
 
-See [TODO.MD](TODO.MD) for the project summary and detailed work.
-See [headless testing](docs/PERFORMANCE-SAVES-AUDIO.md) for invisible native DX8 runs with `--muted`.
+Version 0.8b is a beta for engine assessment. It reaches gameplay, supports
+keyboard/mouse and XInput controls, and includes PC Options and Advanced Options
+using XML2 menu assets recolored for XML1. Full-game compatibility and audio
+fidelity are still being assessed.
 
-## Setup
+<table>
+  <tr>
+    <td><img src="docs/images/main-menu.png" alt="X-Men Legends main menu with its 3D background" width="480"><br>Main menu</td>
+    <td><img src="docs/images/gameplay.png" alt="Wolverine in level-one gameplay at 1080p" width="480"><br>1080p gameplay</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/options.png" alt="Blue XML1-themed Options over the 3D Cerebro scene" width="480"><br>Options</td>
+    <td><img src="docs/images/advanced-options.png" alt="Advanced Options with display settings and control bindings" width="480"><br>Advanced Options</td>
+  </tr>
+</table>
 
-Requires Git, Python 3.12, CMake and Visual Studio 2022 with Desktop C++ tools.
+## Install the beta
+
+Requires 64-bit Windows 10/11 and your own **X-Men Legends (World)** Xbox ISO.
+The release does not include the ISO or the complete original game assets.
+
+1. Extract the Xbox filesystem from your ISO into a writable folder using an
+   Xbox ISO extraction tool. The folder must contain `default.xbe`, `media`,
+   `movies`, `sounds`, and `z/assetsfb.zip` with their original paths.
+2. Extract `OpenXML1xbox-0.8b-win64.zip` into that same folder, replacing the
+   supplied files. Keep `runtime` and the hidden `.xml1-player-layout` file.
+3. Launch **X-Men Legends.exe**. First-run setup extracts the archive into loose
+   assets and generates PKGB manifests. It preserves the supplied modified menus.
+
+The game executable prepares `assetsfb.zip`; it does **not** extract a raw ISO.
+No Python, compiler, developer checkout, or separate launcher is needed to play.
+The required x64/x86 Visual C++ runtime DLLs are bundled beside their respective
+executables. The renderer uses Windows' system `d3d8.dll`.
+
+The tested World ISO SHA-256 is:
+`0a1ef03e57458144609906bbc2d44d2c26028cf704f4698ce0f1e61c34030b44`.
+
+## Features and controls
+
+- 1080p widescreen by default, adjustable display settings and live title-bar FPS.
+- Native Options and Advanced Options, retaining the 3D menu or paused level.
+- Rebindable keyboard/mouse and controller controls.
+- WASD movement; left/right mouse attacks; Space jumps; E interacts.
+- Middle mouse + drag, or V + drag, controls the camera. Esc pauses/resumes.
+- Options > Space opens Advanced Options; Backspace returns to the previous menu.
+- Main-menu Quit closes the application. Normal play has no session limit.
+
+See the included `Read Me.txt` for the full default controls. Display and input
+assignment changes require a restart. PC preferences are stored in
+`pc-settings.ini`; original save data lives in `UDATA` and `TDATA`.
+
+`build.ini` selects installed languages and asset loading. `PreferFilesLoose=1`
+(or `true`) uses loose resources and PKGBs with **no archive fallback**. The new
+PC menus were validated in English; localized PC menu adaptation is not complete.
+
+## Validation and remaining work
+
+The release payload was tested against a fresh World ISO extraction: first-run
+preparation, startup/story movies, the 3D menu, level-one gameplay, movement,
+pause/resume, restart, Options/Advanced and Quit. All 9,383 generated resources
+and 35 supplied files passed the installation integrity check. Native captures
+were inspected individually at 1920x1080.
+
+These checks ran headless and muted. They do not establish audio fidelity,
+physical device recovery, GUI setup appearance, or complete level/game coverage.
+Multi-level multiplayer testing and sustained audio assessment remain open.
+See [TODO.MD](TODO.MD) and [HD evidence](docs/HD-OUTPUT.md).
+
+## Building from source
+
+Development requires Git, Python 3.12, CMake and Visual Studio 2022 Desktop C++
+tools. XboxRecomp and libsamplerate are pinned submodules; the setup script applies
+our ordered toolkit patches.
 
 ```powershell
 ./scripts/setup.ps1
 ./scripts/build-toolkit.ps1
-```
-
-XboxRecomp and libsamplerate are pinned submodules. Setup applies the ordered
-toolkit patches. Audio runs the guest DSP and feeds XAudio2; native movie playback,
-A/V synchronization and current level-1 behavior still require validation.
-
-After importing your image, generate and build the diagnostic:
-
-```powershell
+./scripts/import-iso.ps1 -IsoPath 'D:\path\to\X-Men Legends (World).iso'
 ./scripts/generate-code.ps1 -Disassemble
-cmake -S . -B build/project -G 'Visual Studio 17 2022' -A x64 -DOPENXML1_BUILD_BOOT_PROBE=ON
-cmake --build build/project --config Release --parallel 4
-cmake -S renderer -B build/renderer -A Win32
-cmake --build build/renderer --config Release --target xml1-dx8-worker
-./scripts/run-boot-probe.ps1 -Seconds 20 -LiveDX8 -APU -TestPad
-```
-
-Add `-TestPad` to expose a neutral controller entirely inside the game process.
-The renderer captures its own backbuffer; the harness never sends host input.
-Diagnostic runs have a bounded watchdog and retain explicit unsupported-operation
-guards. Exit3 means the time bound was reached, not that gameplay passed.
-
-For a separate optimized playback build:
-
-```powershell
 cmake -S . -B build/optimized -A x64 -DOPENXML1_BUILD_BOOT_PROBE=ON -DOPENXML1_OPTIMIZE_RECOMP=ON
 cmake --build build/optimized --config Release --target xml1-boot-probe
-./scripts/run-boot-probe.ps1 -Seconds 30 -LiveDX8 -APU -TestPad -Optimized
+cmake -S renderer -B build/renderer -A Win32
+cmake --build build/renderer --config Release --target xml1-dx8-worker
 ```
 
-Optimization is an explicitly selected test configuration; compare its behavior
-with the diagnostic build before drawing compatibility conclusions.
-See `docs/PROGRESS.md`, `docs/UPSTREAM-REVIEW.md` and `docs/GOAL.md` for evidence,
-remaining work and the 30-hour cutoff.
+The game host is 64-bit; the native DX8 renderer is a separate 32-bit process.
+An original-Xbox hardware build is not implemented.
+[PC menu documentation](docs/PC-OPTIONS-CONTROLS.md) covers the menu asset build,
+which also requires locally installed XML2 reference assets and the IGB writer.
+Original assets and generated game code remain outside Git.
 
-## Human playtest
-
-Connect an XInput controller and double-click `Play XML1.cmd` in this repository.
-It opens the optimized native DX8 build at 1920x1080 progressive, with the game's
-original widescreen framing, audio and real controller input. Human sessions
-have no time limit. Run `./scripts/playtest.ps1 -Resolution 720p` for 1280x720 output.
-See `docs/HD-OUTPUT.md` for resolution and performance evidence.
-See `docs/HUMAN-PLAYTEST.md` for controls and feedback
-targets. Full graphics/audio fidelity remains unverified.
-
-## Import the ISO
-
-Place the image in `inputs/` or pass its existing absolute path:
-
-```powershell
-./scripts/import-iso.ps1 -IsoPath 'D:\path\to\X-Men Legends.iso'
-```
-
-This hashes the source, extracts to `game/`, and parses `default.xbe`. It does not
-modify the image, overwrite a nonempty extraction, generate code or launch a game.
-All original data and analysis stay untracked. `analysis/default_analysis.json`
-contains the initial section/library/import inventory.
-
-Inspect the inventory before selecting executable sections for disassembly.
-Upstream's game template is available at `external/xboxrecomp/templates/new-game`;
-its placeholder addresses must be replaced using this game's actual XBE.
-
-## Next decisions
-
-1. Resolve intermittent movie artifacts and establish real-time A/V playback.
-2. Validate the remaining Xbox D3D8 states and native graphics behavior.
-3. Revalidate level-1 movement/combat, sustained gameplay and audio with all fixes.
-4. Prove asset overrides and documented gameplay hooks rather than assuming
-   generated C is automatically convenient to mod.
-
-`scripts/scan-xdk-symbols.ps1` builds a pinned Cxbx XbSymbolDatabase CLI under
-`work/` and scans the local XBE. It recovered 301 named XDK function records,
-including calling conventions, into ignored `analysis/` metadata.
-
-See `docs/SETUP.md` for setup provenance and validation. No game code or assets
-are included. Upstream retains its own licenses and notices.
-
-
-For directed process-local input, set XML1_TEST_INPUT_FILE to an absolute text
-file path before launching with -TestPad. Start with `0 neutral` followed by a
-newline. While the game runs, replace the line with a larger ID and one command,
-for example `1 start`, `2 a`, `3 right`, or `4 neutral`. Each ID applies once.
-A/Start hold300ms and movement holds1000ms before automatic release. The file
-harness changes only the targeted game's controller state, never host input.
+This is an unofficial project, not affiliated with the original game's publishers
+or developers. X-Men Legends and its artwork belong to their respective owners.
+Third-party components retain their licenses and notices.

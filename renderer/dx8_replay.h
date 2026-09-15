@@ -1,6 +1,7 @@
 // Diagnostic replay of actual XML1 submissions. No host input or desktop capture.
 #include <cstdint>
 #include <vector>
+#include <string>
 #include <stdexcept>
 #include "../src/dx8_packet.h"
 #include "../src/texture_wire_cache.h"
@@ -12,6 +13,9 @@ static void checked(HRESULT hr) {
     }
 }
 #include "dx8_state_cache.h"
+#include "pc_options_ui.h"
+#include "dx8_readback.h"
+static Dx8Readback native_readback;
 static D3DFORMAT replay_format(uint32_t format) {
     switch(format) {
         case 0:return D3DFMT_L8;
@@ -134,7 +138,7 @@ static DWORD blend(DWORD v) {
 }
 static void capture_backbuffer(IDirect3DDevice8* device, const char* path) {
     IDirect3DSurface8* surface = nullptr;
-    checked(device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &surface));
+    checked(native_readback.surface(device, false, &surface));
     D3DSURFACE_DESC desc = {};
     checked(surface->GetDesc(&desc));
     if (desc.Format != D3DFMT_X8R8G8B8 && desc.Format != D3DFMT_A8R8G8B8)
@@ -165,11 +169,24 @@ static void capture_backbuffer(IDirect3DDevice8* device, const char* path) {
 }
 static void complete_rendering(IDirect3DDevice8* device) {
     IDirect3DSurface8* surface=nullptr;
-    checked(device->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO,&surface));
+    checked(native_readback.surface(device, true, &surface));
     D3DLOCKED_RECT lock={};
     HRESULT hr=surface->LockRect(&lock,nullptr,D3DLOCK_READONLY);
     if (SUCCEEDED(hr)) hr=surface->UnlockRect();
     surface->Release(); checked(hr); ++completion_waits;
+}
+static void requested_native_capture(IDirect3DDevice8 *device) {
+    const char *path=std::getenv("XML1_PC_CAPTURE_REQUEST");
+    if(!path || !*path)return;
+    FILE *request=std::fopen(path,"rb");if(!request)return;
+    char line[64]={},extra;unsigned id=0;static unsigned previous=0;
+    bool complete=std::fgets(line,sizeof(line),request) && std::strchr(line,'\n');std::fclose(request);
+    if(!complete)return;
+    if(std::sscanf(line,"%u %c",&id,&extra)!=1)throw std::runtime_error("Invalid native capture request");
+    if(id<=previous)return;
+    std::string output=std::string(path)+"-"+std::to_string(id)+".bmp";
+    if(GetFileAttributesA(output.c_str())!=INVALID_FILE_ATTRIBUTES)throw std::runtime_error("Native capture already exists");
+    capture_backbuffer(device,output.c_str());previous=id;
 }
 static void wait_native_vblank(IDirect3DDevice8* device) {
         D3DRASTER_STATUS raster={};
@@ -330,10 +347,12 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         if(second_texture) second_texture->Release();
         if (!live && !quiet_replay) std::printf("Replayed game draw %u: %u vertices, %ux%u format %u\n",n+1,vertices,width,height,header[3]);
     }
+    if(!flush && live) {pc_ui::update();}
     checked(device->EndScene());
     if (flush) { complete_rendering(device); completion_pending=false; return false; }
     if (capture) capture_backbuffer(device,capture);
     else complete_rendering(device);
+    if(live)requested_native_capture(device);
     if (live) checked(device->Present(nullptr,nullptr,nullptr,nullptr));
     frame_open=false;completion_pending=false;
     if(!version8) clear_wire_textures();

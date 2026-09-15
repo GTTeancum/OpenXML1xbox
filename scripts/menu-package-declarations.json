@@ -1,0 +1,194 @@
+{
+  "options": {
+    "original_sha256": "058a0cb1b9804d6eed3c84e5eb5d2b8cf8d61b95fdbefb0978a90e27979a671e",
+    "output_sha256": "b7e1ee31a88b88ac6a4cc75e7386e315459debe1d3ce230d2496c6e5a4d46bbc",
+    "declarations": [
+      {
+        "kind": "model",
+        "filename": "ui/menus/x2m_options"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_track"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_team_helpbar"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_team_corner_hinge"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_team_side_hinge"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_screen"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_light_on"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_focus"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_controls_screen"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_share_tab_light_off"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_share_tab_light_on"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_screen"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_light_off"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_nofocus"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_sound_select"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_combatmusic_select"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_view_select"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/menus/menu_options"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/model_button"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/model_button_highlight"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/model_hide"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/model_bar_sound"
+      },
+      {
+        "kind": "xml",
+        "filename": "ui/menus/options"
+      }
+    ]
+  },
+  "options_controller_xbox": {
+    "original_sha256": "435041580fcb7f8422ab7e8309aaadf8eeaa1bec432682bde0499108ac2640ba",
+    "output_sha256": "4c6c073849e2f4e56cb710a1c599d5b355f9da85d82fdac41cc9cadb206b23fb",
+    "declarations": [
+      {
+        "kind": "model",
+        "filename": "ui/menus/x2m_options"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_track"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_team_helpbar"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_team_corner_hinge"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_team_side_hinge"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_screen"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_light_on"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_focus"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_controls_screen"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_share_tab_light_off"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_share_tab_light_on"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_screen"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_light_off"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_pda_option_nofocus"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_sound_select"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_combatmusic_select"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/m_options_view_select"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/menus/menu_background"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/menus/menu_options_controller"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/xboxcontroller"
+      },
+      {
+        "kind": "model",
+        "filename": "ui/models/model_hide"
+      },
+      {
+        "kind": "xml",
+        "filename": "ui/menus/options_controller_xbox"
+      }
+    ]
+  }
+}

@@ -122,3 +122,49 @@ Relevant tests: `scripts/test-dx8-batches.py`, `scripts/test-dx8-texture-cache.p
 Full-level performance, long-session audio quality, and every effect at the
 higher resolution still need human testing. This does not establish a locked
 60 FPS or completion of the original fidelity goal.
+
+
+## Tester intake check, 2026-09-15
+
+Current staging passed a bounded 1080p 16:9 presentation smoke through gameplay;
+no graphics or asset changes were needed. This supports engine tester handoff,
+not complete game fidelity. Ran !GAME/X-Men Legends.exe from an unrelated
+working directory, hidden and muted, using only process-local input.
+
+All seven native captures were inspected individually in sequence:
+1. Startup movie imagery (an indistinct animation moment; not full movie fidelity).
+2. Main menu: textured 3D background, seven entries including Quit and prompts fit.
+3. Story movie: RVN news imagery and complete two-line subtitle with margins.
+4. Level arrival: Wolverine, HUD, world textures, shadows and translucent marker.
+5. Movement/camera follow: enemies and scene remain intact; no distinct power
+   effect is established merely by the requested quick-power key.
+6. Pause: all entries/prompts fit over the retained level.
+7. Resume: menu closes and enemies advance in gameplay.
+
+All captures are native 1920x1080 (top-down BMPs). Reused accepted Options/Advanced
+v212 staging and v213 saved-720p evidence in PC-OPTIONS-CONTROLS.md. No additional
+4:3 or mixed-device smoke. Evidence: work/native-igb-menu-test/run-hd-v220.py,
+native-v220.log, worker-v220.log, native-hd-v220-capture-1.bmp through -7.bmp,
+and exit-v220.json. Exit 3 is the configured 135-second watchdog. UDATA and all
+11 pre-existing save/settings/config baseline hashes are unchanged.
+
+Game SHA256: 1cf4ed0104255a228edb04ae34b1947274adfc7f16218df2aeb3cbe70f9718a5.
+
+Source confirms successful presents feed the half-second FPS title update and
+the window class uses IDC_ARROW. Hidden runs do not exercise the visible title
+or physical hover; that short human check remains open for tester intake.
+Audio fidelity, every effect/movie, full-level completion and the multi-level
+player matrix remain outside this bounded presentation check.
+
+
+### Pause Options route
+
+Follow-up v221 ran the same staged executable at 1080p. Both main.eng and
+pause.eng use `openmenu options`; the shared menu links to the same Advanced
+Options resource and settings model. Six native captures were inspected in
+order: Pause, Options, Advanced, Back to Options, Back to Pause, resumed gameplay.
+Both settings screens retain the paused level as their 3D background and fit
+the output. Returning resumes the enemies and HUD correctly. No settings were
+changed or applied in this navigation check. Evidence uses run-hd-v221.py,
+native-v221.log, worker-v221.log, native-hd-v221-capture-1.bmp through -6.bmp
+and exit-v221.json in work/native-igb-menu-test.

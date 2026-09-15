@@ -11,6 +11,27 @@ size_t xbox_GetMappedSize(void) { return 64u*1024*1024; }
 void xml1_input_test_frame(uint32_t frame) { (void)frame; }
 void xml1_graphics_observe(uint32_t va) { xml1_graphics_live_observe(va); }
 
+/* No menu exists in this graphics fixture. Unexpected menu work must fail. */
+int xml1_pc_native_tracking(void) { return 0; }
+int xml1_pc_native_interested(unsigned item) { (void)item; abort(); }
+void xml1_pc_native_frame(unsigned frame) { (void)frame; abort(); }
+void xml1_pc_native_menu_type(unsigned vtable) { (void)vtable; }
+void xml1_pc_native_menu(unsigned owner) { (void)owner; abort(); }
+void xml1_pc_native_projection(unsigned item,const float *w,const float *v,const float *p) {
+    (void)item;(void)w;(void)v;(void)p;abort();
+}
+void xml1_pc_native_vertex_owner(unsigned address,unsigned item) { (void)address;(void)item;abort(); }
+unsigned xml1_pc_native_vertex_item(unsigned address) { (void)address;abort(); }
+void xml1_pc_native_render_vertex(unsigned item,float x,float y,unsigned frame) {
+    (void)item;(void)x;(void)y;(void)frame;abort();
+}
+void xml1_pc_native_screen_bounds(unsigned item,float l,float t,float r,float b) {
+    (void)item;(void)l;(void)t;(void)r;(void)b;abort();
+}
+void xml1_pc_native_slider_bounds(unsigned item,float l,float t,float r,float b,unsigned frame) {
+    (void)item;(void)l;(void)t;(void)r;(void)b;(void)frame;abort();
+}
+
 static jmp_buf old_wait;
 static const uint32_t device_va=0x36CB00,completion_va=0x8007E000,tag_va=0xFD400B10;
 static volatile LONG requests;
@@ -85,7 +106,18 @@ int main(void) {
     if(!ConnectNamedPipe(pipe,NULL) && GetLastError()!=ERROR_PIPE_CONNECTED) return 13;
     HANDLE thread=CreateThread(NULL,0,renderer_peer,peer,0,NULL);
     if(!thread)return 14;
-    enabled=1;frames=1015;source_dimensions[0]=640;source_dimensions[1]=480;
+    enabled=1;g_esp=0x700000;
+    MEM32(g_esp+20)=0x700100;
+    MEM32(0x700100)=720;MEM32(0x700104)=480;
+    xml1_graphics_live_observe(0x3680D0);
+    MEM32(g_esp+4)=0x700200;
+    MEM32(0x700208)=1440;MEM32(0x70020c)=480;
+    xml1_graphics_live_observe(0x35BA10);
+    if(source_dimensions[0]!=720 || source_dimensions[1]!=480) return 24;
+    MEM32(0x700100)=1280;MEM32(0x700104)=720;
+    xml1_graphics_live_observe(0x3680D0);
+    if(source_dimensions[0]!=1280 || source_dimensions[1]!=720) return 25;
+    frames=1015;source_dimensions[0]=640;source_dimensions[1]=480;
     const uint32_t cases[][5]={
         {0x23EB,0x23E9,0x23EB,1,1}, /* Captured combat: wait on current fence. */
         {0x23EB,0x23E7,0x23E9,1,0}, /* Deferred issued fence. */

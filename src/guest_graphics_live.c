@@ -1,6 +1,7 @@
 #include "xbox_memory_layout.h"
 #include "dx8_packet.h"
 #include "guest_input.h"
+#include "pc_menu.h"
 #include "fair_gate.h"
 #include "light_state.h"
 #include "shared_completion.h"
@@ -11,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
+#include <math.h>
 extern RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp;
 extern ptrdiff_t g_xbox_mem_offset;
 
@@ -24,6 +27,197 @@ static unsigned char *packet;
 static size_t used, capacity;
 static uint32_t draws, frames;
 static uint32_t source_dimensions[2];
+static unsigned menu_item;
+static struct { unsigned command,item; } menu_commands[256];
+static float menu_rect[4];
+static int menu_slider_trace_active;
+static void menu_current_owner(void) {
+    /* CMenuManager singleton (00183D20), current menu field (00181810). */
+    unsigned manager=*(const unsigned *)((uintptr_t)g_xbox_mem_offset+0x577210);
+    unsigned owner=manager?*(const unsigned *)((uintptr_t)g_xbox_mem_offset+manager+0xC08):0;
+    xml1_pc_native_menu(owner);
+    xml1_pc_native_menu_type(owner?*(const unsigned *)((uintptr_t)g_xbox_mem_offset+owner):0);
+}
+void xml1_graphics_menu_vertex_owner(unsigned address) {
+    static unsigned reports;
+    if(menu_item && reports++<4 && getenv("XML1_PC_NATIVE_BOUNDS"))
+        fprintf(stderr,"[PC VERTEX OWNER] item=%08X address=%08X\n",menu_item,address);
+    xml1_pc_native_vertex_owner(address,menu_item);
+}
+void xml1_graphics_menu_writer(unsigned writer,unsigned target,const unsigned *fields) {
+    static unsigned previous, reports;
+    if((!menu_item && !xml1_pc_native_tracking()) || writer==previous || reports>=12 || !getenv("XML1_PC_NATIVE_BOUNDS"))return;
+    previous=writer;++reports;
+    fprintf(stderr,"[PC WRITER] item=%08X writer=%08X target=%08X fields",menu_item,writer,target);
+    for(unsigned i=0;i<8;++i)fprintf(stderr," %08X",fields[i]);
+    fprintf(stderr,"\n");
+}
+void xml1_graphics_menu_begin(unsigned item) {
+    menu_current_owner();
+    menu_item=xml1_pc_native_interested(item)?item:0;
+    menu_rect[0]=menu_rect[1]=FLT_MAX;
+    menu_rect[2]=menu_rect[3]=-FLT_MAX;
+}
+void xml1_graphics_menu_end(void) {
+    if(menu_item && menu_rect[0]<=menu_rect[2] && menu_rect[1]<=menu_rect[3])
+        xml1_pc_native_screen_bounds(menu_item,menu_rect[0],menu_rect[1],menu_rect[2],menu_rect[3]);
+    menu_item=0;
+}
+void xml1_graphics_menu_command(unsigned command) {
+    unsigned slot=(command>>5)&255;
+    menu_commands[slot].command=command;menu_commands[slot].item=menu_item;
+}
+void xml1_graphics_menu_replay(unsigned command) {
+    unsigned slot=(command>>5)&255;
+    xml1_graphics_menu_begin(menu_commands[slot].command==command?menu_commands[slot].item:0);
+}
+static void menu_draw_vertex(unsigned address,const void *vertex) {
+    unsigned item=xml1_pc_native_vertex_item(address);
+    if(!item || !source_dimensions[0] || !source_dimensions[1])return;
+    float point[4]={0,0,0,1};memcpy(point,vertex,12);
+    const unsigned order[3]={6,0,1};
+    for(unsigned m=0;m<3;++m) {
+        float matrix[16],next[4]={0};memcpy(matrix,matrices[order[m]],64);
+        for(unsigned column=0;column<4;++column)
+            for(unsigned row=0;row<4;++row)next[column]+=point[row]*matrix[row*4+column];
+        memcpy(point,next,sizeof(point));
+    }
+    if(!isfinite(point[3]) || point[3]<=0)return;
+    float x=(viewport[0]+(point[0]/point[3]+1)*.5f*viewport[2])/source_dimensions[0];
+    float y=(viewport[1]+(1-point[1]/point[3])*.5f*viewport[3])/source_dimensions[1];
+    if(!isfinite(x) || !isfinite(y))return;
+    xml1_pc_native_render_vertex(item,x,y,frames);
+}
+void xml1_graphics_menu_quad(float left,float top,float right,float bottom) {
+    (void)left;(void)top;(void)right;(void)bottom;
+}
+/* Loaded native menu scene data. Only the verified slider/Alchemy layouts are
+   read here; no resource aliases, synthesized rectangles or asset mutation. */
+static const unsigned *menu_words(unsigned address,unsigned bytes) {
+    if(address<0x10000u || address>0x10000000u-bytes)return NULL;
+    return (const unsigned *)((uintptr_t)g_xbox_mem_offset+address);
+}
+static void menu_identity(float *m) {
+    memset(m,0,64);m[0]=m[5]=m[10]=m[15]=1;
+}
+static void menu_multiply(float *out,const float *a,const float *b) {
+    float result[16]={0};
+    for(unsigned r=0;r<4;++r)for(unsigned c=0;c<4;++c)
+        for(unsigned k=0;k<4;++k)result[r*4+c]+=a[r*4+k]*b[k*4+c];
+    memcpy(out,result,64);
+}
+static int menu_group(unsigned vt) {
+    return vt==0x403958u || vt==0x3E0F44u || vt==0x3E1214u ||
+           vt==0x404DD0u || vt==0x3E1434u;
+}
+static int menu_slider_box(unsigned node,const float *parent,float *low,float *high,unsigned depth) {
+    const unsigned *n=menu_words(node,32);if(!n || depth>16)return 0;
+    const unsigned *box=n[3]?menu_words(n[3],32):NULL;
+    /* igAABox at +C includes this node's own transform and descendants. */
+    if(box && box[0]==0x3FC270u) {
+        float bounds[6];memcpy(bounds,box+2,24);
+        for(unsigned i=0;i<3;++i)if(!isfinite(bounds[i]) || !isfinite(bounds[i+3]) || bounds[i]>bounds[i+3])return 0;
+        for(unsigned corner=0;corner<8;++corner) {
+            float point[4]={bounds[(corner&1)?3:0],bounds[(corner&2)?4:1],bounds[(corner&4)?5:2],1};
+            for(unsigned c=0;c<3;++c) {
+                float v=0;for(unsigned r=0;r<4;++r)v+=point[r]*parent[r*4+c];
+                if(v<low[c])low[c]=v;if(v>high[c])high[c]=v;
+            }
+        }
+        return 1;
+    }
+    if(!menu_group(n[0]))return 0;
+    float world[16];memcpy(world,parent,64);
+    if(n[0]==0x403958u) {
+        const unsigned *matrix=menu_words(node+0x20,64);if(!matrix)return 0;
+        float local[16];memcpy(local,matrix,64);menu_multiply(world,local,parent);
+    }
+    const unsigned *list=n[7]?menu_words(n[7],20):NULL;
+    if(!list || !list[2] || list[2]>64)return 0;
+    const unsigned *children=menu_words(list[4],list[2]*4);if(!children)return 0;
+    int found=0;
+    for(unsigned i=0;i<list[2];++i)found|=menu_slider_box(children[i],world,low,high,depth+1);
+    return found;
+}
+static void menu_slider_bounds(unsigned item) {
+    if(!xml1_pc_native_interested(item) || (matrix_mask&3)!=3 || !source_dimensions[0] || !source_dimensions[1])return;
+    const unsigned *entry=menu_words(item,0x88);if(!entry)return;
+    const unsigned *vt=menu_words(entry[0],0x40);
+    if(!vt || vt[0x3C/4]!=0x17CE40u)return;
+    menu_slider_trace_active=1;
+    const unsigned *wrapper=menu_words(entry[0x84/4],20);
+    if(!wrapper || wrapper[0]!=0x3DC374u)return;
+    const unsigned *component=menu_words(wrapper[2],8);
+    if(!component || component[0]!=0x3DC288u)return;
+    unsigned root=component[1],node=root,seen[32],count=0;
+    float parent[16];menu_identity(parent);
+    /* Unique instance ancestry, before the slider's local transform. */
+    for(;;) {
+        const unsigned *n=menu_words(node,20);if(!n)return;
+        const unsigned *list=n[4]?menu_words(n[4],20):NULL;
+        if(!list || !list[2])break;
+        if(list[2]!=1 || count==32)return;
+        const unsigned *data=menu_words(list[4],4);if(!data)return;
+        node=data[0];
+        for(unsigned i=0;i<count;++i)if(seen[i]==node)return;
+        seen[count++]=node;
+        n=menu_words(node,32);if(!n || !menu_group(n[0]))return;
+        if(n[0]==0x403958u) {
+            const unsigned *matrix=menu_words(node+0x20,64);if(!matrix)return;
+            float local[16];memcpy(local,matrix,64);menu_multiply(parent,parent,local);
+        }
+    }
+    float low[3]={FLT_MAX,FLT_MAX,FLT_MAX},high[3]={-FLT_MAX,-FLT_MAX,-FLT_MAX};
+    if(!menu_slider_box(root,parent,low,high,0))return;
+    /* Menu camera 0 owns the 3D menu models (001833A0). Its native
+       world-to-camera matrix is refreshed at +AC by 00143830/001300C0.
+       Font rendering uses camera 1, so its current world matrix cannot
+       project the model's XZ-plane bounds. Preserve the live camera transform. */
+    const unsigned *manager_slot=menu_words(0x577210u,4);
+    const unsigned *manager=manager_slot?menu_words(*manager_slot,0xBD8):NULL;
+    const unsigned *camera=manager?menu_words(manager[0xBD4/4],0xEC):NULL;
+    if(!camera || camera[0]!=0x3DCD1Cu)return;
+    float camera_matrix[16];memcpy(camera_matrix,camera+0xAC/4,64);
+    for(unsigned i=0;i<16;++i)if(!isfinite(camera_matrix[i]))return;
+    float combined[16],view[16],projection[16],model_view[16];
+    memcpy(view,matrices[0],64);memcpy(projection,matrices[1],64);
+    menu_multiply(model_view,camera_matrix,view);
+    menu_multiply(combined,model_view,projection);
+    float rect[4]={FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX};
+    for(unsigned corner=0;corner<8;++corner) {
+        float point[4]={corner&1?high[0]:low[0],corner&2?high[1]:low[1],corner&4?high[2]:low[2],1},clip[4]={0};
+        for(unsigned c=0;c<4;++c)for(unsigned r=0;r<4;++r)clip[c]+=point[r]*combined[r*4+c];
+        if(!isfinite(clip[3]) || clip[3]<=0)return;
+        float x=(viewport[0]+(clip[0]/clip[3]+1)*.5f*viewport[2])/source_dimensions[0];
+        float y=(viewport[1]+(1-clip[1]/clip[3])*.5f*viewport[3])/source_dimensions[1];
+        if(!isfinite(x) || !isfinite(y))return;
+        if(x<rect[0])rect[0]=x;if(y<rect[1])rect[1]=y;if(x>rect[2])rect[2]=x;if(y>rect[3])rect[3]=y;
+    }
+    xml1_pc_native_slider_bounds(item,rect[0],rect[1],rect[2],rect[3],frames);
+    static unsigned reports;
+    if(reports<4 && getenv("XML1_PC_NATIVE_BOUNDS")) {
+        ++reports;fprintf(stderr,"[PC SLIDER RECT] item=%08X callback=%08X rect=%.6f %.6f %.6f %.6f\n",item,entry[0x30/4],rect[0],rect[1],rect[2],rect[3]);
+        fprintf(stderr,"[PC SLIDER SPACE] low/high");
+        for(unsigned i=0;i<3;++i)fprintf(stderr," %.6f %.6f",low[i],high[i]);
+        fprintf(stderr," | world");
+        float actual_world[16];memcpy(actual_world,matrices[6],64);
+        for(unsigned i=0;i<16;++i)fprintf(stderr," %.6f",actual_world[i]);
+        const unsigned *display=menu_words(0x58F2B8u,0x54);
+        fprintf(stderr," | display");
+        for(unsigned i=0x28/4;i<0x54/4;++i) {float v;memcpy(&v,display+i,4);fprintf(stderr," %.6f",v);}
+        fprintf(stderr,"\n");
+    }
+}
+void xml1_graphics_menu_projection(unsigned item) {
+    menu_slider_bounds(item);
+    if((matrix_mask & 0x43)==0x43) {
+        float world[16],view[16],projection[16];
+        memcpy(world,matrices[6],sizeof(world));
+        memcpy(view,matrices[0],sizeof(view));
+        memcpy(projection,matrices[1],sizeof(projection));
+        xml1_pc_native_projection(item,world,view,projection);
+    }
+}
 static xml1_texture_wire_cache texture_wire;
 static uint32_t wire_reset_pending=1;
 unsigned xml1_graphics_frame_number(void) { return frames; }
@@ -163,6 +357,16 @@ int xml1_graphics_fence_complete(uint32_t device,uint32_t target) {
 void xml1_graphics_live_observe(uint32_t va) {
     if (!live()||va<0x35ADA0||va>=0x36F300) return;
     const uint32_t *a=guest(g_esp+4,32);
+    if(va==0x3680D0) {
+        /* Original Direct3D_CreateDevice takes presentation parameters as
+         * argument five (003680F6/003680FA). The initialization viewport may
+         * include multisample expansion and is not the logical backbuffer. */
+        const uint32_t *presentation=guest(a[4],8);
+        if(!presentation[0] || !presentation[1] || presentation[0]>4096 || presentation[1]>4096)
+            fatal("invalid guest presentation dimensions");
+        source_dimensions[0]=presentation[0];source_dimensions[1]=presentation[1];
+        fprintf(stderr,"[DX8 GUEST MODE] %ux%u from presentation parameters\n",source_dimensions[0],source_dimensions[1]);
+    }
     if(va==0x3679B0||va==0x367840||va==0x367E30) {
         fprintf(stderr,"[DX8 DRAW API] va=%08X args=%08X/%08X/%08X/%08X/%08X fvf=%08X stride=%u pixel=%08X caller=%08X\n",
             va,a[0],a[1],a[2],a[3],a[4],fvf,stride,pixel_shader,*(const uint32_t *)guest(g_esp,4));
@@ -261,6 +465,20 @@ void xml1_graphics_live_observe(uint32_t va) {
         }
         if ((matrix_mask&0x43)!=0x43||!viewport[2]||!viewport[3]) fatal("missing transform/viewport state");
         const uint32_t *tex=guest(textures[0],20), *vb=guest(stream,12);
+        if(menu_slider_trace_active && getenv("XML1_PC_NATIVE_BOUNDS")) {
+            static unsigned reports,hashes[48];unsigned hash=2166136261u;
+            const unsigned slots[3]={0,1,6};
+            for(unsigned m=0;m<3;++m)for(unsigned i=0;i<16;++i)hash=(hash^matrices[slots[m]][i])*16777619u;
+            unsigned known=0;for(unsigned i=0;i<reports;++i)if(hashes[i]==hash)known=1;
+            if(!known && reports<48) {
+                hashes[reports++]=hash;fprintf(stderr,"[PC MENU CAMERAS] frame=%u",frames);
+                for(unsigned m=0;m<3;++m) {
+                    float values[16];memcpy(values,matrices[slots[m]],64);fprintf(stderr," | ");
+                    for(unsigned i=0;i<16;++i)fprintf(stderr," %.6g",values[i]);
+                }
+                fprintf(stderr,"\n");
+            }
+        }
         const uint32_t *tex1=second_active?guest(textures[1],20):NULL;
         uint32_t second_header[3]={0}; size_t second_bytes=0;
         if(tex1) {
@@ -311,6 +529,7 @@ void xml1_graphics_live_observe(uint32_t va) {
         }
         append_texture(0x80000000+tex[1],header[0],header[1],header[3]);
         if(tex1) append_texture(0x80000000+tex1[1],second_header[0],second_header[1],second_header[2]);
+        const int track_menu_vertices=xml1_pc_native_tracking();
         if(indexed) {
             const uint16_t *indices=guest(a[2],vertex_count*2);
             uint32_t device=*(const uint32_t *)guest(0x36CAF8,4);
@@ -318,11 +537,16 @@ void xml1_graphics_live_observe(uint32_t va) {
             for(uint32_t i=0;i<vertex_count;++i) {
                 uint64_t at=(uint64_t)vb[1]+((uint64_t)base+indices[i])*stride;
                 if(at+stride>64u*1024*1024) fatal("indexed vertex bounds");
+                if(track_menu_vertices)menu_draw_vertex(0x80000000+(uint32_t)at,guest(0x80000000+(uint32_t)at,stride));
                 append(guest(0x80000000+(uint32_t)at,stride),stride);
             }
             static unsigned reports;
             if(reports++<6) fprintf(stderr,"[DX8 INDEXED] indices=%u base=%u stream=%08X first=%u\n",vertex_count,base,stream,indices[0]);
-        } else append(guest(0x80000000+(uint32_t)offset,(size_t)bytes),(size_t)bytes);
+        } else {
+            const unsigned char *vertices=guest(0x80000000+(uint32_t)offset,(size_t)bytes);
+            if(track_menu_vertices)for(unsigned i=0;i<vertex_count;++i)menu_draw_vertex(0x80000000+(uint32_t)offset+i*stride,vertices+(size_t)i*stride);
+            append(vertices,(size_t)bytes);
+        }
         ++draws;
         frame_geometry=1;
     }
@@ -432,6 +656,8 @@ void xml1_graphics_swap(void) {
         capture_stream=NULL;
         fprintf(stderr,"[DX8 FRAME CAPTURE] complete id=%u frame=%u bytes=%zu\n",capture_request_id,frames+1,capture_stream_bytes);
     }
+    menu_current_owner();
+    xml1_pc_native_frame(frames);
     ++frames;
     if(texture_wire.full) {xml1_texture_wire_reset(&texture_wire);wire_reset_pending=1;}
     capture_next_frame();

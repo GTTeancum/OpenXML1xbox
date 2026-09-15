@@ -4,6 +4,7 @@ iniconfig==2.3.0
 numpy==2.5.3
 packaging==26.3
 pefile==2024.8.26
+Pillow==11.3.0
 pluggy==1.6.0
 Pygments==2.21.0
 pytest==9.1.1

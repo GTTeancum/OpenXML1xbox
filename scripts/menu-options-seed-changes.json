@@ -1,0 +1,1110 @@
+{
+  "source_sha256": "81b3eda2bb47f7731c413397008535d4b27ce6eaebb7ed6857ef70a436b75c5b",
+  "purpose": "Initial XML1 Options adaptation before Advanced footer; intermediate only.",
+  "operations": [
+    {
+      "path": [],
+      "tag": "MENU",
+      "name": null,
+      "set": {
+        "fadeout": "false",
+        "name": "options"
+      },
+      "remove": [
+        "no_stack"
+      ]
+    },
+    {
+      "path": [
+        4
+      ],
+      "tag": "item",
+      "name": "track01",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        5
+      ],
+      "tag": "item",
+      "name": "track02",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        6
+      ],
+      "tag": "item",
+      "name": "helpbar",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        7
+      ],
+      "tag": "item",
+      "name": "helpbar_hinge_left",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        8
+      ],
+      "tag": "item",
+      "name": "helpbar_hinge_right",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        9
+      ],
+      "tag": "item",
+      "name": "desctext1",
+      "set": {
+        "style": "STYLE_TITLE"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        10
+      ],
+      "tag": "item",
+      "name": "desctext2",
+      "set": {
+        "style": "STYLE_TITLE"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        11
+      ],
+      "tag": "item",
+      "name": "desctext3",
+      "set": {
+        "style": "STYLE_TITLE"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        12
+      ],
+      "tag": "item",
+      "name": "desctext4",
+      "set": {
+        "style": "STYLE_TITLE"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        13
+      ],
+      "tag": "item",
+      "name": "desctext5",
+      "set": {
+        "style": "STYLE_TITLE"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        14
+      ],
+      "tag": "item",
+      "name": "title_bracket_top",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        15
+      ],
+      "tag": "item",
+      "name": "controls_hinge01",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        16
+      ],
+      "tag": "item",
+      "name": "controls_hinge02",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        17
+      ],
+      "tag": "item",
+      "name": "options_bracket_top",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        18
+      ],
+      "tag": "item",
+      "name": "title",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        19
+      ],
+      "tag": "item",
+      "name": "title_light",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        20
+      ],
+      "tag": "item",
+      "name": "title_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        21
+      ],
+      "tag": "item",
+      "name": "controls_screen",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        22
+      ],
+      "tag": "item",
+      "name": "controls",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        23
+      ],
+      "tag": "item",
+      "name": "controls_light",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        24
+      ],
+      "tag": "item",
+      "name": "controls_focus",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        25
+      ],
+      "tag": "item",
+      "name": "options_screen",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        26
+      ],
+      "tag": "item",
+      "name": "accept",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        27
+      ],
+      "tag": "item",
+      "name": "accept_light",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        28
+      ],
+      "tag": "item",
+      "name": "accept_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        29
+      ],
+      "tag": "item",
+      "name": "view_angle_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        30
+      ],
+      "tag": "item",
+      "name": "view_cycle_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        31
+      ],
+      "tag": "item",
+      "name": "view_follow_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        32
+      ],
+      "tag": "item",
+      "name": "view_shake_focus",
+      "set": {
+        "enabled": "false",
+        "hide": "true"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        33
+      ],
+      "tag": "item",
+      "name": "subtitles_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        34
+      ],
+      "tag": "item",
+      "name": "options_fxvol_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        35
+      ],
+      "tag": "item",
+      "name": "options_musicvol_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        36
+      ],
+      "tag": "item",
+      "name": "options_combatmusic_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        37
+      ],
+      "tag": "item",
+      "name": "options_vibration_focus",
+      "set": {
+        "enabled": "false"
+      },
+      "remove": [
+        "model"
+      ]
+    },
+    {
+      "path": [
+        38
+      ],
+      "tag": "item",
+      "name": "label_options",
+      "set": {
+        "style": "STYLE_TITLE"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        39
+      ],
+      "tag": "item",
+      "name": "label_controls",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        40
+      ],
+      "tag": "item",
+      "name": "label_effects_volume",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_sound_select",
+        "focusitemname": "options_fxvol_focus",
+        "type": "MENU_ITEM_SLIDER",
+        "gamevar": "sfxvolume",
+        "slidermodel": "fx_vol"
+      },
+      "remove": [
+        "leftcmd",
+        "rightcmd"
+      ]
+    },
+    {
+      "path": [
+        40
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        41
+      ],
+      "tag": "item",
+      "name": "label_music_volume",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_sound_select",
+        "focusitemname": "options_musicvol_focus",
+        "type": "MENU_ITEM_SLIDER",
+        "gamevar": "musicvolume",
+        "slidermodel": "music_vol"
+      },
+      "remove": [
+        "leftcmd",
+        "rightcmd"
+      ]
+    },
+    {
+      "path": [
+        41
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        42
+      ],
+      "tag": "item",
+      "name": "label_combat_music",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_combatmusic_select",
+        "focusitemname": "options_combatmusic_focus",
+        "type": "MENU_ITEM_BINARY",
+        "gamevar": "music",
+        "fielditem": "combat_music"
+      },
+      "remove": [
+        "usecmd"
+      ]
+    },
+    {
+      "path": [
+        42
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        43
+      ],
+      "tag": "item",
+      "name": "label_view_angle",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "view_angle_focus",
+        "type": "MENU_ITEM_LIST_CYCLE",
+        "gamevar": "view_angle",
+        "fielditem": "view_angle"
+      },
+      "remove": [
+        "usecmd"
+      ]
+    },
+    {
+      "path": [
+        43
+      ],
+      "replace_children": [
+        "<listitem value=\"Normal\" />",
+        "<listitem value=\"Steep\" />",
+        "<listitem value=\"Close\" />"
+      ]
+    },
+    {
+      "path": [
+        44
+      ],
+      "tag": "item",
+      "name": "label_view_cycle",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "view_cycle_focus",
+        "type": "MENU_ITEM_BINARY",
+        "gamevar": "view_cycle",
+        "fielditem": "view_cycle"
+      },
+      "remove": [
+        "usecmd"
+      ]
+    },
+    {
+      "path": [
+        44
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        45
+      ],
+      "tag": "item",
+      "name": "label_view_follow",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "view_follow_focus",
+        "type": "MENU_ITEM_BINARY",
+        "gamevar": "view_follow",
+        "fielditem": "view_follow"
+      },
+      "remove": [
+        "usecmd"
+      ]
+    },
+    {
+      "path": [
+        45
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        46
+      ],
+      "tag": "item",
+      "name": "label_view_shake",
+      "set": {
+        "text": "Advanced Options",
+        "style": "STYLE_MENU",
+        "usecmd": "pcnative_open;openmenu options_controller_xbox"
+      },
+      "remove": [
+        "animtext_scene",
+        "down",
+        "textalignx",
+        "up"
+      ]
+    },
+    {
+      "path": [
+        46
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        47
+      ],
+      "tag": "item",
+      "name": "label_subtitles",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_view_select",
+        "focusitemname": "subtitles_focus",
+        "type": "MENU_ITEM_BINARY",
+        "gamevar": "subtitles",
+        "fielditem": "subtitles"
+      },
+      "remove": [
+        "usecmd"
+      ]
+    },
+    {
+      "path": [
+        47
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        48
+      ],
+      "tag": "item",
+      "name": "label_vibration",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_options_combatmusic_select",
+        "focusitemname": "options_vibration_focus",
+        "type": "MENU_ITEM_BINARY",
+        "gamevar": "vibration",
+        "fielditem": "vibration"
+      },
+      "remove": [
+        "usecmd"
+      ]
+    },
+    {
+      "path": [
+        48
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        49
+      ],
+      "tag": "item",
+      "name": "label_accept",
+      "set": {
+        "style": "STYLE_MENU",
+        "focusmodel": "ui/models/m_pda_option_focus",
+        "focusitemname": "accept_focus"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        49
+      ],
+      "replace_children": []
+    },
+    {
+      "path": [
+        50
+      ],
+      "tag": "item",
+      "name": "fx_vol",
+      "set": {
+        "type": "MENU_ITEM_MODEL",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "color",
+        "gamevar",
+        "parallelogram"
+      ]
+    },
+    {
+      "path": [
+        51
+      ],
+      "tag": "item",
+      "name": "music_vol",
+      "set": {
+        "type": "MENU_ITEM_MODEL",
+        "enabled": "false"
+      },
+      "remove": [
+        "animtext_scene",
+        "color",
+        "gamevar",
+        "parallelogram"
+      ]
+    },
+    {
+      "path": [
+        52
+      ],
+      "tag": "item",
+      "name": "combat_music",
+      "set": {
+        "style": "STYLE_SMALL",
+        "enabled": "false"
+      },
+      "remove": [
+        "gamevar",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        53
+      ],
+      "tag": "item",
+      "name": "view_angle",
+      "set": {
+        "style": "STYLE_SMALL",
+        "enabled": "false"
+      },
+      "remove": [
+        "gamevar",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        54
+      ],
+      "tag": "item",
+      "name": "view_cycle",
+      "set": {
+        "style": "STYLE_SMALL",
+        "enabled": "false"
+      },
+      "remove": [
+        "gamevar",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        55
+      ],
+      "tag": "item",
+      "name": "view_follow",
+      "set": {
+        "style": "STYLE_SMALL",
+        "enabled": "false"
+      },
+      "remove": [
+        "gamevar",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        56
+      ],
+      "tag": "item",
+      "name": "view_shake",
+      "set": {
+        "style": "STYLE_SMALL",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        57
+      ],
+      "tag": "item",
+      "name": "subtitles",
+      "set": {
+        "style": "STYLE_SMALL",
+        "enabled": "false"
+      },
+      "remove": [
+        "gamevar",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        58
+      ],
+      "tag": "item",
+      "name": "vibration",
+      "set": {
+        "style": "STYLE_SMALL",
+        "enabled": "false"
+      },
+      "remove": [
+        "gamevar",
+        "type"
+      ]
+    },
+    {
+      "path": [
+        59
+      ],
+      "tag": "item",
+      "name": "label_button01",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        60
+      ],
+      "tag": "item",
+      "name": "label_button02",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        61
+      ],
+      "tag": "item",
+      "name": "label_button03",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        62
+      ],
+      "tag": "item",
+      "name": "label_button04",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        63
+      ],
+      "tag": "item",
+      "name": "label_button05",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        64
+      ],
+      "tag": "item",
+      "name": "label_button06",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        65
+      ],
+      "tag": "item",
+      "name": "label_button07",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        66
+      ],
+      "tag": "item",
+      "name": "label_button08",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        67
+      ],
+      "tag": "item",
+      "name": "label_button09",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        68
+      ],
+      "tag": "item",
+      "name": "label_button10",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        69
+      ],
+      "tag": "item",
+      "name": "label_button11",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        70
+      ],
+      "tag": "item",
+      "name": "label_button12",
+      "set": {
+        "style": "STYLE_TITLE",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        71
+      ],
+      "tag": "item",
+      "name": "label_stick01",
+      "set": {
+        "style": "STYLE_SMALL",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        72
+      ],
+      "tag": "item",
+      "name": "label_stick02",
+      "set": {
+        "style": "STYLE_SMALL",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        73
+      ],
+      "tag": "item",
+      "name": "label_click01",
+      "set": {
+        "style": "STYLE_SMALL",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        74
+      ],
+      "tag": "item",
+      "name": "label_click02",
+      "set": {
+        "style": "STYLE_SMALL",
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        75
+      ],
+      "tag": "item",
+      "name": "controls_list",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [
+        76
+      ],
+      "tag": "item",
+      "name": "controls_list2",
+      "set": {
+        "hide": "true",
+        "enabled": "false"
+      },
+      "remove": []
+    },
+    {
+      "path": [],
+      "append": [
+        "<item name=\"pc_secondary0\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_secondary1\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_secondary2\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_secondary3\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_secondary4\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_secondary5\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_secondary6\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_header_action\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_header_primary\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_header_secondary\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_scroll_prev\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_scroll_next\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_scroll_range\" hide=\"true\" enabled=\"false\" />",
+        "<item name=\"pc_status\" hide=\"true\" enabled=\"false\" />"
+      ]
+    }
+  ]
+}

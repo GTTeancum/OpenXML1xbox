@@ -1,0 +1,109 @@
+{
+  "description": "Verified XML2 PC reference inputs; files remain local and are not redistributed.",
+  "files": [
+    {
+      "path": "Packages/generated/maps/package/menus/options.PKGB",
+      "sha256": "f8b81726d4ce64ca4d938198a73daa7041d44db708cd2737539361c077088f04"
+    },
+    {
+      "path": "UI/menus/menu_options_controller.IGB",
+      "sha256": "ae63b172cc214a653c72df04258c846a7e5395301b335bb08299da154baa009c"
+    },
+    {
+      "path": "UI/menus/options.engb",
+      "sha256": "81b3eda2bb47f7731c413397008535d4b27ce6eaebb7ed6857ef70a436b75c5b"
+    },
+    {
+      "path": "UI/menus/options.xmlb",
+      "sha256": "81b3eda2bb47f7731c413397008535d4b27ce6eaebb7ed6857ef70a436b75c5b"
+    },
+    {
+      "path": "UI/menus/options_controller.IGB",
+      "sha256": "27c2736bc24b000d2b8e9b6aa3619f6b8d88e1d7804c11fefdd1f3c7b1ec050b"
+    },
+    {
+      "path": "UI/menus/x2m_options.IGB",
+      "sha256": "854bc302b6e95dff218d3673794f40e52321456892c7e3edecf778260aed51bf"
+    },
+    {
+      "path": "UI/models/m_invis.IGB",
+      "sha256": "1d4da2d6a89accfcb517fdb66e60a5618c3933c1325b3e1802fe61c564ad60f5"
+    },
+    {
+      "path": "UI/models/m_options_combatmusic_select.IGB",
+      "sha256": "3faa9157fd7a230405318aced2241c973445e6d705e152d908de118e44a587d9"
+    },
+    {
+      "path": "UI/models/m_options_controls_screen.IGB",
+      "sha256": "bf31b628fc6aad339d9723cb17f268e2bc3ead91401c446f54d724728116237e"
+    },
+    {
+      "path": "UI/models/m_options_screen.IGB",
+      "sha256": "e22c4952e3373313eca84a6b04ab80efcc1022de06c3342e3bf5590002d18153"
+    },
+    {
+      "path": "UI/models/m_options_sound_select.IGB",
+      "sha256": "3460648807b46442c71b95dae2a74e888b8d0bca74e5dad2291be621c3c13bb4"
+    },
+    {
+      "path": "UI/models/m_options_view_select.IGB",
+      "sha256": "5894e9515792f25594c346e72234c53fdd00e41c8f7ce814aa6c1f934bbd52d9"
+    },
+    {
+      "path": "UI/models/m_pda_option_focus.IGB",
+      "sha256": "804f57113ed16ed35a0aa70fcc86f34f955cf041117b430d772dee62540000e5"
+    },
+    {
+      "path": "UI/models/m_pda_option_light_off.IGB",
+      "sha256": "ebfeac0e295dc5b67f487738d7e17a9c2e66edc83efaa2cc9c1cbd3c7d1a88de"
+    },
+    {
+      "path": "UI/models/m_pda_option_light_on.IGB",
+      "sha256": "31bec56b5e9ccc923b30d18b95306ce2316d1f68fcbfcc29d15f443e72ee33d6"
+    },
+    {
+      "path": "UI/models/m_pda_option_nofocus.IGB",
+      "sha256": "9fede86e093f10bee48be3fa46a62e17dbbe82954b245143c2a97694e926acfe"
+    },
+    {
+      "path": "UI/models/m_pda_option_screen.IGB",
+      "sha256": "e6040527d5b02c475bdf14441b804a2f534749a87e23461ea290935d090612ce"
+    },
+    {
+      "path": "UI/models/m_share_tab_light_off.IGB",
+      "sha256": "145fc6a1e6285e16953c0d14b4afd5ca13ca3202344fa7052f534266152a29fd"
+    },
+    {
+      "path": "UI/models/m_share_tab_light_on.IGB",
+      "sha256": "722e7da38d4e8cb7a8109ee4ee666d88e22b53e554e835116905759bcf3cf66d"
+    },
+    {
+      "path": "UI/models/m_team_corner_hinge.IGB",
+      "sha256": "a05af630cedf874b297d7fcf0dee6cb69e8297be90aac6daf1b00a28dc659a42"
+    },
+    {
+      "path": "UI/models/m_team_helpbar.IGB",
+      "sha256": "4f3512c17651de91f529a681b83ab83f925d741c5557d9963abb4e6dc14871a0"
+    },
+    {
+      "path": "UI/models/m_team_side_hinge.IGB",
+      "sha256": "9a9e126ca49afe929bf0dae0b5d8fb97c50b8f43c83d2d97554f0491540b09df"
+    },
+    {
+      "path": "UI/models/m_track.IGB",
+      "sha256": "c39eb4a9ca3640c580cdefb1cfac30c31bb0b654329ce8885186b99c09b8cf8c"
+    },
+    {
+      "path": "Texs/tabimg.png",
+      "sha256": "5ff0a688477bd3d289b47a7b5bd27073806961b5c076bd511efb75aed9832d48"
+    },
+    {
+      "path": "Texs/tabimg2.png",
+      "sha256": "10a39c08a21b5f1a893da1edf67c5151730a1e94ebffefb4f7f004034d37fdb4"
+    },
+    {
+      "path": "Texs/tabbtn.png",
+      "sha256": "5ffcd96593c868150dcd26070acc02f27c0200e0bc51fe2100cc14f0f4f4da15"
+    }
+  ]
+}
