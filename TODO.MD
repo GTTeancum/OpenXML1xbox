@@ -2,46 +2,23 @@
 
 ## Summary
 
-1. Smoke test various levels with 1–4 players.
-2. Verify clean audio and headphone recovery.
-3. Confirm visible-window FPS and cursor behavior.
-4. Plan the 32-bit/original-Xbox return path.
-5. Make XboxRecomp friendlier to future Xbox builds with modern toolchains.
-6. NewGame+, 35 roster size, 10 costume size, lvl 99 cap
+1. Integrate NewGame+.
+2. Optimize performance and resolve beta testers' low-FPS reports.
+3. Plan the Xbox return path and make XboxRecomp friendlier to modern Xbox builds.
 
 ## Detailed work
 
-### 1. Multi-level smoke tests with 1–4 players
+### 1. NewGame+
 
-- [ ] Establish a named 1080p, 16:9 level/player-count matrix covering several levels,
-      interiors/exteriors, heavy combat, and scripted transitions.
-- [ ] Test each selected level with 1, 2, 3, and 4 local players: loading,
-      independent controls, character selection, camera/HUD ownership, combat,
-      powers, pause/resume, joining/leaving where supported, and level exit.
-- [ ] Complete level 1 through its exit; successful subway traversal alone
-      does not establish full level completion.
-- [ ] Record pass/fail per matrix cell and reproducible defects with locations,
-      builds, logs, and native visual evidence where useful.
+Trace and integrate NewGame+ progression, carry-over state and save/load behavior.
 
-### 2. Audio continuity and device recovery
+### 2. Performance optimization
 
-- [ ] Verify 15–20 minutes of combat/transitions without crackle, stutter,
-      missing sounds, or A/V drift; record reproducible remaining defects.
-- [ ] Physically disconnect/reconnect headphones during gameplay; confirm the
-      game survives, follows the default output, and resumes sound.
+Reproduce beta testers' low-FPS reports using their hardware, settings, levels and gameplay scenarios. Profile CPU, GPU and frame times at 1080p 16:9, identify the causes of sustained low FPS and stalls, and optimize the measured bottlenecks. Compare before/after results in the affected gameplay sequences and check visual and audio behavior; menu FPS or rendered-frame counts alone are insufficient. Target consistent 40+ FPS across various levels and record the hardware used for each result.
 
-Simulated device-loss and native engine-restart tests passed; physical headphone
-recovery needs confirmation. See [audio recovery](docs/AUDIO-DEVICE-RECOVERY.md).
+CLOSURE REQUIREMENT: neither the user nor Codex may close this item until the user has personally tested the candidate build on multiple machines locally at home. Available test hardware includes two laptops and a different desktop. Testing on the development machine alone, automated checks, or completed code changes do not satisfy this requirement. Keep this item open pending the user's multi-machine test results and performance acceptance.
 
-### 3. HD presentation and window behavior
-
-- [ ] Confirm live title-bar FPS and the normal mouse cursor in human play.
-
-The staged 1080p presentation smoke passed through gameplay. The remaining
-visible-window check can be performed during tester intake. Evidence is in
-[HD output](docs/HD-OUTPUT.md).
-
-### 4. Future 32-bit and original-Xbox return path
+### 3. Xbox return path, toolkit portability and nxdk support
 
 - [ ] Assess a 32-bit game runtime and document toolkit, compiler, memory, and
       platform requirements for an original-Xbox build.
@@ -50,8 +27,6 @@ visible-window check can be performed during tester intake. Evidence is in
 
 The current Windows game is 64-bit with a separate 32-bit DX8 renderer; no
 hardware port is implemented. See [Xbox return path](docs/XBOX-RETURN.md).
-
-### 5. XboxRecomp portability and nxdk build support
 
 - [ ] Audit host-specific assumptions in generated code and runtime interfaces;
       distinguish 32-bit Xbox addresses from host pointers.
@@ -67,10 +42,5 @@ hardware port is implemented. See [Xbox return path](docs/XBOX-RETURN.md).
       reusable changes as isolated, tested XboxRecomp PRs.
 
 Use modern C++ where supported by the selected toolchain; do not impose legacy
-XDK or 2005-era compiler restrictions. Scope is toolkit portability, not an XML1
-Xbox port, a complete game runtime, or full Xbox graphics/audio backends. Item 4
-covers the project's return-path planning; this item covers reusable toolkit work.
-
-### 6. NewGame+, 35 roster size, 10 costume size
-
-Increase all necessary limits to allow for a roster size of 35, with 10 costumes per character, and integrate NewGame+ mode. As part of NewGame+, raise the character level cap from 45 to 99.
+XDK or 2005-era compiler restrictions. Scope covers return-path planning and reusable toolkit portability, not a complete
+XML1 Xbox port, game runtime, or Xbox graphics/audio backends.

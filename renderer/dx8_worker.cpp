@@ -1,3 +1,5 @@
+#include <memory>
+#include "pipe_ready.h"
 #include <windows.h>
 // mingw-w64 vocabulary used by the pinned, otherwise unmodified DX8 headers.
 typedef BOOL WINBOOL;
@@ -7,16 +9,31 @@ typedef BOOL WINBOOL;
 #include <d3d8.h>
 #include <cstdio>
 #include <cstring>
+#include <cerrno>
 #include "dx8_replay.h"
+#include "performance_report.h"
 #include <io.h>
 #include <fcntl.h>
+
+// Hints belong to the process that creates the device, not the 64-bit game.
+// Explicit Windows GPU preferences retain precedence over these defaults.
+extern "C" {
+__declspec(dllexport) DWORD NvOptimusEnablement=1;
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance=1;
+}
 
 static bool user_closed = false;
 static constexpr UINT_PTR fps_title_timer = 1;
 static ULONGLONG fps_title_started;
 static unsigned fps_title_frames;
 static unsigned captured_mouse_buttons;
+static bool publish_display_events=false;
+static void publish_output_display(HWND window) {
+    MONITORINFOEXA info={};info.cbSize=sizeof(info);
+    if(GetMonitorInfoA(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&info))xml1_pc_channel_set_display(info.szDevice);
+}
 static LRESULT CALLBACK playtest_window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    if(publish_display_events && (message==WM_MOVE || message==WM_DISPLAYCHANGE))publish_output_display(window);
     if (message == WM_CLOSE) { user_closed = true; return 0; }
     if(message==WM_SETFOCUS || message==WM_KILLFOCUS) {
         xml1_pc_channel_focus(message==WM_SETFOCUS);return 0;
@@ -108,10 +125,26 @@ int main(int argc, char** argv) {
     wchar_t modulePath[MAX_PATH] = {};
     GetModuleFileNameW(library, modulePath, MAX_PATH);
     std::printf("System D3D8: %ls\n", modulePath);
+    std::printf("[DX8 PROCESS] pid=%lu role=%s adapters=%u\n",GetCurrentProcessId(),vblankMode?"vblank":"renderer",api->GetAdapterCount());
+    for(UINT index=0;index<api->GetAdapterCount();++index) {
+        D3DADAPTER_IDENTIFIER8 identity={};
+        if(SUCCEEDED(api->GetAdapterIdentifier(index,0,&identity)))
+            std::printf("[DX8 ADAPTER] index=%u description=%s driver=%s vendor=%04lx device=%04lx subsystem=%08lx revision=%lu driver_version=%08lx:%08lx\n",
+                index,identity.Description,identity.Driver,identity.VendorId,identity.DeviceId,identity.SubSysId,identity.Revision,
+                identity.DriverVersion.HighPart,identity.DriverVersion.LowPart);
+    }
     D3DADAPTER_IDENTIFIER8 adapter = {};
     D3DCAPS8 caps = {};
-    api->GetAdapterIdentifier(D3DADAPTER_DEFAULT, 0, &adapter);
-    HRESULT hr = api->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps);
+    UINT adapter_index=D3DADAPTER_DEFAULT;
+    if(const char *value=std::getenv("XML1_DX8_ADAPTER")) {
+        char *end=nullptr;long index=std::strtol(value,&end,10);
+        if(!*value || *end || index < -1 || index >= (long)api->GetAdapterCount()) {
+            std::fprintf(stderr,"Requested DX8 adapter is unavailable: %s\n",value);api->Release();FreeLibrary(library);return 2;
+        }
+        if(index>=0)adapter_index=(UINT)index;
+    }
+    api->GetAdapterIdentifier(adapter_index, 0, &adapter);
+    HRESULT hr = api->GetDeviceCaps(adapter_index, D3DDEVTYPE_HAL, &caps);
     if (FAILED(hr)) { api->Release(); FreeLibrary(library); return 1; }
     std::printf("Adapter: %s\nVertex shader: %08lx; pixel shader: %08lx\nMax texture: %lux%lu; stages: %lu; simultaneous textures: %lu\n",
         adapter.Description, caps.VertexShaderVersion, caps.PixelShaderVersion,
@@ -126,6 +159,10 @@ int main(int argc, char** argv) {
     RegisterClassW(&wc);
     Xml1PcInputSnapshot initial_input={};
     bool pc_connected=liveMode && !vblankMode && std::getenv("XML1_PC_INPUT_CHANNEL");
+    publish_display_events=pc_connected;
+    if(vblankMode && std::getenv("XML1_PC_INPUT_CHANNEL") && !xml1_pc_channel_connect()) {
+        std::fprintf(stderr,"Cannot connect display timing channel\n");return 2;
+    }
     if(pc_connected && (!xml1_pc_channel_connect() || !xml1_pc_channel_read(&initial_input,1))) {
         std::fprintf(stderr,"Cannot connect PC input channel\n");return 2;
     }
@@ -154,9 +191,10 @@ int main(int argc, char** argv) {
         // Mouse coordinates are client pixels; scale hit targets to this size.
         pc_ui::client_width=r.right-r.left;pc_ui::client_height=r.bottom-r.top;
     }
+    if(pc_connected)publish_output_display(window);
     D3DPRESENT_PARAMETERS pp = {};
     D3DDISPLAYMODE mode = {};
-    api->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode);
+    api->GetAdapterDisplayMode(adapter_index, &mode);
     std::printf("Native display refresh: %u Hz\n",mode.RefreshRate);
     pp.BackBufferWidth = render_width;
     pp.BackBufferHeight = render_height;
@@ -171,8 +209,8 @@ int main(int argc, char** argv) {
     const unsigned sample_counts[]={2,4,8};
     for(unsigned count:sample_counts) {
         auto samples=static_cast<D3DMULTISAMPLE_TYPE>(count);
-        if(SUCCEEDED(api->CheckDeviceMultiSampleType(0,D3DDEVTYPE_HAL,mode.Format,TRUE,samples)) &&
-           SUCCEEDED(api->CheckDeviceMultiSampleType(0,D3DDEVTYPE_HAL,D3DFMT_D24S8,TRUE,samples)))
+        if(SUCCEEDED(api->CheckDeviceMultiSampleType(adapter_index,D3DDEVTYPE_HAL,mode.Format,TRUE,samples)) &&
+           SUCCEEDED(api->CheckDeviceMultiSampleType(adapter_index,D3DDEVTYPE_HAL,D3DFMT_D24S8,TRUE,samples)))
             fsaa_modes|=1u<<count;
     }
     if(pc_connected)xml1_pc_channel_set_fsaa_modes(fsaa_modes);
@@ -182,13 +220,24 @@ int main(int argc, char** argv) {
         xml1_pc_channel_close();DestroyWindow(window);api->Release();FreeLibrary(library);return 2;
     }
     pp.MultiSampleType=static_cast<D3DMULTISAMPLE_TYPE>(fsaa);
-    pp.Flags = fsaa?0:D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+    pp.Flags = 0; // Completion uses a one-pixel image copy; no lockable backbuffer.
     IDirect3DDevice8* device = nullptr;
-    hr = api->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window,
+    hr = api->CreateDevice(adapter_index, D3DDEVTYPE_HAL, window,
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE, &pp, &device);
     std::printf("%s D3D8 HAL device creation: %08lx\n", visible ? "Visible playtest" : "Hidden", static_cast<unsigned long>(hr));
     std::printf("Native backbuffer: %ux%u\n",render_width,render_height);
     std::printf("Native FSAA: %u; supported mask=%08x\n",fsaa,fsaa_modes);
+    if(device) {
+        D3DDEVICE_CREATION_PARAMETERS actual={};checked(device->GetCreationParameters(&actual));
+        MONITORINFOEXA monitor={};monitor.cbSize=sizeof(monitor);
+        GetMonitorInfoA(api->GetAdapterMonitor(actual.AdapterOrdinal),&monitor);
+        std::printf("[DX8 DEVICE] adapter=%u type=%u behavior=%08lx display=%s refresh=%u windowed=%u\n",
+            actual.AdapterOrdinal,(unsigned)actual.DeviceType,actual.BehaviorFlags,monitor.szDevice,mode.RefreshRate,pp.Windowed);
+        if(vblankMode || replayMode || benchmarkMode) {
+            try {native_vblank.open(api->GetAdapterMonitor(adapter_index));}
+            catch(const std::exception& e){std::fprintf(stderr,"%s\n",e.what());device->Release();api->Release();FreeLibrary(library);return 2;}
+        }
+    }
     if(device && fsaa) {
         // Fail before consuming any guest work if this driver cannot resolve
         // its multisampled surface for the mandatory completion/capture path.
@@ -229,29 +278,27 @@ int main(int argc, char** argv) {
             int fd=_open_osfhandle((intptr_t)pipe,_O_RDONLY|_O_BINARY);
             FILE* input=fd>=0?_fdopen(fd,"rb"):nullptr;
             if (!input) throw std::runtime_error("Cannot read graphics pipe");
+            std::unique_ptr<PipeReady> reader;
+            if(visible || std::getenv("XML1_DX8_MESSAGE_WAIT_TEST"))reader.reset(new PipeReady(input));
+            char report_display[32]={};xml1_pc_channel_get_display(report_display,sizeof(report_display));
+            PerformanceReport report;if(!vblankMode)report.start(api,pp,visible,adapter_index,report_display);
             unsigned frame=1;
             LARGE_INTEGER fps_start,fps_previous,fps_frequency;QueryPerformanceFrequency(&fps_frequency);
             QueryPerformanceCounter(&fps_start);fps_previous=fps_start;double max_frame_ms=0;
             for (unsigned sequence=1;;++sequence) {
-                if (visible) {
-                    // The producer waits for each acknowledgement before
-                    // sending its next command, so no next-command bytes
-                    // can remain in stdio's buffer at this boundary.
-                    DWORD available = 0;
-                    while (pump_playtest_window()) {
-                        if (!PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr)) break;
-                        if (available) break;
-                        // A synchronous pipe does not wake a message-only
-                        // wait. A 10ms timeout here delays every guest flush,
-                        // reducing gameplay to a few FPS. Yield without a
-                        // fixed delay and keep pumping this window's messages.
-                        SwitchToThread();
-                    }
-                    if (user_closed) { std::printf("Playtest window closed by user\n"); break; }
+                double wait_started=perf_now_ms();
+                int next=reader?reader->next(pump_playtest_window):std::fgetc(input);
+                if (user_closed) {report.exit_reason("window_closed",sequence,0);std::printf("Playtest window closed by user\n");break;}
+                if (next==EOF) {
+                    report.exit_reason("pipe_end",sequence,reader?reader->read_error():GetLastError());
+                    std::fprintf(stderr,"[DX8 PIPE END] seq=%u frame=%u eof=%d error=%d errno=%d win32=%lu\n",
+                        sequence,frame,std::feof(input),std::ferror(input),reader?reader->read_errno():errno,
+                        reader?reader->read_error():GetLastError());
+                    break;
                 }
-                int next=std::fgetc(input);
-                if (next==EOF) break;
                 std::ungetc(next,input);
+                perf_wait_ms+=perf_now_ms()-wait_started;
+                double work_started=perf_now_ms();
                 char capture[128];
                 std::snprintf(capture,sizeof(capture),"build/dx8-live-frame-%06u.bmp",frame);
                 ULONGLONG command_start=GetTickCount64();
@@ -264,32 +311,52 @@ int main(int argc, char** argv) {
                     if(!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
                     continue;
                 }
-                // Human sessions opt out of synchronous GPU readback and BMP writes.
+                // Diagnostic full-frame capture is optional; guest completion
+                // barriers remain mandatory even when screenshots are disabled.
                 const bool capture_enabled = !std::getenv("XML1_DX8_NO_CAPTURE");
                 bool presented=replay_stream(device,input,(capture_enabled && (std::getenv("XML1_DX8_CAPTURE_ALL")||frame<=8||frame%60==0))?capture:nullptr,true);
+                perf_work_ms+=perf_now_ms()-work_started;++perf_commands;
                 ULONGLONG command_ms=GetTickCount64()-command_start;
                 if(command_ms>=50) std::printf("[DX8 COMMAND] seq=%u frame=%u presented=%u ms=%llu\n",sequence,frame,presented,command_ms);
                 DWORD ack=sequence,written=0;
-                if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) break;
+                if (!WriteFile(pipe,&ack,4,&written,nullptr)||written!=4) {
+                    DWORD error=GetLastError();report.exit_reason("ack_failed",sequence,error);
+                    std::fprintf(stderr,"[DX8 ACK FAILED] seq=%u frame=%u written=%lu win32=%lu\n",
+                        sequence,frame,written,error);
+                    break;
+                }
                 if (presented) {
                     if (visible) ++fps_title_frames;
                     LARGE_INTEGER now;QueryPerformanceCounter(&now);
                     double frame_ms=1000.0*(now.QuadPart-fps_previous.QuadPart)/fps_frequency.QuadPart;
                     if(frame_ms>max_frame_ms)max_frame_ms=frame_ms;fps_previous=now;
+                    report.frame(frame,frame_ms,render_width,render_height,perf_wait_ms,perf_work_ms,perf_read_ms,perf_texture_ms,perf_fence_ms,perf_present_ms,perf_commands,perf_fences);
                     if(frame%120==0) {
                         double seconds=(double)(now.QuadPart-fps_start.QuadPart)/fps_frequency.QuadPart;
                         std::printf("[DX8 FPS] frame=%u fps=%.2f mean_ms=%.3f max_frame_ms=%.3f output=%ux%u\n",frame,120.0/seconds,1000.0*seconds/120,max_frame_ms,render_width,render_height);
+                        std::printf("[DX8 COST] frames=120 commands=%u fences=%u wait_ms=%.3f work_ms=%.3f fence_ms=%.3f present_ms=%.3f\n",
+                            perf_commands,perf_fences,perf_wait_ms,perf_work_ms,perf_fence_ms,perf_present_ms);
+                        // These are disjoint wall-time categories. decode_submit
+                        // includes driver calls and host scheduling, not pure CPU
+                        // execution. Texture time is a subset of decode_submit.
+                        std::printf("[DX8 COST SPLIT] incoming_read_ms=%.3f decode_submit_ms=%.3f texture_ms=%.3f\n",
+                            perf_read_ms,std::max(0.0,perf_work_ms-perf_read_ms-perf_fence_ms-perf_present_ms),perf_texture_ms);
+                        perf_wait_ms=perf_work_ms=perf_fence_ms=perf_present_ms=0;perf_commands=perf_fences=0;
+                        perf_read_ms=perf_texture_ms=0;
                         fps_start=now;max_frame_ms=0;
                     }
                     if (frame==1||frame%60==0) {std::printf("Presented live frame %u\n",frame);report_texture_cache(frame);}
                     ++frame;
                 }
             }
+            reader.reset();
             std::fclose(input);
         } catch (const std::exception& error) { std::fprintf(stderr,"%s\n",error.what()); hr=E_FAIL; }
     }
     if(texture_requests) report_texture_cache(0);
     clear_texture_cache();
+    geometry_stream.clear();
+    native_vblank.clear();
     native_readback.clear();
     xml1_pc_channel_close();
     if (device) device->Release();

@@ -1,6 +1,14 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+/* V9 adds an eviction count + token IDs before each texture token, and
+ * index_count/unique_vertex_count + vertices + uint16 indices after textures.
+ * B1 wraps an ordered list of commands with one final acknowledgement. Only
+ * its final command can present; F9/R9 completion still covers all prior work.
+ * Evictions retire token ownership in stream order, never guest fence state. */
+/* D8 carries the same version-8 draw records as F8/R8, but acknowledges
+ * ordered submission only. It neither presents nor publishes GPU completion;
+ * a subsequent F8/R8 must complete all preceding D8 draws and C5 clears. */
 /* Version6 packs the explicit mip count above the low-byte Xbox format. Older
  * packets carry a bare format and therefore represent one level. */
 static unsigned xml1_texture_levels(uint32_t format) { return (format>>8)?(format>>8):1; }

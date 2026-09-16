@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
-project(OpenXML1xbox LANGUAGES C CXX)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+project(OpenXML1xbox LANGUAGES C CXX RC)
 add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/x87-status-fixture.inc"
     COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-x87-status-test.py"
     DEPENDS scripts/generate-x87-status-test.py external/xboxrecomp/tools/recomp/lifter.py)
@@ -41,6 +42,7 @@ add_executable(apu-resample-test tests/apu_resample_test.c)
 target_link_libraries(apu-resample-test PRIVATE xboxrecomp)
 target_include_directories(apu-resample-test PRIVATE external/xboxrecomp/src)
 add_executable(fair-gate-test tests/fair_gate_test.c)
+add_executable(controller-retry-test tests/controller_retry_test.c)
 add_executable(shared-completion-test tests/shared_completion_test.c)
 target_include_directories(shared-completion-test PRIVATE src)
 add_executable(light-state-test tests/light_state_test.c)
@@ -92,7 +94,7 @@ if(OPENXML1_BUILD_BOOT_PROBE)
                 external/xboxrecomp/tools/recomp/test_incdec_carry.py)
     add_executable(guest-flags-test tests/guest_flags_test.c "${CMAKE_CURRENT_SOURCE_DIR}/build/flags-fixture.inc")
     target_include_directories(guest-flags-test PRIVATE src/recomp/gen build)
-    add_executable(xml1-boot-probe src/asset_routes.c src/build_settings.c src/main.c src/native_probe.c src/recomp_manual.c src/guest_crt.c src/guest_input.c src/guest_graphics_trace.c src/guest_graphics_live.c tests/guest_swizzle_test.c ${RECOMP_SOURCES})
+    add_executable(xml1-boot-probe src/asset_routes.c src/build_settings.c src/main.c src/performance_log.c src/newgame_plus.c src/native_probe.c src/recomp_manual.c src/guest_crt.c src/guest_input.c src/guest_graphics_trace.c src/guest_graphics_live.c tests/guest_swizzle_test.c tests/progression_test.c ${RECOMP_SOURCES})
     target_include_directories(xml1-boot-probe PRIVATE src src/recomp/gen external/xboxrecomp/include)
     target_link_libraries(xml1-boot-probe PRIVATE xboxrecomp dbghelp)
     target_compile_definitions(xml1-boot-probe PRIVATE _CRT_SECURE_NO_WARNINGS WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -176,3 +178,17 @@ add_executable(pc-controls-test tests/pc_controls_test.cpp)
 target_link_libraries(pc-controls-test PRIVATE xml1-pc-controls)
 add_executable(pkgb-decode-driver tests/pkgb_decode_driver.cpp)
 target_link_libraries(pkgb-decode-driver PRIVATE xml1-loose-extract)
+
+if(TARGET xml1-boot-probe)
+    # DX8 is 32-bit; carry its static-CRT executable as an embedded resource.
+    set(XML1_RENDERER_BUILD "${CMAKE_CURRENT_BINARY_DIR}/embedded-renderer")
+    add_custom_target(xml1-embedded-renderer
+        COMMAND "${CMAKE_COMMAND}" -S "${CMAKE_CURRENT_SOURCE_DIR}/renderer" -B "${XML1_RENDERER_BUILD}" -A Win32
+        COMMAND "${CMAKE_COMMAND}" --build "${XML1_RENDERER_BUILD}" --config $<CONFIG> --target xml1-dx8-worker
+        BYPRODUCTS "${XML1_RENDERER_BUILD}/$<CONFIG>/xml1-dx8-worker.exe")
+    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/embedded-worker-$<CONFIG>.rc"
+        CONTENT "101 RCDATA \"${XML1_RENDERER_BUILD}/$<CONFIG>/xml1-dx8-worker.exe\"\n")
+    target_sources(xml1-boot-probe PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/embedded-worker-$<CONFIG>.rc" src/embedded_worker.c)
+    add_dependencies(xml1-boot-probe xml1-embedded-renderer)
+    target_link_libraries(xml1-boot-probe PRIVATE bcrypt)
+endif()

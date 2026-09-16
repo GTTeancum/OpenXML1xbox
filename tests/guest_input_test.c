@@ -7,9 +7,12 @@ RECOMP_TLS uint32_t g_eax, g_esp;
 ptrdiff_t g_xbox_mem_offset;
 static uint8_t memory[8u << 20];
 static unsigned host_calls, event_calls;
+static unsigned host_connected;
 size_t xbox_GetMappedSize(void) { return sizeof(memory); }
 void xbox_InputInit(void) { ++host_calls; }
-DWORD xbox_InputGetState(DWORD port, XBOX_INPUT_STATE *state) { (void)port; (void)state; ++host_calls; return 1167; }
+DWORD xbox_InputGetState(DWORD port, XBOX_INPUT_STATE *state) {
+    ++host_calls;memset(state,0,sizeof(*state));return host_connected&(1u<<port)?0:1167;
+}
 DWORD xbox_InputSetState(DWORD port, const XBOX_VIBRATION *state) { (void)port; (void)state; ++host_calls; return 1167; }
 static void signal_event(void) {
     if (*(uint32_t *)(memory + g_esp + 4) != 123) { puts("FAIL event handle"); exit(1); }
@@ -140,5 +143,23 @@ int main(void) {
     REQUIRE(call(0x3C0336, 4, args) == 0);
     REQUIRE(host_calls == 0);
     puts("PASS: process-local input enumeration, transitions, handles, wire state, completion event and stack cleanup; zero host input/output calls.");
+    /* Exercise the real bridge's retry path against a controlled host backend.
+     * This does not read a host controller or inject OS input. */
+    _putenv_s("XML1_TEST_PAD", "");_putenv_s("XML1_PC_TEST_INPUT", "");
+    args[0]=0;args[1]=0;REQUIRE(call(0x3BF897,2,args)==0);
+    unsigned sampled=host_calls;
+    args[0]=0x3BF474;
+    for(unsigned i=0;i<500;++i)REQUIRE(call(0x3C0465,1,args)==0);
+    REQUIRE(host_calls==sampled);
+    host_connected=1;Sleep(2050);
+    REQUIRE(call(0x3C0465,1,args)==1);REQUIRE(host_calls==sampled+4);
+    sampled=host_calls;
+    for(unsigned i=0;i<10;++i)REQUIRE(call(0x3C0465,1,args)==1);
+    REQUIRE(host_calls==sampled+10); /* connected slot is never delayed */
+    host_connected=0;REQUIRE(call(0x3C0465,1,args)==0);
+    sampled=host_calls;host_connected=1;
+    REQUIRE(call(0x3C0465,1,args)==0);REQUIRE(host_calls==sampled);
+    Sleep(2050);REQUIRE(call(0x3C0465,1,args)==1);
+    puts("PASS: production polling skips absent slots, samples connected pads immediately, detects disconnect and reconnect");
     return 0;
 }

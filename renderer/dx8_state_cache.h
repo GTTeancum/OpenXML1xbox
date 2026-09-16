@@ -2,6 +2,16 @@
 /* State belongs to this one native device. Keep the exact game values; avoid
  * calling D3D8 again when another draw supplies an identical state. */
 static uint64_t state_requests,state_calls;
+static bool state_cache_enabled();
+static IDirect3DTexture8 *bound_textures[4]={};
+static bool bound_textures_known[4]={};
+static void cached_texture_binding(IDirect3DDevice8 *device,unsigned stage,IDirect3DTexture8 *texture) {
+    ++state_requests;
+    if(state_cache_enabled() && bound_textures_known[stage] && bound_textures[stage]==texture)return;
+    checked(device->SetTexture(stage,texture));bound_textures[stage]=texture;bound_textures_known[stage]=true;++state_calls;
+    // The device retains the bound object, so its pointer cannot be recycled
+    // while this cached binding is current. No additional ownership is needed.
+}
 static bool state_cache_enabled() {
     static const bool enabled=std::getenv("XML1_DX8_NO_STATE_CACHE")==nullptr;
     return enabled;

@@ -16,6 +16,7 @@ typedef struct Xml1PcInputSnapshot {
     uint32_t fsaa_modes; /* bit N: N samples supported by the native device */
     uint32_t native_menu; /* bit 0: native navigation; bit 1: pause-menu Esc/Back */
     uint32_t connected_players; /* physical controller present at each routed game port */
+    char output_display[32]; /* Display containing this game's own window. */
 } Xml1PcInputSnapshot;
 
 int xml1_pc_channel_create(const Xml1PcSettings *settings);
@@ -31,6 +32,8 @@ void xml1_pc_channel_request_menu(void);
 int xml1_pc_channel_set_menu(int active);
 int xml1_pc_channel_set_settings(const Xml1PcSettings *settings);
 int xml1_pc_channel_set_fsaa_modes(uint32_t modes);
+int xml1_pc_channel_set_display(const char *display);
+int xml1_pc_channel_get_display(char *display,unsigned capacity);
 /* Capture one window key/button for native rebinding without guest actions. */
 int xml1_pc_channel_capture(int active);
 unsigned xml1_pc_channel_capture_key(void);

@@ -1,3 +1,4 @@
+#include "performance_log.h"
 #include "xbox_memory_layout.h"
 #include "dx8_packet.h"
 #include "guest_input.h"
@@ -25,6 +26,9 @@ static xml1_light_state light_state;
 static int material_valid;
 static unsigned char *packet;
 static size_t used, capacity;
+static unsigned char *ordered_packet;
+static size_t ordered_used,ordered_capacity;
+static uint32_t ordered_commands;
 static uint32_t draws, frames;
 static uint32_t source_dimensions[2];
 static unsigned menu_item;
@@ -295,7 +299,10 @@ static void append_texture(uint32_t address,unsigned width,unsigned height,uint3
     const unsigned char *pixels=guest(address,total);
     static int wire_enabled=-1;
     if(wire_enabled<0) wire_enabled=getenv("XML1_DX8_NO_WIRE_CACHE")==NULL;
-    uint32_t token=wire_enabled?xml1_texture_wire_token(&texture_wire,address,width,height,packed,pixels,total):0;
+    uint32_t token=wire_enabled?xml1_texture_wire_token_v9(&texture_wire,address,width,height,packed,pixels,total):0;
+    uint32_t evictions=wire_enabled?texture_wire.evicted_count:0;
+    append(&evictions,4);
+    if(evictions)append(texture_wire.evicted,evictions*4);
     append(&token,4);
     if(token && !(token&XML1_WIRE_TEXTURE_DEFINE)) return;
     unsigned format=packed&255;
@@ -316,8 +323,9 @@ static void append_texture(uint32_t address,unsigned width,unsigned height,uint3
         pixels+=bytes; width=width>1?width/2:1; height=height>1?height/2:1;
     }
 }
+extern const char *xml1_embedded_worker(void);
 static void connect_worker_channel(HANDLE *channel,HANDLE *job,const char *suffix,const char *mode) {
-    char name[128], command[512];
+    char name[128], command[32768];
     snprintf(name,sizeof(name),"\\\\.\\pipe\\OpenXML1DX8-%lu-%s",GetCurrentProcessId(),suffix);
     *channel=CreateNamedPipeA(name,PIPE_ACCESS_DUPLEX,PIPE_TYPE_BYTE|PIPE_READMODE_BYTE|PIPE_WAIT|PIPE_REJECT_REMOTE_CLIENTS,
         1,1024*1024,4096,10000,NULL);
@@ -328,8 +336,8 @@ static void connect_worker_channel(HANDLE *channel,HANDLE *job,const char *suffi
     if (!*job||!SetInformationJobObject(*job,JobObjectExtendedLimitInformation,&limit,sizeof(limit)))
         fatal("cannot bind graphics worker lifetime");
     STARTUPINFOA start={0}; PROCESS_INFORMATION process={0}; start.cb=sizeof(start);
-    const char *worker=GetFileAttributesA(".xml1-player-layout")!=INVALID_FILE_ATTRIBUTES
-        ? "runtime\\xml1-dx8-worker.exe" : "build\\renderer\\Release\\xml1-dx8-worker.exe";
+    const char *worker=xml1_embedded_worker();
+    if (!worker) fatal("cannot prepare embedded DX8 renderer");
     snprintf(command,sizeof(command),"\"%s\" %s %s",worker,mode,name);
     if (!CreateProcessA(NULL,command,NULL,NULL,FALSE,CREATE_NO_WINDOW|CREATE_SUSPENDED,NULL,NULL,&start,&process))
         fatal("cannot launch native DX8 worker");
@@ -353,6 +361,23 @@ int xml1_graphics_fence_complete(uint32_t device,uint32_t target) {
      * does not issue a fence, submit work, or manufacture an event signal. */
     return (uint32_t)(latest-target)>=(uint32_t)(latest-completed);
 }
+static void flush_completed_work(uint32_t device);
+void xml1_graphics_kickoff_tag(uint32_t pointer,uint32_t value) {
+    // XDK's software push-buffer branch writes a completed tag inline. The
+    // native backend now defers kickoff, so that store must not advertise work
+    // as finished. Bootstrap/non-live behavior retains the original store.
+    if(!live() || !frames)*(uint32_t*)guest(pointer,4)=value;
+}
+int xml1_graphics_wait_fence(uint32_t device,uint32_t target) {
+    if(xml1_graphics_fence_complete(device,target))return 1;
+    if(!live() || !frames)return 0;
+    const uint32_t *d=guest(device,0x34);
+    // A current/unissued tag belongs to InsertFence, not to this wait. The
+    // verified post-insert hook below calls us again once it is issued.
+    if(d[0x2c/4]==target)return 0;
+    flush_completed_work(device);
+    return xml1_graphics_fence_complete(device,target);
+}
 
 void xml1_graphics_live_observe(uint32_t va) {
     if (!live()||va<0x35ADA0||va>=0x36F300) return;
@@ -375,7 +400,9 @@ void xml1_graphics_live_observe(uint32_t va) {
     if (va==0x35FC00 && frames) {
         uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
         if(g_ecx!=device) fatal("unexpected push-buffer flush device");
-        flush_completed_work(device);
+        /* Kickoff is submission, not a CPU resource wait. Draw/texture bytes
+         * are already snapshotted. Keep them ordered until a real BlockOnTime
+         * boundary or swap; do not publish completion here. */
     }
     if (va==0x35FDE0 && frames) {
         uint32_t device=*(uint32_t*)guest(0x36CAF8,4);
@@ -534,15 +561,29 @@ void xml1_graphics_live_observe(uint32_t va) {
             const uint16_t *indices=guest(a[2],vertex_count*2);
             uint32_t device=*(const uint32_t *)guest(0x36CAF8,4);
             uint32_t base=*(const uint32_t *)guest(device+0x1C,4);
+            static uint32_t epochs[65536],epoch;
+            static uint16_t remap[65536],unique[65536];
+            static uint16_t *compact;static size_t compact_capacity;
+            if(++epoch==0){memset(epochs,0,sizeof(epochs));epoch=1;}
+            if(vertex_count>compact_capacity){void *next=realloc(compact,(size_t)vertex_count*2);if(!next)fatal("index packet allocation failed");compact=next;compact_capacity=vertex_count;}
+            uint32_t unique_count=0;
             for(uint32_t i=0;i<vertex_count;++i) {
-                uint64_t at=(uint64_t)vb[1]+((uint64_t)base+indices[i])*stride;
+                unsigned index=indices[i];
+                if(epochs[index]!=epoch){epochs[index]=epoch;remap[index]=(uint16_t)unique_count;unique[unique_count++]=(uint16_t)index;}
+                compact[i]=remap[index];
+            }
+            append(&vertex_count,4);append(&unique_count,4);
+            for(uint32_t i=0;i<unique_count;++i) {
+                uint64_t at=(uint64_t)vb[1]+((uint64_t)base+unique[i])*stride;
                 if(at+stride>64u*1024*1024) fatal("indexed vertex bounds");
                 if(track_menu_vertices)menu_draw_vertex(0x80000000+(uint32_t)at,guest(0x80000000+(uint32_t)at,stride));
                 append(guest(0x80000000+(uint32_t)at,stride),stride);
             }
+            append(compact,(size_t)vertex_count*2);
             static unsigned reports;
             if(reports++<6) fprintf(stderr,"[DX8 INDEXED] indices=%u base=%u stream=%08X first=%u\n",vertex_count,base,stream,indices[0]);
         } else {
+            uint32_t index_count=0;append(&index_count,4);append(&vertex_count,4);
             const unsigned char *vertices=guest(0x80000000+(uint32_t)offset,(size_t)bytes);
             if(track_menu_vertices)for(unsigned i=0;i<vertex_count;++i)menu_draw_vertex(0x80000000+(uint32_t)offset+i*stride,vertices+(size_t)i*stride);
             append(vertices,(size_t)bytes);
@@ -576,6 +617,25 @@ static void send_frame_mode(void) {
     uint32_t mode[3]={source_dimensions[0],source_dimensions[1],wire_reset_pending};
     send_bytes("XMLDX8S2",8);send_bytes(mode,sizeof(mode));wire_reset_pending=0;
 }
+static void queue_bytes(const void *data,size_t bytes) {
+    if(bytes>128u*1024*1024 || ordered_used>128u*1024*1024-bytes)fatal("ordered graphics batch exceeds limit");
+    if(ordered_used+bytes>ordered_capacity) {
+        size_t next=(ordered_used+bytes+65535)&~(size_t)65535;void *p=realloc(ordered_packet,next);
+        if(!p)fatal("ordered graphics batch allocation failed");ordered_packet=p;ordered_capacity=next;
+    }
+    memcpy(ordered_packet+ordered_used,data,bytes);ordered_used+=bytes;
+}
+static void queue_mode(void) {
+    uint32_t mode[3]={source_dimensions[0],source_dimensions[1],wire_reset_pending};
+    queue_bytes("XMLDX8S2",8);queue_bytes(mode,sizeof(mode));wire_reset_pending=0;
+}
+static void begin_submission(void) {
+    if(ordered_commands) {
+        uint32_t count=ordered_commands+1;
+        send_bytes("XMLDX8B1",8);send_bytes(&count,4);send_bytes(ordered_packet,ordered_used);
+        ordered_commands=0;ordered_used=0;
+    }
+}
 static void flush_completed_work(uint32_t device) {
     LARGE_INTEGER started,locked,finished,frequency;
     QueryPerformanceCounter(&started);
@@ -583,7 +643,7 @@ static void flush_completed_work(uint32_t device) {
     QueryPerformanceCounter(&locked);
     uint32_t *d=guest(device,0x938);
     uint32_t fence=d[0x2c/4]-2;
-    send_frame_mode();send_bytes("XMLDX8F8",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+    begin_submission();send_frame_mode();send_bytes("XMLDX8F9",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
     QueryPerformanceCounter(&finished); QueryPerformanceFrequency(&frequency);
     static unsigned timing_reports;
     if(timing_reports++<12) fprintf(stderr,"[DX8 FLUSH TIME] draws=%u queue_ms=%.3f submit_ms=%.3f\n",draws,
@@ -628,13 +688,15 @@ static void ordered_clear(const uint32_t *a) {
     const void *rects=a[0]?guest(a[1],(size_t)a[0]*16):NULL;
     if(pipe==INVALID_HANDLE_VALUE) connect_worker();
     if(draws) {
-        send_frame_mode();send_bytes("XMLDX8F8",8); send_bytes(&draws,4); send_bytes(packet,used); receive_ack();
+        /* D8 acknowledges ordered submission only. A clear must follow these
+         * draws on the same device, but does not publish a guest fence value. */
+        queue_mode();queue_bytes("XMLDX8D9",8);queue_bytes(&draws,4);queue_bytes(packet,used);++ordered_commands;
         draws=0; used=0;
     }
     uint32_t header[5]={a[2],a[3],a[4],a[5],a[0]};
-    send_frame_mode();send_bytes("XMLDX8C5",8); send_bytes(header,sizeof(header));
-    if(a[0]) send_bytes(rects,(size_t)a[0]*16);
-    receive_ack();
+    queue_mode();queue_bytes("XMLDX8C5",8);queue_bytes(header,sizeof(header));
+    if(a[0])queue_bytes(rects,(size_t)a[0]*16);
+    ++ordered_commands;
     xml1_fair_leave(&transport_lock);
 }
 void xml1_graphics_swap(void) {
@@ -649,7 +711,7 @@ void xml1_graphics_swap(void) {
             frames+1,d[0x2c/4],*(uint32_t*)guest(d[0x30/4],4),draws);
     }
     if (pipe==INVALID_HANDLE_VALUE) connect_worker();
-    send_frame_mode();send_bytes("XMLDX8R8",8); send_bytes(&draws,4); send_bytes(packet,used);
+    begin_submission();send_frame_mode();send_bytes("XMLDX8R9",8); send_bytes(&draws,4); send_bytes(packet,used);
     receive_ack();
     if(capture_stream) {
         if(fclose(capture_stream)) fatal("DX8 frame capture close failed");
@@ -659,12 +721,23 @@ void xml1_graphics_swap(void) {
     menu_current_owner();
     xml1_pc_native_frame(frames);
     ++frames;
+    xml1_performance_frame(frames);
     if(texture_wire.full) {xml1_texture_wire_reset(&texture_wire);wire_reset_pending=1;}
     capture_next_frame();
     xml1_input_test_frame(frames);
     if (frames==1||frames%60==0) {
         fprintf(stderr,"[DX8 LIVE] presented frame=%u draws=%u bytes=%zu\n",frames,draws,used);
         fprintf(stderr,"[DX8 WIRE] requests=%llu references=%llu avoided_bytes=%llu\n",texture_wire.requests,texture_wire.references,texture_wire.avoided_bytes);
+    }
+    if(frames%120==0 && getenv("XML1_FRAME_CADENCE")) {
+        /* FrameManager singleton from 00011320; 00011421 records the actual
+         * elapsed clock passed to updates, not a fabricated per-frame delta. */
+        static LARGE_INTEGER previous;static float previous_game;
+        LARGE_INTEGER now,frequency;QueryPerformanceCounter(&now);QueryPerformanceFrequency(&frequency);
+        float minimum=*(float*)guest(0x47C4E4,4),game=*(float*)guest(0x47C4E8,4);
+        if(previous.QuadPart)fprintf(stderr,"[GAME CADENCE] frame=%u minimum_ms=%.6f wall_ms=%.3f game_ms=%.3f\n",frames,
+            1000.0*minimum,1000.0*(now.QuadPart-previous.QuadPart)/frequency.QuadPart,1000.0*(game-previous_game));
+        previous=now;previous_game=game;
     }
     draws=0; used=0; frame_geometry=0;
     /* Return only after the native renderer has consumed the submitted frame. */

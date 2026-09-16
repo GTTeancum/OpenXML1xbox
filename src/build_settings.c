@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-Xml1BuildSettings xml1_build_settings={1,"eng","eng","eng"};
+Xml1BuildSettings xml1_build_settings={1,"eng","eng","eng",0,1,-1};
 int xml1_prefer_files_loose(void) { return xml1_build_settings.prefer_files_loose; }
 static char *trim(char *s) {
     while(isspace((unsigned char)*s)) ++s;
@@ -27,7 +27,7 @@ static int language(const char *s) {
     return 0;
 }
 int xml1_read_build_settings(const char *path,Xml1BuildSettings *out,char *error,unsigned size) {
-    Xml1BuildSettings settings={1,"eng","eng","eng"};
+    Xml1BuildSettings settings={1,"eng","eng","eng",0,1,-1};
     char allowed[3][128]={"eng,fre,ger","eng","eng"};
     char *defaults[]={settings.text_language,settings.movie_language,settings.audio_language};
     const char *allow_keys[]={"AllowedTextLanguages","AllowedMovieLanguages","AllowedAudioLanguages"};
@@ -50,6 +50,24 @@ int xml1_read_build_settings(const char *path,Xml1BuildSettings *out,char *error
             if(equal(value,"1")||equal(value,"true")) settings.prefer_files_loose=1;
             else if(equal(value,"0")||equal(value,"false")) settings.prefer_files_loose=0;
             else {ok=fail(error,size,"PreferFilesLoose must be 1, true, 0, or false");break;}
+        }
+        if(equal(s,"performanceLogging")) {
+            if(equal(value,"1")||equal(value,"true")) settings.performance_logging=1;
+            else if(equal(value,"0")||equal(value,"false")) settings.performance_logging=0;
+            else {ok=fail(error,size,"performanceLogging must be 1, true, 0, or false");break;}
+        }
+        if(equal(s,"graphicsAdapter")) {
+            if(equal(value,"auto"))settings.graphics_adapter=-1;
+            else {
+                char *end;errno=0;long n=strtol(value,&end,10);
+                if(errno || end==value || *end || n<0 || n>255) {ok=fail(error,size,"graphicsAdapter must be auto or a DX8 adapter index (0-255)");break;}
+                settings.graphics_adapter=(int)n;
+            }
+        }
+        if(equal(s,"modderMode")) {
+            if(equal(value,"1")||equal(value,"true")) settings.modder_mode=1;
+            else if(equal(value,"0")||equal(value,"false")) settings.modder_mode=0;
+            else {ok=fail(error,size,"modderMode must be 1, true, 0, or false");break;}
         }
         for(int i=0;i<3;++i) {
             if(equal(s,allow_keys[i])) {

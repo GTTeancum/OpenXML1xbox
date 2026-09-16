@@ -1,5 +1,6 @@
 #include "guest_input.h"
 #include "pc_gamepad.h"
+#include "controller_retry.h"
 #include "xbox_memory_layout.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,6 +15,24 @@ extern xml1_guest_function recomp_lookup_kernel(uint32_t va);
 static int test_mode;
 static int pc_test_mode;
 static SRWLOCK pc_poll_lock=SRWLOCK_INIT;
+static SRWLOCK physical_poll_lock=SRWLOCK_INIT;
+static xml1_controller_retry physical_retry;
+static uint64_t physical_calls,physical_skips;
+static double physical_ms,physical_max_ms;
+static DWORD measured_physical_poll(unsigned slot,XBOX_INPUT_STATE *state) {
+    AcquireSRWLockExclusive(&physical_poll_lock);
+    ULONGLONG now=GetTickCount64();
+    if(!xml1_controller_probe_due(&physical_retry,slot,now)) {
+        ++physical_skips;ReleaseSRWLockExclusive(&physical_poll_lock);return DISCONNECTED;
+    }
+    LARGE_INTEGER begin,end,frequency;QueryPerformanceFrequency(&frequency);QueryPerformanceCounter(&begin);
+    DWORD result=xbox_InputGetState(slot,state);
+    QueryPerformanceCounter(&end);
+    double elapsed=1000.0*(end.QuadPart-begin.QuadPart)/frequency.QuadPart;
+    ++physical_calls;physical_ms+=elapsed;if(elapsed>physical_max_ms)physical_max_ms=elapsed;
+    xml1_controller_probe_result(&physical_retry,slot,GetTickCount64(),result);
+    ReleaseSRWLockExclusive(&physical_poll_lock);return result;
+}
 static uint32_t handles[4], generation, previous_mask;
 static uint32_t test_connected;
 static XBOX_INPUT_STATE test_states[4];
@@ -74,6 +93,20 @@ static void test_file_input(uint32_t frame) {
             state.bAnalogButtons[XBOX_BUTTON_RTRIGGER]=255;
             state.bAnalogButtons[part[2]=='a'?XBOX_BUTTON_A:part[2]=='b'?XBOX_BUTTON_B:part[2]=='x'?XBOX_BUTTON_X:XBOX_BUTTON_Y]=255;
         }
+        else if(!strcmp(part,"unlockcostumes") && !strcmp(command,part)) {
+            /* Private process-local fixture command, reachable only through
+             * XML1_TEST_PAD's file channel. World GameState::SetAllSkins
+             * (0x8C2D0) changes bit 0 at singleton 0x4A0210 + 0x195.
+             * Keep retail unlock checks and all other progression flags intact.
+             * Never apply this to player staging or from host input. */
+            unsigned char *mem=(unsigned char *)(uintptr_t)g_xbox_mem_offset;
+            if(!(mem[0x4A0540u]&1)) {
+                fprintf(stderr,"[FATAL INPUT] costume fixture requested before GameState initialization\n");
+                _exit(4);
+            }
+            mem[0x4A03A5u]|=1;
+            duration=0;
+        }
         else if((!strcmp(part,"neutral") || !strcmp(part,"disconnect")) && !strcmp(command,part)) duration=0;
         else {fprintf(stderr,"[FATAL INPUT] unsupported test command %s\n",action);_exit(4);}
         if(!next) break;
@@ -90,6 +123,20 @@ static void test_file_input(uint32_t frame) {
 
 void xml1_input_test_frame(uint32_t frame)
 {
+    /* Read-only host sampling can accompany synthetic gameplay without merging
+     * the user's controller into the test or sending any host input/rumble. */
+    static int profile=-1;
+    if(profile<0)profile=getenv("XML1_PROFILE_PHYSICAL_INPUT")!=NULL;
+    if(profile && (test_mode || pc_test_mode))for(unsigned slot=0;slot<4;++slot) {
+        XBOX_INPUT_STATE ignored;measured_physical_poll(slot,&ignored);
+    }
+    if(frame%120==0) {
+        AcquireSRWLockExclusive(&physical_poll_lock);
+        fprintf(stderr,"[INPUT COST] frame=%u calls=%llu skipped=%llu host_ms=%.3f max_call_ms=%.3f\n",
+            frame,physical_calls,physical_skips,physical_ms,physical_max_ms);
+        physical_calls=physical_skips=0;physical_ms=physical_max_ms=0;
+        ReleaseSRWLockExclusive(&physical_poll_lock);
+    }
     if(!test_mode) return;
     test_file_input(frame);
     if(test_press_frame && (frame==test_press_frame || frame==test_press_frame+12)) {
@@ -125,7 +172,7 @@ static DWORD physical_poll(int slot,XBOX_INPUT_STATE *state)
         if(!(test_connected&(1u<<slot)))return DISCONNECTED;
         *state=test_states[slot];return 0;
     }
-    return pc_test_mode?DISCONNECTED:xbox_InputGetState((DWORD)slot,state);
+    return pc_test_mode?DISCONNECTED:measured_physical_poll((unsigned)slot,state);
 }
 static DWORD poll(unsigned port, XBOX_INPUT_STATE *state, int consume)
 {

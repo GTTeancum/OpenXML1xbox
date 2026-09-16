@@ -4,10 +4,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$playerRoot = Join-Path $projectRoot '!GAME'
+$playerRoot = Join-Path $projectRoot 'XBOXgame'
 $gameExe = Join-Path $playerRoot 'X-Men Legends.exe'
-$workerExe = Join-Path $playerRoot 'runtime/xml1-dx8-worker.exe'
-foreach ($required in @($gameExe, $workerExe, (Join-Path $playerRoot 'default.xbe'))) {
+foreach ($required in @($gameExe, (Join-Path $playerRoot 'default.xbe'))) {
     if (!(Test-Path -LiteralPath $required)) { throw "Missing playtest requirement: $required" }
 }
 if (Get-Process -Name xml1-boot-probe,'X-Men Legends' -ErrorAction SilentlyContinue) {

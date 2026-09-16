@@ -37,8 +37,11 @@ The release does not include the ISO or the complete original game assets.
 
 The game executable prepares `assetsfb.zip`; it does **not** extract a raw ISO.
 No Python, compiler, developer checkout, or separate launcher is needed to play.
-The required x64/x86 Visual C++ runtime DLLs are bundled beside their respective
-executables. The renderer uses Windows' system `d3d8.dll`.
+Current source builds statically link the Visual C++ runtimes and embed the
+32-bit renderer in **X-Men Legends.exe**. The renderer is unpacked automatically
+to `%LOCALAPPDATA%/OpenXML1` and uses Windows' system `d3d8.dll`. No adjacent
+runtime DLLs or renderer executable are required. The published 0.8b package
+predates this packaging change.
 
 The tested World ISO SHA-256 is:
 `0a1ef03e57458144609906bbc2d44d2c26028cf704f4698ce0f1e61c34030b44`.
@@ -60,6 +63,11 @@ assignment changes require a restart. PC preferences are stored in
 `build.ini` selects installed languages and asset loading. `PreferFilesLoose=1`
 (or `true`) uses loose resources and PKGBs with **no archive fallback**. The new
 PC menus were validated in English; localized PC menu adaptation is not complete.
+
+`modderMode=1` (or `true`) in `[BUILD]` unlocks all installed playable characters
+and costumes for testing, including after loading a save. Use `0` or `false`
+to disable it, then restart. Unlocks written to a save remain unlocked. If the
+key is absent, modder mode is off.
 
 ## Validation and remaining work
 

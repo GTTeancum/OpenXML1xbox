@@ -42,7 +42,9 @@
 #include "pc_menu.h"
 #include "pc_input_channel.h"
 
+#include "performance_log.h"
 void xml1_pc_menu_command(const char *command) {
+    xml1_performance_event(command);
     if (strcmp(command, "quitapp") != 0) return;
     fprintf(stderr, "[PC MENU] Quit selected; closing application and owned renderer jobs\n");
     fflush(stderr);
@@ -56,6 +58,8 @@ static int s_headless;
 static int s_memory_query_test;
 static int s_irql_test;
 static int s_swizzle_test;
+static int s_progression_test;
+int xml1_progression_test(void);
 int xml1_swizzle_test(void);
 void xml1_native_probe_start(void);
 
@@ -408,7 +412,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     g_xbox_mem_offset = xbox_GetMemoryOffset();
     printf("Xbox memory mapped. Offset: 0x%llX\n", (unsigned long long)g_xbox_mem_offset);
-    if (getenv("XML1_APU") && !s_memory_query_test && !s_irql_test && !s_swizzle_test) {
+    if (getenv("XML1_APU") && !s_memory_query_test && !s_irql_test && !s_swizzle_test && !s_progression_test) {
         /* DSP scratch buffers and scatter/gather tables currently observed in
          * XML1 use physical allocations backed by the contiguous window. */
         g_apu_state = mcpx_apu_init_standalone((uint8_t *)((uintptr_t)g_xbox_mem_offset + 0x80000000u));
@@ -447,6 +451,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             if(!s_headless) MessageBoxA(NULL,settings_error,"X-Men Legends configuration",MB_OK|MB_ICONERROR);
             return 4;
         }
+        { char adapter[16];snprintf(adapter,sizeof(adapter),"%d",xml1_build_settings.graphics_adapter);
+          _putenv_s("XML1_DX8_ADAPTER",adapter); }
+        xml1_performance_start(xml1_build_settings.performance_logging);
         fprintf(stderr,"[BUILD SETTINGS] loose=%d text=%s movie=%s audio=%s\n",
             xml1_build_settings.prefer_files_loose,xml1_build_settings.text_language,
             xml1_build_settings.movie_language,xml1_build_settings.audio_language);
@@ -490,8 +497,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     /* Step 6: Initialize stack */
     g_esp = XBOX_STACK_TOP;
 
-    if (s_memory_query_test || s_irql_test || s_swizzle_test) {
-        int result = s_swizzle_test ? xml1_swizzle_test() : s_irql_test ? irql_bridge_test() : memory_query_bridge_test();
+    if (s_memory_query_test || s_irql_test || s_swizzle_test || s_progression_test) {
+        int result = s_progression_test ? xml1_progression_test() : s_swizzle_test ? xml1_swizzle_test() : s_irql_test ? irql_bridge_test() : memory_query_bridge_test();
         xbox_kernel_shutdown();
         xbox_MemoryLayoutShutdown();
         free(xbe_data);
@@ -606,7 +613,7 @@ int main(int argc, char **argv)
         wchar_t *slash=wcsrchr(executable,L'\\');
         if(slash) {
             *slash=0;
-            if(swprintf(marker,MAX_PATH,L"%ls\\.xml1-player-layout",executable)>0 &&
+            if(swprintf(marker,MAX_PATH,L"%ls\\default.xbe",executable)>0 &&
                GetFileAttributesW(marker)!=INVALID_FILE_ATTRIBUTES) {
                 if(!SetCurrentDirectoryW(executable))return 4;
                 player_layout=1;
@@ -649,7 +656,7 @@ int main(int argc, char **argv)
                  "  --muted     Silence this game's output; preserve DSP and audio pacing.");
             return 0;
         } else if (strcmp(argv[i], "--memory-query-test") &&
-                   strcmp(argv[i], "--irql-test") && strcmp(argv[i], "--swizzle-test")) {
+                   strcmp(argv[i], "--irql-test") && strcmp(argv[i], "--swizzle-test") && strcmp(argv[i], "--progression-test")) {
             fprintf(stderr, "Unknown argument: %s\n", argv[i]);
             return 2;
         }
@@ -662,7 +669,8 @@ int main(int argc, char **argv)
     s_memory_query_test = argc == 2 && strcmp(argv[1], "--memory-query-test") == 0;
     s_irql_test = argc == 2 && strcmp(argv[1], "--irql-test") == 0;
     s_swizzle_test = argc == 2 && strcmp(argv[1], "--swizzle-test") == 0;
-    if(!s_memory_query_test && !s_irql_test && !s_swizzle_test && getenv("XML1_LIVE_DX8")) {
+    s_progression_test = argc == 2 && strcmp(argv[1], "--progression-test") == 0;
+    if(!s_memory_query_test && !s_irql_test && !s_swizzle_test && !s_progression_test && getenv("XML1_LIVE_DX8")) {
         Xml1PcSettings settings;char error[256],resolution[32];
         if(!xml1_pc_settings_load("pc-settings.ini",&settings,error,sizeof(error))) {
             fprintf(stderr,"[PC SETTINGS] %s\n",error);return 4;

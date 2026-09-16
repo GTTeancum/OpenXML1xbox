@@ -1,7 +1,9 @@
 #pragma once
 
-// D3D8 multisampled backbuffers cannot be locked. CopyRects resolves their
-// samples into an ordinary image surface before a CPU read. A one-pixel copy
+// Never lock the presentation surface, including with FSAA disabled. A full
+// lock can transfer the HD image to CPU memory at every guest fence on a
+// discrete GPU and requires a slower lockable presentation allocation.
+// CopyRects resolves into an ordinary image surface before a CPU read. A one-pixel copy
 // provides the same ordered GPU-to-CPU synchronization without transferring
 // an entire HD frame at every guest fence. No render state is changed here.
 class Dx8Readback {
@@ -27,9 +29,6 @@ public:
         if (FAILED(hr)) return hr;
         D3DSURFACE_DESC desc = {};
         hr = backbuffer->GetDesc(&desc);
-        if (SUCCEEDED(hr) && desc.MultiSampleType == D3DMULTISAMPLE_NONE) {
-            *out = backbuffer; return S_OK;
-        }
         if (SUCCEEDED(hr)) {
             if (format_ != desc.Format || width_ != desc.Width || height_ != desc.Height) {
                 clear(); format_ = desc.Format; width_ = desc.Width; height_ = desc.Height;

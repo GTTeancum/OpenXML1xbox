@@ -10,6 +10,8 @@ ptrdiff_t g_xbox_mem_offset;
 size_t xbox_GetMappedSize(void) { return 64u*1024*1024; }
 void xml1_input_test_frame(uint32_t frame) { (void)frame; }
 void xml1_graphics_observe(uint32_t va) { xml1_graphics_live_observe(va); }
+/* This fixture supplies a pipe peer; it must never launch the embedded worker. */
+const char *xml1_embedded_worker(void) { abort(); }
 
 /* No menu exists in this graphics fixture. Unexpected menu work must fail. */
 int xml1_pc_native_tracking(void) { return 0; }
@@ -46,7 +48,7 @@ static DWORD WINAPI renderer_peer(void *parameter) {
             }
             received+=bytes;
         }
-        if(memcmp(command,"XMLDX8S2",8) || memcmp(command+20,"XMLDX8F8\0\0\0\0",12)) ExitProcess(80);
+        if(memcmp(command,"XMLDX8S2",8) || memcmp(command+20,"XMLDX8F9\0\0\0\0",12)) ExitProcess(80);
         uint32_t before=MEM32(completion_va),tag=MEM32(tag_va);
         /* Until this peer acknowledges, the real bridge must not publish the
          * newly issued fence or its NV2A tag, even while the caller is waiting. */
@@ -59,7 +61,7 @@ static DWORD WINAPI renderer_peer(void *parameter) {
 }
 
 void sub_00360090(void) { longjmp(old_wait,2); }
-void sub_0035FC00(void) { g_esp+=4; } /* Real native submit occurs in observer. */
+void sub_0035C330(void) { longjmp(old_wait,7); }
 void sub_0035F9D0(void) { longjmp(old_wait,1); }
 void sub_0035FB50(void) { longjmp(old_wait,3); }
 void sub_0035F860(void) { longjmp(old_wait,4); }
@@ -72,6 +74,7 @@ static int check_case(uint32_t latest,uint32_t completed,uint32_t target,unsigne
     MEM32(0x36CAF8)=device_va;
     memset(guest(device_va,0x2000),0,0x2000);
     MEM32(device_va)=0x800000; MEM32(device_va+4)=0x810000;
+    MEM32(device_va+8)=0x2000; /* Actual XDK software kickoff branch. */
     MEM32(device_va+0x2c)=latest; MEM32(device_va+0x30)=completion_va;
     MEM32(device_va+0x934)=0xFD000000;
     MEM32(completion_va)=completed; MEM32(tag_va)=0xA5000000|((completed<<2)&0x7c);
@@ -83,6 +86,9 @@ static int check_case(uint32_t latest,uint32_t completed,uint32_t target,unsigne
         fprintf(stderr,"FAIL: reached Xbox hardware wait after native completion target=%08X complete=%08X\n",target,MEM32(completion_va));
         return 1;
     }
+    g_ecx=device_va;g_esp-=4;MEM32(g_esp)=0x123456;
+    RECOMP_ABI_CALL(0x35FC00,sub_0035FC00);
+    if(MEM32(completion_va)!=completed || requests!=start_requests)return 30;
     RECOMP_ABI_CALL(0x35FDE0,sub_0035FDE0);
     if(g_esp!=0xF7FC44 || g_esi!=0x11223344 || g_edi!=0x55667788 || g_ebx!=0x12345678 ||
        g_ebp!=0x87654321 || g_seh_ebp!=0x87654321 ||

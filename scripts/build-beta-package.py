@@ -10,18 +10,17 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--stage',type=Path,required=True)
     ap.add_argument('--audit',type=Path,required=True)
-    ap.add_argument('--redist',type=Path,required=True)
     ap.add_argument('--output',type=Path,required=True)
     a=ap.parse_args()
     if a.output.exists():raise SystemExit('Choose a new output directory')
     entries=[]
     for entry in json.loads(a.audit.read_text())['files']:
         rel=entry['path'];source=a.stage/rel
+        if rel.lower().endswith('.dll') or rel.lower()=='runtime/xml1-dx8-worker.exe':
+            raise SystemExit('Obsolete external runtime in audit: '+rel)
         if digest(source)!=entry['sha256']:raise SystemExit('Staging changed: '+rel)
         entries.append((rel,source,'replacement' if entry['baseline'] else 'addition'))
     entries.append(('.xml1-player-layout',a.stage/'.xml1-player-layout','layout'))
-    for arch,prefix,names in [('x64','',['msvcp140.dll','vcruntime140.dll','vcruntime140_1.dll']),('x86','runtime/',['msvcp140.dll','vcruntime140.dll'])]:
-        for name in names:entries.append((prefix+name,a.redist/arch/'Microsoft.VC143.CRT'/name,arch+' runtime'))
     # Validate the full source list before creating the package.
     for rel,source,kind in entries:
         p=Path(rel)

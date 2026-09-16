@@ -40,6 +40,12 @@ def refs(v,j):return [x for x, in struct.iter_unpack('<i',v.objects[j].data)]
 
 def transfer_graph(w,source,index):
  meta_map={};object_map={}
+ def meta_field(i):
+  if i<0:return i
+  sf=source.meta_fields[i]
+  dest=next((j for j,x in enumerate(w.meta_fields) if x.name==sf.name),None)
+  if dest is None:dest=len(w.meta_fields);w.meta_fields.append(copy.deepcopy(sf))
+  return dest
  def meta(i):
   if i<0:return i
   if i in meta_map:return meta_map[i]
@@ -50,11 +56,16 @@ def transfer_graph(w,source,index):
    meta_map[i]=found;return found
   result=copy.deepcopy(m);result.parent_index=meta(m.parent_index)
   for f in result.fields:
-   sf=source.meta_fields[f.type_index]
-   dest=next((j for j,x in enumerate(w.meta_fields) if x.name==sf.name),None)
-   if dest is None:dest=len(w.meta_fields);w.meta_fields.append(copy.deepcopy(sf))
-   f.type_index=dest
+   f.type_index=meta_field(f.type_index)
   meta_map[i]=len(w.meta_objects);w.meta_objects.append(result);return meta_map[i]
+ def object_list(type_index):
+  # Animation track/binding lists also store object references. Follow the
+  # declared inheritance instead of treating arbitrary list memory as refs.
+  while type_index>=0:
+   m=source.meta_objects[type_index]
+   if m.name==b'igObjectList':return True
+   type_index=m.parent_index
+  return False
  def transfer(i,reference_memory=False):
   if i<0:return i
   if i in object_map:return object_map[i]
@@ -63,7 +74,10 @@ def transfer_graph(w,source,index):
   entry=copy.deepcopy(source.entries[source.index_map[i]])
   defs=source.meta_objects[entry.type_index].fields
   entry.type_index=meta(entry.type_index);entry.raw_bytes=None
-  info['type_index']=meta(info['type_index'])
+  # Directory memory types index meta-fields (ObjectRef, Vec3f, Matrix44f,
+  # etc.), not meta-objects. Animation buffers expose this distinction:
+  # Matrix44f's field index can exceed the entire meta-object table.
+  info['type_index']=(meta if info['is_object'] else meta_field)(info['type_index'])
   for j,d in enumerate(defs):
    if d.slot==(11 if info['is_object'] else 10):entry.field_values[j]=info['type_index']
    if not info['is_object'] and d.slot==12:entry.field_values[j]=-1
@@ -71,7 +85,7 @@ def transfer_graph(w,source,index):
   if info['is_object']:
    kind=source.meta_objects[obj.type_index].name
    obj.type_index=info['type_index'];obj.raw_bytes=None
-   obj.raw_fields=[(k,transfer(v, (kind in (b'igAttrList',b'igNodeList') and k==4) or
+   obj.raw_fields=[(k,transfer(v, (object_list(source.objects[i].type_index) and k==4) or
      (kind==b'igVertexArray1_1' and k==2)) if t.short_name in (b'ObjectRef',b'MemoryRef') else v,t)
      for k,v,t in obj.raw_fields]
   else:

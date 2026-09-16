@@ -26,6 +26,9 @@ int main(int argc,char **argv) {
         if(argc==2 && !std::strcmp(argv[1],"--producer")) {
             REQUIRE(xml1_pc_channel_connect());
             Xml1PcInputSnapshot profile_snapshot{};
+            char display[32]={};REQUIRE(xml1_pc_channel_get_display(display,sizeof(display)));
+            REQUIRE(!std::strcmp(display,"\\\\.\\DISPLAY17"));
+            REQUIRE(xml1_pc_channel_set_display("\\\\.\\DISPLAY18"));
             REQUIRE(xml1_pc_channel_read(&profile_snapshot,1));
             REQUIRE(profile_snapshot.settings.keys[3][XML1_PC_FORWARD]=='T');
             REQUIRE(profile_snapshot.settings.pad_bindings[3][XML1_PC_POWER1]==XML1_PAD_RTHUMB);
@@ -278,6 +281,7 @@ int main(int argc,char **argv) {
         auto ipc_profiles=defaults;ipc_profiles.keys[3][XML1_PC_FORWARD]='T';
         ipc_profiles.pad_bindings[3][XML1_PC_POWER1]=XML1_PAD_RTHUMB;
         REQUIRE(xml1_pc_channel_create(&ipc_profiles));
+        REQUIRE(xml1_pc_channel_set_display("\\\\.\\DISPLAY17"));
         {
             float camera_output[]={123,4,-5,6,456};
             REQUIRE(!xml1_pc_filter_camera_shake(camera_output+1));
@@ -303,6 +307,8 @@ int main(int argc,char **argv) {
             REQUIRE(WaitForSingleObject(pi.hProcess,10000)==WAIT_OBJECT_0);
             DWORD code;REQUIRE(GetExitCodeProcess(pi.hProcess,&code));
             CloseHandle(pi.hThread);CloseHandle(pi.hProcess);REQUIRE(code==0);
+            char display[32]={};REQUIRE(xml1_pc_channel_get_display(display,sizeof(display)));
+            REQUIRE(!std::strcmp(display,"\\\\.\\DISPLAY18"));
         } else {
             xml1_pc_channel_focus(1);xml1_pc_channel_key('W',1);xml1_pc_channel_key('W',0);
             xml1_pc_channel_key('A',1);xml1_pc_channel_mouse(320,240,120);

@@ -1,11 +1,10 @@
 param([string]$Destination, [string]$MenuSource, [string]$MenuWriterRoot)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (!$Destination) { $Destination = Join-Path $projectRoot '!GAME' }
+if (!$Destination) { $Destination = Join-Path $projectRoot 'XBOXgame' }
 $Destination = [System.IO.Path]::GetFullPath($Destination)
 if (!(Test-Path -LiteralPath (Join-Path $Destination 'default.xbe'))) { throw 'Stage into the existing asset directory containing default.xbe.' }
 $gameExe = Join-Path $projectRoot 'build/optimized/Release/xml1-boot-probe.exe'
-$workerExe = Join-Path $projectRoot 'build/renderer/Release/xml1-dx8-worker.exe'
 # Updating binaries must not certify an installation whose active media still
 # depend on another folder. Do this before replacing any staged executable.
 foreach ($relative in @('media','movies','sounds')) {
@@ -31,7 +30,7 @@ foreach ($relative in @('media','movies','sounds')) {
     }
     if (!$fileCount) { throw "Empty player asset directory: $assetDirectory" }
 }
-foreach ($required in @($gameExe,$workerExe)) {
+foreach ($required in @($gameExe)) {
     if (!(Test-Path -LiteralPath $required -PathType Leaf)) { throw "Missing staging input: $required" }
 }
 if ($MenuSource) {
@@ -42,10 +41,6 @@ if ($MenuSource) {
     $binaryBackup = Join-Path $backupRoot 'runtime-files'
     New-Item -ItemType Directory -Path $binaryBackup -Force | Out-Null
     $replaceFiles = @('X-Men Legends.exe','runtime/xml1-dx8-worker.exe','Read Me.txt','.xml1-player-layout','runtime/licenses/miniz.txt')
-    foreach ($directory in @((Split-Path $gameExe),(Split-Path $workerExe))) {
-        $prefix = if ($directory -eq (Split-Path $gameExe)) { '' } else { 'runtime/' }
-        foreach ($dll in Get-ChildItem -LiteralPath $directory -Filter '*.dll') { $replaceFiles += $prefix + $dll.Name }
-    }
     foreach ($relative in $replaceFiles) {
         $existing = Join-Path $Destination $relative
         if (Test-Path -LiteralPath $existing -PathType Leaf) {
@@ -62,11 +57,18 @@ foreach ($directory in @('runtime','build')) {
     New-Item -ItemType Directory -Path (Join-Path $Destination $directory) -Force | Out-Null
 }
 Copy-Item -LiteralPath $gameExe -Destination (Join-Path $Destination 'X-Men Legends.exe')
-Copy-Item -LiteralPath $workerExe -Destination (Join-Path $Destination 'runtime/xml1-dx8-worker.exe')
-foreach ($directory in @((Split-Path $gameExe),(Split-Path $workerExe))) {
-    $target = if ($directory -eq (Split-Path $gameExe)) { $Destination } else { Join-Path $Destination 'runtime' }
-    Get-ChildItem -LiteralPath $directory -Filter '*.dll' | Copy-Item -Destination $target
+# Preserve then remove only obsolete, explicitly named distribution dependencies.
+$obsoleteBackup = Join-Path $projectRoot ('work/player-stage-backups/embedded-' + [Guid]::NewGuid().ToString('N'))
+foreach ($relative in @('runtime/xml1-dx8-worker.exe','msvcp140.dll','vcruntime140.dll','vcruntime140_1.dll','runtime/msvcp140.dll','runtime/vcruntime140.dll','runtime/vcruntime140_1.dll','Play XML1.cmd')) {
+    $old = Join-Path $Destination $relative
+    if (Test-Path -LiteralPath $old -PathType Leaf) {
+        $saved = Join-Path $obsoleteBackup $relative
+        New-Item -ItemType Directory -Path (Split-Path -Parent $saved) -Force | Out-Null
+        Copy-Item -LiteralPath $old -Destination $saved
+        Remove-Item -LiteralPath $old
+    }
 }
+
 if (!(Test-Path -LiteralPath (Join-Path $Destination 'build.ini'))) { Copy-Item -LiteralPath (Join-Path $projectRoot 'build.ini') -Destination (Join-Path $Destination 'build.ini') }
 Set-Content -LiteralPath (Join-Path $Destination '.xml1-player-layout') -Value 'OpenXML1 player layout version 2' -Encoding ascii
 @'
@@ -110,7 +112,8 @@ This first pass uses WASD movement, not XML2's click-to-move/targeting.
 
 build.ini controls language and loose/packaged asset selection.
 Assets live directly beside this EXE. UDATA and TDATA contain saved data.
-runtime contains the required native Direct3D 8 renderer.
+The native Direct3D 8 renderer is embedded in X-Men Legends.exe.
+Windows system DLLs are supplied by Windows; no separate runtime DLLs are needed.
 build contains diagnostic logs if a problem needs reporting.
 
 Keep this entire folder together when moving or copying the game.

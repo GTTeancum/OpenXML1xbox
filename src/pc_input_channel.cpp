@@ -5,7 +5,7 @@
 #include <cstring>
 
 namespace {
-constexpr uint32_t version=12;
+constexpr uint32_t version=13;
 constexpr unsigned pointer_capacity=16;
 struct Shared {
     uint32_t version, bytes;
@@ -19,7 +19,7 @@ struct Shared {
 };
 static_assert(sizeof(Xml1PcSettings)==1896);
 static_assert(sizeof(Xml1PcControlState)==280);
-static_assert(sizeof(Shared)==2956);
+static_assert(sizeof(Shared)==2988);
 HANDLE mapping=nullptr, mutex=nullptr;
 Shared *shared=nullptr;
 struct Lock {
@@ -55,6 +55,16 @@ extern "C" void xml1_pc_channel_close() {
     if(mapping)CloseHandle(mapping);
     if(mutex)CloseHandle(mutex);
     shared=nullptr;mapping=nullptr;mutex=nullptr;
+}
+extern "C" int xml1_pc_channel_set_display(const char *display) {
+    if(!display || !*display || std::strlen(display)>=32)return 0;
+    Lock lock;if(!lock.locked || !shared)return 0;
+    std::strcpy(shared->snapshot.output_display,display);return 1;
+}
+extern "C" int xml1_pc_channel_get_display(char *display,unsigned capacity) {
+    if(!display || capacity<32)return 0;
+    Lock lock;if(!lock.locked || !shared || !shared->snapshot.output_display[0])return 0;
+    std::strcpy(display,shared->snapshot.output_display);return 1;
 }
 extern "C" int xml1_pc_channel_create(const Xml1PcSettings *settings) {
     if(shared || !xml1_pc_settings_validate(settings,nullptr,0))return 0;

@@ -22,21 +22,40 @@ for path in root.glob('*.c'):
         path.write_text(result, encoding='utf-8')
 print(f'Installed {count} fail-fast missing-function guards')
 
-# BlockOnTime can insert the current fence itself. Its native kickoff completes
-# synchronously, after the entry observer's completion check. Recheck before
-# entering the Xbox-only interrupt wait, preserving the original insert and ABI.
+# BlockOnTime can insert the current fence itself. Native kickoff only queues
+# work; demand actual completion here, before the Xbox-only interrupt wait.
 fence_path = root / 'recomp_0095.c'
 text = fence_path.read_text(encoding='utf-8')
 fence_hook = '''loc_0035FE0F: ;
+    /* Complete the issued fence before entering the Xbox hardware wait. */
+    if (xml1_graphics_wait_fence(esi, edi)) goto loc_0035FF23;'''
+old_fence_hook = '''loc_0035FE0F: ;
     /* Native DX8 may have completed the fence inserted just above. */
     if (xml1_graphics_fence_complete(esi, edi)) goto loc_0035FF23;'''
+if old_fence_hook in text:
+    text = text.replace(old_fence_hook, fence_hook, 1).replace(
+        'int xml1_graphics_fence_complete(uint32_t device, uint32_t target);',
+        'int xml1_graphics_wait_fence(uint32_t device, uint32_t target);')
+    fence_path.write_text(text, encoding='utf-8')
 if fence_hook not in text:
     if text.count('loc_0035FE0F: ;') != 1 or text.count('void sub_0035FDE0(void)') != 1:
         raise SystemExit('Cannot locate the verified XML1 BlockOnTime boundary')
     text = text.replace('void sub_0035FDE0(void)',
-                        'int xml1_graphics_fence_complete(uint32_t device, uint32_t target);\n'
+                        'int xml1_graphics_wait_fence(uint32_t device, uint32_t target);\n'
                         'void sub_0035FDE0(void)', 1)
     text = text.replace('loc_0035FE0F: ;', fence_hook, 1)
+    fence_path.write_text(text, encoding='utf-8')
+
+# The XDK software push-buffer path normally writes latest-2 immediately at
+# 0035FC76. That was safe only while our entry hook synchronously drained GPU
+# work. With deferred kickoff, the native backend owns completion publication.
+text = fence_path.read_text(encoding='utf-8')
+old_tag = '    eax = eax - 2;\n    MEM32(ecx) = eax;\n    edx = MEM32(esi + 0x2478);'
+new_tag = '    eax = eax - 2;\n    xml1_graphics_kickoff_tag(ecx, eax);\n    edx = MEM32(esi + 0x2478);'
+if new_tag not in text:
+    if text.count(old_tag) != 1: raise SystemExit('Cannot locate verified XDK software kickoff completion store')
+    text = text.replace(old_tag, new_tag).replace('void sub_0035FC00(void)',
+        'void xml1_graphics_kickoff_tag(uint32_t pointer, uint32_t value);\nvoid sub_0035FC00(void)', 1)
     fence_path.write_text(text, encoding='utf-8')
 
 types = root / 'recomp_types.h'
