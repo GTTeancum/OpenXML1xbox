@@ -39,6 +39,19 @@ int xml1_asset_path_filter(const char *input,char *output,unsigned size) {
     if(config.prefer_files_loose && !strcmp(base,"assetsfb.zip")) {
         fprintf(stderr,"[LOOSE ASSET DENIED] %s\n",input);return -1;
     }
+    /* First-run setup compiles these Raven data types to their later-game
+       binary extensions. Select the compiled file explicitly, with no text or
+       archive fallback. This does not alter the PKGB's extensionless names. */
+    if(config.prefer_files_loose) {
+        const char *ext=strrchr(base,'.');
+        if(ext && (!strcmp(ext,".xml")||!strcmp(ext,".eng")||!strcmp(ext,".fre")||
+                   !strcmp(ext,".ger")||!strcmp(ext,".ita")||!strcmp(ext,".spa")||
+                   !strcmp(ext,".pol")||!strcmp(ext,".rus")||!strcmp(ext,".chr")||
+                   !strcmp(ext,".nav")||!strcmp(ext,".boy"))) {
+            int n=snprintf(output,size,"D:/%sb",relative);
+            return n>=0&&(unsigned)n<size?1:-1;
+        }
+    }
     const char *rest=NULL,*prefix=NULL,*language=NULL;
     if(movie_ntsc&&!strncmp(relative,"movies/ntsc/",12)) {prefix="movies/ntsc";language=config.movie_language;rest=relative+12;}
     else if(movie_pal&&!strncmp(relative,"movies/pal/",11)) {prefix="movies/pal";language=config.movie_language;rest=relative+11;}

@@ -122,6 +122,10 @@ The original archive is retained for switching back to packaged mode.
 Loose files are already prepared; new installations can prepare them using the
 EXE's first-run progress dialog. Existing files and saved games are preserved.
 
+First-run setup also compiles XML data to XMLB (including language, character
+and navigation variants). Existing loose installations upgrade once. Original
+text files and saves are retained; the game reads compiled files in loose mode.
+Edit the compiled counterparts for mods. Existing binary mods are preserved.
 Loose assets and PKGB modding are enabled. See build.ini for configuration.
 '@ | Set-Content -LiteralPath (Join-Path $Destination 'Read Me.txt') -Encoding utf8
 New-Item -ItemType Directory -Path (Join-Path $Destination 'runtime/licenses') -Force | Out-Null

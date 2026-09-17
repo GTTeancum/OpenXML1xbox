@@ -16,6 +16,8 @@ def main():
     entries=[]
     for entry in json.loads(a.audit.read_text())['files']:
         rel=entry['path'];source=a.stage/rel
+        if Path(rel).name in ('.xml1-loose-ready','.xml1-xmlb-ready'):
+            raise SystemExit('Setup completion marker must not ship: '+rel)
         if rel.lower().endswith('.dll') or rel.lower()=='runtime/xml1-dx8-worker.exe':
             raise SystemExit('Obsolete external runtime in audit: '+rel)
         if digest(source)!=entry['sha256']:raise SystemExit('Staging changed: '+rel)
@@ -31,8 +33,8 @@ def main():
         shutil.copyfile(source,target)
         manifest.append({'path':rel,'size':target.stat().st_size,'sha256':digest(target),'role':kind})
     result={'format':1,'base':'X-Men Legends (World) Xbox ISO','iso_sha256':'0a1ef03e57458144609906bbc2d44d2c26028cf704f4698ce0f1e61c34030b44',
-        'install_order':['Extract the ISO filesystem into a fresh directory.','Overlay files/ at that directory root.','Launch X-Men Legends.exe; its first-run setup generates loose assets and PKGBs while preserving the overlay.'],
-        'excluded':['ISO content','regenerable unmodified loose assets and PKGBs','UDATA','TDATA','pc-settings.ini','.xml1-loose-ready','logs','captures'],
+        'install_order':['Extract the ISO filesystem into a fresh directory.','Overlay files/ at that directory root.','Launch X-Men Legends.exe; its first-run setup generates loose assets, PKGBs and XMLB data while preserving the overlay.'],
+        'excluded':['ISO content','regenerable unmodified loose assets, PKGBs and XMLB data','UDATA','TDATA','pc-settings.ini','.xml1-loose-ready','.xml1-xmlb-ready','logs','captures'],
         'files':manifest}
     (a.output/'manifest.json').write_text(json.dumps(result,indent=2)+'\n')
     print(len(manifest),'files;',sum(x['size'] for x in manifest),'bytes;',a.output)

@@ -43,6 +43,13 @@ to `%LOCALAPPDATA%/OpenXML1` and uses Windows' system `d3d8.dll`. No adjacent
 runtime DLLs or renderer executable are required. The published 0.8b package
 predates this packaging change.
 
+Current source builds also compile Raven XML data during first-run setup to the
+later games' XMLB format (`.xmlb`, `.engb` and other language variants, `.chrb`,
+`.navb`). Existing loose installations upgrade once on launch. Original text files
+and saves are retained; loose-mode gameplay reads the compiled counterparts.
+Existing binary mods are validated and preserved. See [XMLB setup](docs/XMLB-SETUP.md).
+This feature is not in the published 0.8b package.
+
 The tested World ISO SHA-256 is:
 `0a1ef03e57458144609906bbc2d44d2c26028cf704f4698ce0f1e61c34030b44`.
 

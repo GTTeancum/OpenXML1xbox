@@ -12,6 +12,15 @@ int main(void) {
     CHECK(xml1_asset_path_filter("\\Device\\CdRom0\\z\\assetsfb.zip",output,sizeof(output))==-1);
     CHECK(xml1_asset_path_filter("D:\\movies\\ntsc\\i\\1\\i101.sfd",output,sizeof(output))==0);
     CHECK(xml1_asset_path_filter("U:\\save.dat",output,sizeof(output))==0);
+    CHECK(xml1_asset_path_filter("D:/data/herostat.eng",output,sizeof(output))==1);
+    CHECK(!strcmp(output,"D:/data/herostat.engb"));
+    CHECK(xml1_asset_path_filter("D:/maps/test.nav",output,sizeof(output))==1);
+    CHECK(!strcmp(output,"D:/maps/test.navb"));
+    CHECK(xml1_asset_path_filter("D:/maps/test.chr",output,sizeof(output))==1);
+    CHECK(!strcmp(output,"D:/maps/test.chrb"));
+    CHECK(xml1_asset_path_filter("D:/data/colors.xmlb",output,sizeof(output))==0);
+    CHECK(xml1_asset_path_filter("U:/data/test.xml",output,sizeof(output))==0);
+    CHECK(xml1_asset_path_filter("D:/data/test.xml",output,3)==-1);
     strcpy(s.audio_language,"fre");CHECK(!xml1_asset_routes_init(root,&s,error,sizeof(error)));
     snprintf(path,sizeof(path),"%s/sounds",root);CHECK(CreateDirectoryA(path,NULL));
     snprintf(path,sizeof(path),"%s/sounds/fre",root);CHECK(CreateDirectoryA(path,NULL));

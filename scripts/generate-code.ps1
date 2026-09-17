@@ -21,6 +21,8 @@ try {
     & $python (Join-Path $PSScriptRoot 'guard-generated.py')
     & $python (Join-Path $PSScriptRoot 'guard-package-loading.py')
     if ($LASTEXITCODE -ne 0) { throw 'Package guards failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-xmlb.py')
+    if ($LASTEXITCODE -ne 0) { throw 'XMLB cache guard failed.' }
     & $python (Join-Path $PSScriptRoot 'guard-pc-menu.py')
     if ($LASTEXITCODE -ne 0) { throw 'Generated diagnostic guards failed.' }
     & $python (Join-Path $PSScriptRoot 'guard-character-limits.py')
