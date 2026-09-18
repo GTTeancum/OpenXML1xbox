@@ -1,5 +1,9 @@
 # Audio bring-up
 
+**Superseded:** XDK DirectSound is now replaced natively, and the APU is no
+longer emulated. See [AUDIO-HLE-PLAN.md](AUDIO-HLE-PLAN.md). The history below
+describes the emulation path it replaced.
+
 The live game produces original DSP audio through XAudio2 with mapped DMA and
 stateful voice resampling. Consumer-paced output now produces samples near real time in boot115; complete
 audio fidelity and synchronization remain unverified. Details below retain the
