@@ -325,3 +325,34 @@ is correct: an Xbox ADPCM block is 36 bytes per channel and carries the header
 sample plus 63 coded samples, and decoding on that basis reproduces ffmpeg's
 output exactly, while 65 samples per block drifts by one sample per block. The
 pinned revision is unchanged; this is recorded for an upstream report.
+
+
+## Frame-rate-coupled break-up
+
+A tester reports that the output breaks up whenever the frame rate falls below
+about 50 FPS, and is clean above it. That rules out the sample path: a decoder
+produces the same bytes at any frame rate, and the reference check above shows
+the bank data itself decodes exactly.
+
+Consumption pacing already decouples production from the renderer in principle.
+With RECOMP_APU_NATIVE_DSP_OUTPUT the wall-clock throttle returns immediately and
+mcpx_apu_frame_thread is paced by XAudio2 accepting buffers, which is the correct
+arrangement. The coupling that remains is scheduling: that thread blocks on the
+device for most of its period but still needs a burst of CPU for VP and DSP work
+every 256-sample block, or 5.33 ms, and nothing raises it above normal priority.
+When the frame loop saturates the CPU - the condition the low-FPS item already
+tracks - the audio thread is delayed past the device's demand, the queue drains
+and the output breaks up. The 50 FPS boundary is where the machine stops having
+spare time for it, not a property of audio code.
+
+patches/xboxrecomp-audio-thread-priority.patch raises that thread to
+THREAD_PRIORITY_HIGHEST and logs when the call fails. TIME_CRITICAL was rejected
+deliberately: it would take CPU from a frame loop that is already the bottleneck.
+This does not raise the frame rate and is not a substitute for the performance
+work; it stops audio degrading as a side effect of a slow frame.
+
+The diagnosis can be checked without rebuilding by starting the staged executable
+at Windows High priority and reproducing the same low-FPS scene. If the break-up
+disappears while the frame rate stays low, scheduling is confirmed as the cause.
+Audible verification on a real low-FPS scene is required before treating this as
+resolved; no fidelity claim is made here.
