@@ -291,3 +291,37 @@ Both preserve close waveform alignment. The remaining difference occurs after
 EP input. The optional newer DSP backend is a diagnostic experiment and does
 not yet play this title's EP program successfully; C remains the default.
 See DSP-COMPARISON.md. No complete audio-fidelity claim is made.
+
+
+## Game-sound reference
+
+scripts/zsnd-reference.py decodes a named sound out of the disc's ZSND banks so a
+captured voice can be compared against known-correct samples. Until now the only
+reference was decoded movie audio, which is long, stereo and continuously mixed;
+a menu cue is short, mono and played on its own, which isolates a smaller part of
+the path. The script takes the extracted sounds/zsds directory and a sound name,
+reports the bank and format, and writes a raw interleaved stereo s16 file for
+compare-movie-audio.py, or a WAV at the bank's own rate for listening.
+
+Use --rate 48000 (the default) against final output, and --rate 0 against the
+pre-SRC capture from XML1_CAPTURE_VOICE_SOURCE, which is at the source rate.
+Resampling is linear, so the resampled reference supports alignment and envelope
+work rather than full-band fidelity claims; --rate 0 is unresampled.
+
+The decoder was checked against ffmpeg's adpcm_ima_xbox on the same bank data:
+menus/menu_flip (1664 samples), menus/menu_accept (5312) and music/menu_c
+(988736 per channel) decode sample-for-sample identically. That establishes the
+reference itself, not any property of the port's output.
+
+The bank layout (ZSND/XBOX header, 8-byte hash entries over the PJW hash of the
+upper-cased name, 24-byte sounds, 28-byte samples, 84-byte sample files) and the
+ADPCM block layout are documented in the remake project's Docs/02_AUDIO_RESEARCH.md.
+
+### Recorded upstream observation
+
+external/xboxrecomp src/apu/apu_regs.h:336 defines ADPCM_SAMPLES_PER_BLOCK as 64
+with a FIXME asking whether it should be 65. The decode above is evidence that 64
+is correct: an Xbox ADPCM block is 36 bytes per channel and carries the header
+sample plus 63 coded samples, and decoding on that basis reproduces ffmpeg's
+output exactly, while 65 samples per block drifts by one sample per block. The
+pinned revision is unchanged; this is recorded for an upstream report.
