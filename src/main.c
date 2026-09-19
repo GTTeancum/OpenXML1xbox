@@ -400,7 +400,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     printf("XBE loaded: %zu bytes\n", xbe_size);
 
     /* Step 2: Initialize Xbox memory layout */
-    if (getenv("XML1_APU")) _putenv_s("RECOMP_AC97_READY", "1");
+    /* DirectSound is replaced natively (src/dsound_hle.c), so nothing programs
+     * the APU any more. Older scripts still request its emulation. */
+    if (getenv("XML1_APU")) {
+        fprintf(stderr, "[AUDIO] XML1_APU ignored: DirectSound runs natively; the APU is not emulated\n");
+        _putenv_s("XML1_APU", "");
+    }
     printf("Initializing Xbox memory layout...\n");
     /* Distinct virtual backing for Alchemy reservations; physical RAM remains 64 MiB. */
     xbox_SetMapSize(256u * 1024u * 1024u);
@@ -625,7 +630,6 @@ int main(int argc, char **argv)
                 _putenv_s("XML1_LIVE_DX8","1");
                 _putenv_s("XML1_DX8_VISIBLE","1");
                 _putenv_s("XML1_DX8_NO_CAPTURE","1");
-                _putenv_s("XML1_APU","1");
             }
         }
     }
@@ -647,13 +651,12 @@ int main(int argc, char **argv)
             _putenv_s("XML1_LIVE_DX8", "1");
             _putenv_s("XML1_DX8_VISIBLE", "0");
             _putenv_s("XML1_DX8_NO_CAPTURE", "1");
-            _putenv_s("XML1_APU", "1");
         } else if (!strcmp(argv[i], "--muted")) {
             _putenv_s("XML1_MUTED", "1");
         } else if (!strcmp(argv[i], "--help")) {
             puts("Usage: xml1-boot-probe [--headless] [--muted]\n"
-                 "  --headless  Hidden native DX8 rendering (1080p default) with full audio processing.\n"
-                 "  --muted     Silence this game's output; preserve DSP and audio pacing.");
+                 "  --headless  Hidden native DX8 rendering (1080p default) with native DirectSound audio.\n"
+                 "  --muted     Silence this game's output; preserve audio pacing.");
             return 0;
         } else if (strcmp(argv[i], "--memory-query-test") &&
                    strcmp(argv[i], "--irql-test") && strcmp(argv[i], "--swizzle-test") && strcmp(argv[i], "--progression-test")) {

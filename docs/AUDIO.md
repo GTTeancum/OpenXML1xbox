@@ -1,5 +1,9 @@
 # Audio bring-up
 
+**Superseded:** XDK DirectSound is now replaced natively, and the APU is no
+longer emulated. See [AUDIO-HLE-PLAN.md](AUDIO-HLE-PLAN.md). The history below
+describes the emulation path it replaced.
+
 The live game produces original DSP audio through XAudio2 with mapped DMA and
 stateful voice resampling. Consumer-paced output now produces samples near real time in boot115; complete
 audio fidelity and synchronization remain unverified. Details below retain the
@@ -291,3 +295,68 @@ Both preserve close waveform alignment. The remaining difference occurs after
 EP input. The optional newer DSP backend is a diagnostic experiment and does
 not yet play this title's EP program successfully; C remains the default.
 See DSP-COMPARISON.md. No complete audio-fidelity claim is made.
+
+
+## Game-sound reference
+
+scripts/zsnd-reference.py decodes a named sound out of the disc's ZSND banks so a
+captured voice can be compared against known-correct samples. Until now the only
+reference was decoded movie audio, which is long, stereo and continuously mixed;
+a menu cue is short, mono and played on its own, which isolates a smaller part of
+the path. The script takes the extracted sounds/zsds directory and a sound name,
+reports the bank and format, and writes a raw interleaved stereo s16 file for
+compare-movie-audio.py, or a WAV at the bank's own rate for listening.
+
+Use --rate 48000 (the default) against final output, and --rate 0 against the
+pre-SRC capture from XML1_CAPTURE_VOICE_SOURCE, which is at the source rate.
+Resampling is linear, so the resampled reference supports alignment and envelope
+work rather than full-band fidelity claims; --rate 0 is unresampled.
+
+The decoder was checked against ffmpeg's adpcm_ima_xbox on the same bank data:
+menus/menu_flip (1664 samples), menus/menu_accept (5312) and music/menu_c
+(988736 per channel) decode sample-for-sample identically. That establishes the
+reference itself, not any property of the port's output.
+
+The bank layout (ZSND/XBOX header, 8-byte hash entries over the PJW hash of the
+upper-cased name, 24-byte sounds, 28-byte samples, 84-byte sample files) and the
+ADPCM block layout are documented in the remake project's Docs/02_AUDIO_RESEARCH.md.
+
+### Recorded upstream observation
+
+external/xboxrecomp src/apu/apu_regs.h:336 defines ADPCM_SAMPLES_PER_BLOCK as 64
+with a FIXME asking whether it should be 65. The decode above is evidence that 64
+is correct: an Xbox ADPCM block is 36 bytes per channel and carries the header
+sample plus 63 coded samples, and decoding on that basis reproduces ffmpeg's
+output exactly, while 65 samples per block drifts by one sample per block. The
+pinned revision is unchanged; this is recorded for an upstream report.
+
+
+## Frame-rate-coupled break-up
+
+A tester reports that the output breaks up whenever the frame rate falls below
+about 50 FPS, and is clean above it. That rules out the sample path: a decoder
+produces the same bytes at any frame rate, and the reference check above shows
+the bank data itself decodes exactly.
+
+Consumption pacing already decouples production from the renderer in principle.
+With RECOMP_APU_NATIVE_DSP_OUTPUT the wall-clock throttle returns immediately and
+mcpx_apu_frame_thread is paced by XAudio2 accepting buffers, which is the correct
+arrangement. The coupling that remains is scheduling: that thread blocks on the
+device for most of its period but still needs a burst of CPU for VP and DSP work
+every 256-sample block, or 5.33 ms, and nothing raises it above normal priority.
+When the frame loop saturates the CPU - the condition the low-FPS item already
+tracks - the audio thread is delayed past the device's demand, the queue drains
+and the output breaks up. The 50 FPS boundary is where the machine stops having
+spare time for it, not a property of audio code.
+
+patches/xboxrecomp-audio-thread-priority.patch raises that thread to
+THREAD_PRIORITY_HIGHEST and logs when the call fails. TIME_CRITICAL was rejected
+deliberately: it would take CPU from a frame loop that is already the bottleneck.
+This does not raise the frame rate and is not a substitute for the performance
+work; it stops audio degrading as a side effect of a slow frame.
+
+The diagnosis can be checked without rebuilding by starting the staged executable
+at Windows High priority and reproducing the same low-FPS scene. If the break-up
+disappears while the frame rate stays low, scheduling is confirmed as the cause.
+Audible verification on a real low-FPS scene is required before treating this as
+resolved; no fidelity claim is made here.

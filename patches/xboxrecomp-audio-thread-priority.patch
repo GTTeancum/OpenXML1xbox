@@ -1,0 +1,26 @@
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -433,6 +433,22 @@
+  * ============================================================ */
+
+ static void *mcpx_apu_frame_thread(void *arg)
+ {
++#ifdef _WIN32
++    /* Consumption pacing decouples audio from the renderer only while this
++     * thread is still scheduled in time. It blocks on XAudio2 for most of its
++     * period and needs a short burst of CPU per 256-sample block (5.33 ms), so
++     * at a normal priority a CPU-saturated frame loop can delay it past the
++     * device's demand; the queue then drains and the output breaks up. Audio
++     * threads are expected to outrank rendering work for this reason.
++     *
++     * THREAD_PRIORITY_HIGHEST is deliberate: the stronger TIME_CRITICAL takes
++     * CPU away from a frame loop that is already the reported bottleneck. */
++    if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST)) {
++        fprintf(stderr, "[APU OUTPUT] audio thread priority unchanged (%lu); "
++                        "output may break up when the frame rate drops\n",
++                GetLastError());
++    }
++#endif
+     MCPXAPUState *d = MCPX_APU_DEVICE(arg);
+     qemu_mutex_lock(&d->lock);
+

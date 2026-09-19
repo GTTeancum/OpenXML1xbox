@@ -179,3 +179,40 @@ reduces kickoff completion waits and transport round trips, adds explicit worker
 GPU selection/identity, blocks on native vertical blank, retains indexed geometry
 and replaces individual texture-cache entries. It is staged for the user's
 multi-machine testing; issue #1 and performance TODO #2 remain open.
+
+
+## Affected-hardware sampling: the symptom is hitching, not low FPS
+
+Hardware: Ryzen 7 5700X3D (16 logical), 64 GB, RTX 4080 SUPER, Windows 10.0.26200,
+windowed 1920x1080, presentation_interval=0. Reports under XBOXgame/logs/performance.
+
+Session reports show the median frame at **16.5-16.9 ms in every interval** - the
+60 FPS cap - while single frames reach **1066 ms**, and eight of ten intervals
+contain a frame over 100 ms. Mean FPS of 20-50 is the arithmetic consequence of a
+few enormous frames, not a uniformly low rate. What a player reports as "very
+laggy" here is stalling, not frame rate, and the two want different fixes.
+
+The renderer is not the constraint. It occupied **0.03-0.14 core equivalents** and
+spent most of each interval waiting for work: 5.8 s of wait in one ~6 s interval.
+The game process occupied ~2.5 of 16 logical cores, which presents as roughly 15%
+machine-wide - the reason the machine looks idle while the game stalls.
+
+`XML1_NATIVE_PROFILE` (200 samples, 50 ms apart, across the intro) attributes the
+stalls: **36% of samples are blocked**, all on condition variables
+(`SleepConditionVariableSRW` 39, `RtlSleepConditionVariableCS` 26), with a longest
+unbroken run of **12 samples = 600 ms in one wait**. The largest non-blocked cost
+is `xml1_movie_convert_impl` at 9.5%, consistent with the existing note that movie
+presentation is slow, plus `NtReadFile` at 4%.
+
+The APU is not the cause. The first interval's worst frame is 815.3 ms, 800.2 ms
+and 813.2 ms across three runs, the third with `XML1_APU` unset. Audio-lock
+contention would not survive disabling the APU. That run stopped after the first
+movie, so it compares only that interval; movie playback appears to depend on
+audio.
+
+Not established here: which condition variable is waited on, whether the stall is
+transport round-trip latency or guest-side blocking, and whether gameplay stalls
+share the boot sequence's cause. The renderer starving while the guest blocks is
+consistent with a latency ping-pong between the two, but the wait target was not
+identified. Profiler output lands in the game's own working directory
+(XBOXgame/build/native-profile.csv), not the project root.
