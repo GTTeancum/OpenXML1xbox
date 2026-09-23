@@ -1,7 +1,7 @@
 # First-run Raven XMLB conversion
 
 Current source builds compile XML1's Raven text data into the later games' native
-binary XML format. The published 0.8b release does not contain this change.
+binary XML format. This setup path is included in the 0.9 beta release.
 
 ## Player behavior
 

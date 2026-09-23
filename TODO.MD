@@ -4,7 +4,9 @@
 
 1. Integrate NewGame+.
 2. Optimize performance and resolve beta testers' low-FPS reports.
-3. Plan the Xbox return path and make XboxRecomp friendlier to modern Xbox builds.
+3. Build a separate XML2-to-XML1 character conversion tool.
+4. Bring missing XML2 combat and scripting functions into XML1.
+5. Plan the Xbox return path and make XboxRecomp friendlier to modern Xbox builds.
 
 ## Detailed work
 
@@ -18,7 +20,23 @@ Reproduce beta testers' low-FPS reports using their hardware, settings, levels a
 
 CLOSURE REQUIREMENT: neither the user nor Codex may close this item until the user has personally tested the candidate build on multiple machines locally at home. Available test hardware includes two laptops and a different desktop. Testing on the development machine alone, automated checks, or completed code changes do not satisfy this requirement. Keep this item open pending the user's multi-machine test results and performance acceptance.
 
-### 3. Xbox return path, toolkit portability and nxdk support
+### 3. XML2 character conversion
+
+Build a separate tool that takes an XML2 character and their XMLB script structure and adapts them to XML1's character and script structure. Convert the relevant character definitions, powers and resource/package references, and identify unsupported features or dependencies that require manual work. Preserve the expected asset paths and package relationships.
+
+Converted characters do not need to follow XML1's tiered power upgrades. They must work within XML1's UI and during combat: validate character selection, displayed character/power information, power assignment and activation, animations, effects and combat behavior in actual gameplay. Successful conversion or loading alone is not sufficient.
+
+### 4. Missing XML2 combat and scripting functions in XML1
+
+Use `Z:\Programming\!archived\XML2 XboxRecomp\` as a reference for bringing only missing XML2 combat and scripting functions into the working XML1 runtime. The direction is XML2 → XML1. A standalone XML2 port, XML2 renderer bring-up and validation of XML2 as a playable game are outside this task.
+
+Coverage includes missing executable combat, character and scripting functions overall, across XML2. Bishop and Sunfire are priority fixtures, not the completion boundary. Audit character handlers, powerup and combat-event systems, affecters, damage modifiers and script additions independently of the currently imported roster. New functionality ONLY: if XML1 already has the function or system, skip it without comparing behavior or signatures. Do not pursue parity fixes.
+
+Use the user-selected Bishop and Sunfire from the archived XML2 installation at `Z:\Programming\!archived\X-Men Legends II\` to validate handler behavior in XML1's UI and combat. Replace only identified dummy roster entries in private fixtures; preserve existing XML1 characters and check imported assets for collisions before applying them. Trace and progress evidence: [XML2 integration](docs/XML2-INTEGRATION.md).
+
+Trace the missing combat handlers and script implementations, then adapt them to XML1's actual consumers and object lifetimes. Preserve existing XML1 behavior and the imported assets' package structure. Coordinate with the separate character conversion tool in #3 without assuming it is complete. Perform basic programmatic functionality validation of the added implementations and relevant integration contracts; users perform gameplay testing. Gameplay or visual acceptance campaigns are not an engineering completion requirement for this goal. XML1 is the integration target.
+
+### 5. Xbox return path, toolkit portability and nxdk support
 
 - [ ] Assess a 32-bit game runtime and document toolkit, compiler, memory, and
       platform requirements for an original-Xbox build.

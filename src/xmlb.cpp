@@ -9,7 +9,7 @@ namespace xml1 {
 namespace {
 constexpr uint32_t end = 0xffffffffu;
 constexpr size_t limit = 16*1024*1024;
-struct Node {std::string name; std::vector<std::pair<std::string,std::string>> attrs; std::vector<Node> children;};
+using Node = XmlNode;
 bool space(unsigned char c) {return c==' '||c=='\t'||c=='\r'||c=='\n'||c=='\v'||c=='\f';}
 bool first(unsigned char c) {return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||c=='_';}
 bool next(unsigned char c) {return first(c)||(c>='0'&&c<='9')||c=='-'||c==':';}
@@ -116,5 +116,12 @@ std::string decode_xmlb(const void *bytes,unsigned length){
     if(length>8)emit(8,0);
     if(!ranges.empty())for(uint32_t offset:string_offsets)if(offset<ranges.rbegin()->second)throw std::runtime_error("XMLB string overlaps records");
     return xml;
+}
+std::vector<XmlNode> parse_xmlb(const void *bytes,unsigned length){
+    // Reuse the production decoder's bounds, overlap and cycle validation.
+    // Its text representation retains literal Raven bytes and duplicate keys;
+    // TextReader does not apply standard-XML entity or whitespace rewriting.
+    const std::string text=decode_xmlb(bytes,length);
+    return TextReader(text).list();
 }
 }

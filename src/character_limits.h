@@ -3,9 +3,12 @@
 #include <string.h>
 
 /* Retail CharacterDef is 0x484 bytes. Keep every original member at its
- * original offset; the appended word holds aoa/astonishing/90s skin bytes.
+ * original offset; appended bytes +484..486 hold aoa/astonishing/90s skins.
+ * Byte +487 holds imported character combat flags; constructor clears all four.
  * The selected physical skin remains the existing byte at +0x1E. */
 #define XML1_CHARACTER_BYTES 0x488u
+#define XML1_CHARACTER_COMBAT_FLAGS 0x487u
+#define XML1_CHARACTER_NONHUMANOID_SKELETON 1u
 #define XML1_CHARACTER_POOL_CAPACITY 48u
 #define XML1_SKIN_CATEGORY_COUNT 11u
 

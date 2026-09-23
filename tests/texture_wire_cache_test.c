@@ -1,6 +1,22 @@
 #include "texture_wire_cache.h"
+#include "dx8_packet.h"
+#include "palette_texture.h"
 #include <stdio.h>
 int main(void) {
+    if(xml1_texture_bytes(8,8,7)!=256||xml1_texture_bytes(8,8,7|(4<<8))!=340)return 33;
+    /* Block-rounded DXT1 storage, including sub-4x4 mip levels. */
+    if(xml1_texture_bytes(1,1,12)!=8 || xml1_texture_bytes(5,3,12)!=16 ||
+       xml1_texture_bytes(8,8,12|(4<<8))!=56)return 32;
+    if(xml1_texture_bytes(4,2,11)!=1032 || xml1_texture_bytes(4,2,11|(3<<8))!=1035)return 30;
+    {
+        unsigned char palette[1024]={0},indices[]={255,0,1},row[16];
+        memset(row,0xAA,sizeof(row));
+        palette[1020]=3;palette[1021]=4;palette[1022]=5;palette[1023]=6;
+        palette[0]=10;palette[1]=20;palette[2]=30;palette[3]=40;
+        xml1_expand_palette_row(row,indices,3,palette);
+        const unsigned char expected[]={3,4,5,6,10,20,30,40,0,0,0,0,0xAA,0xAA,0xAA,0xAA};
+        if(memcmp(row,expected,sizeof(row)))return 31;
+    }
     xml1_texture_wire_cache cache={0}; unsigned char pixels[16]={0};
     uint32_t first=xml1_texture_wire_token(&cache,100,2,2,6,pixels,16);
     if(first!=(XML1_WIRE_TEXTURE_DEFINE|1)) return 1;
@@ -45,5 +61,14 @@ int main(void) {
        cache.bytes!=XML1_WIRE_TEXTURE_LIMIT)return 21;
     if(xml1_texture_wire_token_v9(&cache,203,1,1,6,large,chunk)!=4 || cache.evicted_count)return 22;
     xml1_texture_wire_reset(&cache);free(large);
-    puts("PASS: exact texture reuse, mutation, dimensions, reset, bounded fallback and v9 individual LRU replacement");return 0;
+    {
+        unsigned char indexed[1028]={0};
+        uint32_t id=xml1_texture_wire_token_v9(&cache,700,2,2,11,indexed,sizeof(indexed));
+        if(!(id&XML1_WIRE_TEXTURE_DEFINE))return 32;
+        if(xml1_texture_wire_token_v9(&cache,700,2,2,11,indexed,sizeof(indexed))!=(id&~XML1_WIRE_TEXTURE_DEFINE))return 33;
+        indexed[3]=128; // Palette-only alpha change must invalidate the snapshot.
+        if(!(xml1_texture_wire_token_v9(&cache,700,2,2,11,indexed,sizeof(indexed))&XML1_WIRE_TEXTURE_DEFINE))return 34;
+        xml1_texture_wire_reset(&cache);
+    }
+    puts("PASS: exact texture reuse, P8 palette/alpha/mips, mutation, dimensions, reset, bounded fallback and v9 individual LRU replacement");return 0;
 }

@@ -175,6 +175,18 @@ static void trace_bins(const char *what, Object *o, unsigned count, const uint32
     fprintf(stderr, "%s\n", text);
 }
 
+/* Opt-in playback diagnostics connect the bank's decoded byte count to the
+ * actual voice lifecycle, including loop setup and release. No PCM is logged. */
+static void trace_buffer(const char *what, Object *o, uint32_t a, uint32_t b)
+{
+    static int enabled = -1;
+    static LONG lines;
+    if (enabled < 0) enabled = getenv("XML1_DSOUND_BUFFER_TRACE") != NULL;
+    if (!enabled || InterlockedIncrement(&lines) > 16000) return;
+    fprintf(stderr, "[DSOUND BUFFER] %s ms=%llu voice=%d data=%08X bytes=%u a=%u b=%u\n",
+        what, (unsigned long long)GetTickCount64(), o->voice, o->data, o->bytes, a, b);
+}
+
 static void set_mixbins(Object *o, uint32_t va)
 {
     uint32_t bins[DSM_MAX_BINS];
@@ -283,7 +295,7 @@ void xml1_DirectSoundDoWork(void) { finish(0, 0); }
 
 /* ---- buffers ---------------------------------------------------------- */
 
-#define BUFFER(n) Object *o = object(arg(0), KIND_BUFFER); (void)o
+#define BUFFER() Object *o = object(arg(0), KIND_BUFFER); (void)o
 
 void xml1_IDirectSoundBuffer_Release(void) { seen("IDirectSoundBuffer_Release"); finish(1, release(arg(0), KIND_BUFFER)); }
 void xml1_IDirectSoundBuffer_Play(void)
@@ -291,16 +303,18 @@ void xml1_IDirectSoundBuffer_Play(void)
     seen("IDirectSoundBuffer_Play");
     BUFFER();
     uint32_t flags = arg(3);
+    trace_buffer("Play", o, flags, 0);
     dsm_play(o->voice, flags & 1, (flags & 2) != 0);
     finish(4, 0);
 }
-void xml1_IDirectSoundBuffer_Stop(void) { seen("IDirectSoundBuffer_Stop"); BUFFER(); dsm_stop(o->voice); finish(1, 0); }
+void xml1_IDirectSoundBuffer_Stop(void) { seen("IDirectSoundBuffer_Stop"); BUFFER(); trace_buffer("Stop", o, 0, 0); dsm_stop(o->voice); finish(1, 0); }
 void xml1_IDirectSoundBuffer_StopEx(void)
 {
     seen("IDirectSoundBuffer_StopEx");
     BUFFER();
     int64_t when = read_time(1);
     uint32_t flags = arg(3);
+    trace_buffer("StopEx", o, flags, 0);
     if (flags & 2) {
         /* DSBSTOPEX_RELEASEWAVEFORM: leave the loop and play out the data. */
         uint32_t status = dsm_buffer_status(o->voice);
@@ -322,6 +336,7 @@ void xml1_IDirectSoundBuffer_SetBufferData(void)
     uint32_t data = arg(1), bytes = arg(2);
     o->data = data;
     o->bytes = data ? bytes : 0;
+    trace_buffer("SetData", o, 0, 0);
     dsm_set_data(o->voice, data ? guest(data, bytes) : NULL, o->bytes);
     finish(3, 0);
 }
@@ -330,10 +345,11 @@ void xml1_IDirectSoundBuffer_SetLoopRegion(void)
 {
     seen("IDirectSoundBuffer_SetLoopRegion");
     BUFFER();
+    trace_buffer("LoopRegion", o, arg(1), arg(2));
     dsm_set_loop_region(o->voice, arg(1), arg(2));
     finish(3, 0);
 }
-void xml1_IDirectSoundBuffer_SetFrequency(void) { seen("IDirectSoundBuffer_SetFrequency"); BUFFER(); dsm_set_frequency(o->voice, arg(1)); finish(2, 0); }
+void xml1_IDirectSoundBuffer_SetFrequency(void) { seen("IDirectSoundBuffer_SetFrequency"); BUFFER(); trace_buffer("Frequency", o, arg(1), 0); dsm_set_frequency(o->voice, arg(1)); finish(2, 0); }
 void xml1_IDirectSoundBuffer_SetVolume(void) { seen("IDirectSoundBuffer_SetVolume"); BUFFER(); dsm_set_volume(o->voice, (int32_t)arg(1)); finish(2, 0); }
 void xml1_IDirectSoundBuffer_SetHeadroom(void) { seen("IDirectSoundBuffer_SetHeadroom"); BUFFER(); dsm_set_headroom(o->voice, arg(1)); finish(2, 0); }
 void xml1_IDirectSoundBuffer_SetMixBins(void) { seen("IDirectSoundBuffer_SetMixBins"); BUFFER(); set_mixbins(o, arg(1)); finish(2, 0); }
@@ -476,4 +492,3 @@ void xml1_CDirectSoundStream_Process(void)
 }
 void xml1_CDirectSoundStream_Discontinuity(void) { seen("CDirectSoundStream_Discontinuity"); STREAM(); finish(1, 0); }
 void xml1_CDirectSoundStream_Flush(void) { seen("CDirectSoundStream_Flush"); STREAM(); dsm_stream_flush(o->voice, 0); finish(1, 0); }
-

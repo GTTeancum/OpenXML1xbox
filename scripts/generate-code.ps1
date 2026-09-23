@@ -27,8 +27,35 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Generated diagnostic guards failed.' }
     & $python (Join-Path $PSScriptRoot 'guard-character-limits.py')
     if ($LASTEXITCODE -ne 0) { throw 'Character layout guards failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-character-filter.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Character combat-property guard failed.' }
     & $python (Join-Path $PSScriptRoot 'guard-newgame-plus.py')
     if ($LASTEXITCODE -ne 0) { throw 'NewGame+ boundary guards failed.' }
     & $python (Join-Path $PSScriptRoot 'guard-frame-limit.py')
     if ($LASTEXITCODE -ne 0) { throw 'Frame-limit guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-script-extensions.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Script-extension guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-filter-event.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Filter event guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-bishop-drain.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Bishop contact guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-handler-live-trace.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Handler live trace guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-vertex-state.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Vertex viewport guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-raven-operand-trace.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Raven operand trace guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-raven-energy.py')
+    & $python (Join-Path $PSScriptRoot 'guard-raven-power-bindings.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Raven energy guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-raven-damage.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Raven damage guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-raven-powerup-metadata.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Raven powerup metadata guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-raven-secondary-victim.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Raven secondary victim guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-raven-loop-sound.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Raven loop sound guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-raven-effect-sound.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Effect/sound event guard failed.' }
 } finally { Pop-Location }

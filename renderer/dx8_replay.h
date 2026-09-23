@@ -6,14 +6,20 @@
 #include <stdexcept>
 #include "../src/dx8_packet.h"
 #include "../src/texture_wire_cache.h"
+#include "../src/palette_texture.h"
 
-static void checked(HRESULT hr) {
+static void checked_result(HRESULT hr,const char* expression,const char* file,int line) {
     if (FAILED(hr)) {
-        std::fprintf(stderr, "D3D8 replay HRESULT %08lx\n", (unsigned long)hr);
+        std::fprintf(stderr, "D3D8 replay HRESULT %08lx at %s:%d: %s\n",
+            (unsigned long)hr,file,line,expression);
         throw std::runtime_error("D3D8 call failed");
     }
 }
+// Evaluate each Direct3D call once, preserving its failure behavior while
+// identifying device loss versus a bad resource/state operation in beta logs.
+#define checked(expression) checked_result((expression),#expression,__FILE__,__LINE__)
 #include "dx8_state_cache.h"
+#include "program_vertex.h"
 #include "pc_options_ui.h"
 #include "dx8_readback.h"
 #include "native_vblank.h"
@@ -41,7 +47,10 @@ static void replay_read(FILE *file,void *dst,size_t bytes) {
 static D3DFORMAT replay_format(uint32_t format) {
     switch(format) {
         case 0:return D3DFMT_L8;
+        case 7:return D3DFMT_X8R8G8B8;
         case 6:return D3DFMT_A8R8G8B8;
+        case 11:return D3DFMT_A8R8G8B8; // Expand Xbox P8 with its captured palette.
+        case 12:return D3DFMT_DXT1;
         case 14:return D3DFMT_DXT3;
         case 25:return D3DFMT_A8;
         default:throw std::runtime_error("Unsupported texture format");
@@ -132,13 +141,19 @@ static IDirect3DTexture8* read_texture(IDirect3DDevice8* device,FILE* file,unsig
         }
     }
     if(!texture) {checked(device->CreateTexture(width,height,levels,0,replay_format(format),D3DPOOL_MANAGED,&texture));++texture_creates;}
-    unsigned w=width,h=height;size_t offset=0;
+    unsigned w=width,h=height;size_t offset=format==11?1024:0;
     try {
         for(unsigned level=0;level<levels;++level) {
-            unsigned rows=format==14?(h+3)/4:h;
-            unsigned row_bytes=format==14?((w+3)/4)*16:w*(format==6?4:1);
+            unsigned rows=(format==12||format==14)?(h+3)/4:h;
+            unsigned row_bytes=(format==12||format==14)?((w+3)/4)*(format==12?8:16):w*((format==6||format==7)?4:1);
             D3DLOCKED_RECT lock={}; checked(texture->LockRect(level,&lock,nullptr,0));
-            for(unsigned y=0;y<rows;++y) std::memcpy((char*)lock.pBits+y*lock.Pitch,pixels.data()+offset+y*row_bytes,row_bytes);
+            for(unsigned y=0;y<rows;++y) {
+                unsigned char *dest=(unsigned char*)lock.pBits+y*lock.Pitch;
+                const unsigned char *source=pixels.data()+offset+y*row_bytes;
+                if(format==11) {
+                    xml1_expand_palette_row(dest,source,w,pixels.data());
+                } else std::memcpy(dest,source,row_bytes);
+            }
             checked(texture->UnlockRect(level));
             offset+=(size_t)rows*row_bytes;
             w=w>1?w/2:1; h=h>1?h/2:1;
@@ -327,7 +342,16 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
     const bool version2=magic[7]=='2'||version3;
     const bool flush=!std::memcmp(magic,"XMLDX8F",7);
     const bool ordered=!std::memcmp(magic,"XMLDX8D8",8)||!std::memcmp(magic,"XMLDX8D9",8);
-    if ((!flush && !ordered && std::memcmp(magic,"XMLDX8R",7)) || (!version2 && magic[7]!='1')) throw std::runtime_error("Invalid replay version");
+    if ((!flush && !ordered && std::memcmp(magic,"XMLDX8R",7)) || (!version2 && magic[7]!='1')) {
+        // Preserve the actual bytes at a protocol failure: a generic version
+        // error cannot distinguish an unsupported producer from stream drift.
+        char detail[160];
+        std::snprintf(detail,sizeof(detail),
+            "Invalid replay version: bytes=%02X%02X%02X%02X%02X%02X%02X%02X batch_depth=%u",
+            (unsigned char)magic[0],(unsigned char)magic[1],(unsigned char)magic[2],(unsigned char)magic[3],
+            (unsigned char)magic[4],(unsigned char)magic[5],(unsigned char)magic[6],(unsigned char)magic[7],batch_depth);
+        throw std::runtime_error(detail);
+    }
     uint32_t count; read(&count,4);
     if(ordered && !count)return false;
     /* A submitted C5 clear is still pending even with no recorded draws.
@@ -383,7 +407,7 @@ static bool replay_stream(IDirect3DDevice8* device, FILE* file, const char* capt
         cached_transform(device,D3DTS_VIEW,&matrices[1]);
         cached_transform(device,D3DTS_PROJECTION,&matrices[2]);
         if(version4) for(unsigned i=0;i<2;++i) cached_transform(device,(D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0+i),&texture_matrices[i]);
-        cached_shader(device,header[4],false); cached_shader(device,0,true);
+        cached_shader(device,header[4]==0x80000001u?program_vertex_shader(device):header[4],false); cached_shader(device,0,true);
         auto state=[&](D3DRENDERSTATETYPE type,DWORD value){ cached_render_state(device,type,value); };
         state(D3DRS_LIGHTING,rs[102]); state(D3DRS_SPECULARENABLE,rs[103]);
         if(version3) {

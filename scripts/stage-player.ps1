@@ -130,5 +130,6 @@ Loose assets and PKGB modding are enabled. See build.ini for configuration.
 '@ | Set-Content -LiteralPath (Join-Path $Destination 'Read Me.txt') -Encoding utf8
 New-Item -ItemType Directory -Path (Join-Path $Destination 'runtime/licenses') -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $projectRoot 'external/miniz/LICENSE') -Destination (Join-Path $Destination 'runtime/licenses/miniz.txt')
+Copy-Item -LiteralPath (Join-Path $projectRoot 'external/nv2a-vsh-cpu/NOTICE') -Destination (Join-Path $Destination 'runtime/licenses/nv2a-vsh-cpu.txt')
 Write-Host "Player build staged at: $Destination"
 exit 0

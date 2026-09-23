@@ -11,6 +11,7 @@
 #include "character_save.h"
 #include "modder_mode.h"
 #include "newgame_plus.h"
+#include "raven_filter_event.h"
 
 static int newgame_plus_boundaries(void) {
     unsigned old_manager=MEM32(0x48D59C);
@@ -227,6 +228,67 @@ static int modder_boundaries(void)
     return failed;
 }
 
+static int filter_fixture_read(void *context,uint32_t address,void *out,size_t size) {
+    unsigned base=*(unsigned *)context;
+    if(address<base||(uint64_t)address+size>(uint64_t)base+0xc00)return 0;
+    memcpy(out,(void*)XBOX_PTR(address),size);return 1;
+}
+
+static int character_filter_boundaries(unsigned character) {
+    unsigned stack=g_esp,key=character+0x600,value=character+0x700;
+    const char *keys[]={"nonhumanoidskeleton","NONHUMANOIDSKELETON","nonhumanoidskeleton","nonhumanoidskeleton"};
+    const char *values[]={"TrUe","false","1","true"};
+    const unsigned expected[]={0xa5,0xa4,0xa4,0xa5};
+    unsigned char before[XML1_CHARACTER_BYTES];
+    /* Use the real constructor on poisoned reused storage. It must clear the
+     * appended combat byte along with the three extra costume bytes. */
+    memset((void*)XBOX_PTR(character),0xa5,XML1_CHARACTER_BYTES+4);
+    g_ecx=character;PUSH32(g_esp,0);RECOMP_ABI_CALL(0x000B1640u,sub_000B1640);
+    if(g_esp!=stack||g_eax!=character||MEM32(character+0x484)!=0||
+       MEM32(character+XML1_CHARACTER_BYTES)!=0xa5a5a5a5)return 1;
+    memset((void*)XBOX_PTR(character),0xa5,XML1_CHARACTER_BYTES);
+    for(unsigned i=0;i<4;++i) {
+        memcpy(before,(void*)XBOX_PTR(character),sizeof(before));
+        strcpy((char*)XBOX_PTR(key),keys[i]);strcpy((char*)XBOX_PTR(value),values[i]);
+        g_ecx=character;PUSH32(g_esp,value);PUSH32(g_esp,key);PUSH32(g_esp,0);
+        RECOMP_ABI_CALL(0x000AFD70u,sub_000AFD70);
+        if(g_esp!=stack||(g_eax&255)!=1||MEM8(character+XML1_CHARACTER_COMBAT_FLAGS)!=expected[i])return 1;
+        before[XML1_CHARACTER_COMBAT_FLAGS]=(unsigned char)expected[i];
+        if(memcmp(before,(void*)XBOX_PTR(character),sizeof(before)))return 1;
+    }
+    /* Exercise native fallthrough with a real recognized field. Poisoned
+     * other fields are safe because dangerRating changes only its float. */
+    strcpy((char*)XBOX_PTR(key),"dangerRating");strcpy((char*)XBOX_PTR(value),"7.5");
+    g_ecx=character;PUSH32(g_esp,value);PUSH32(g_esp,key);PUSH32(g_esp,0);
+    RECOMP_ABI_CALL(0x000AFD70u,sub_000AFD70);
+    if(g_esp!=stack||(g_eax&255)!=1||MEMF(character+0x478)!=7.5f||
+       MEM8(character+XML1_CHARACTER_COMBAT_FLAGS)!=0xa5)return 1;
+    unsigned actor=character+0x800;
+    MEM32(actor+0x2d8)=character;
+    raven_filter_target target={0};target.character_path=1;
+    if(!raven_filter_xml1_character(filter_fixture_read,&character,actor,&target)||
+       target.danger!=7.5f||!target.is_nonhumanoid)return 1;
+    raven_filter_event event;raven_filter_event_init(&event);
+    event.pass_tag=101;event.fail_tag=102;event.flags=2;
+    if(raven_filter_event_tag(&event,&target)!=102)return 1;
+    MEM8(character+XML1_CHARACTER_COMBAT_FLAGS)&=(uint8_t)~1u;
+    if(!raven_filter_xml1_character(filter_fixture_read,&character,actor,&target)||
+       raven_filter_event_tag(&event,&target)!=101)return 1;
+    event.max_danger=7;
+    if(raven_filter_event_tag(&event,&target)!=102)return 1;
+    /* Invalid or unreadable definition must not turn into a default pass. */
+    raven_filter_target previous=target;
+    for(unsigned i=0;i<3;++i) {
+        const unsigned invalid[]={0,0xfffffff0,character+0xb00};
+        MEM32(actor+0x2d8)=invalid[i];
+        if(raven_filter_xml1_character(filter_fixture_read,&character,actor,&target)||
+           memcmp(&previous,&target,sizeof(target)))return 1;
+    }
+    memset((void*)XBOX_PTR(character),0,0xc00);
+    puts("[CHARACTER FILTER] constructor reuse and generated parser: boolean replacement, case, native fallthrough, adjacent skins, live property reads, filter decisions and stack passed");
+    return 0;
+}
+
 int xml1_progression_test(void)
 {
     unsigned scratch = g_esp - 0x30000;
@@ -241,6 +303,7 @@ int xml1_progression_test(void)
     g_ecx = manager; PUSH32(g_esp, 0);
     RECOMP_ABI_CALL(0x00056C80u, sub_00056C80);
     cap = g_eax;
+    if(character_filter_boundaries(character))return 1;
     printf("[PROGRESSION] level-cap=%u\n", cap);
     if (cap != 45) return 1;
     for (unsigned level = 1; level <= cap; ++level) {

@@ -4,12 +4,14 @@ A Windows recompilation of the original Xbox **X-Men Legends**, built with
 [XboxRecomp](https://github.com/sp00nznet/xboxrecomp) and a native Windows
 **Direct3D 8** renderer.
 
-**[Download 0.8b prerelease](https://github.com/GTTeancum/OpenXML1xbox/releases/tag/0.8b)**
+**[Download 0.9 beta](https://github.com/GTTeancum/OpenXML1xbox/releases/tag/0.9b)**
 
-Version 0.8b is a beta for engine assessment. It reaches gameplay, supports
+Version 0.9 beta is an engine-assessment build. It reaches gameplay, supports
 keyboard/mouse and XInput controls, and includes PC Options and Advanced Options
-using XML2 menu assets recolored for XML1. Full-game compatibility and audio
-fidelity are still being assessed.
+using XML2 menu assets recolored for XML1. It also adds the Angel mod plus beta
+Bishop and Sunfire imports used to exercise the newly supported XML2 combat
+handlers and PC sound banks. Full-game compatibility, imported-power coverage,
+performance across different PCs, and audio fidelity are still being assessed.
 
 <table>
   <tr>
@@ -30,25 +32,23 @@ The release does not include the ISO or the complete original game assets.
 1. Extract the Xbox filesystem from your ISO into a writable folder using an
    Xbox ISO extraction tool. The folder must contain `default.xbe`, `media`,
    `movies`, `sounds`, and `z/assetsfb.zip` with their original paths.
-2. Extract `OpenXML1xbox-0.8b-win64.zip` into that same folder, replacing the
+2. Extract `OpenXML1xbox-0.9b-win64.zip` into that same folder, replacing the
    supplied files. Keep `runtime` and the hidden `.xml1-player-layout` file.
 3. Launch **X-Men Legends.exe**. First-run setup extracts the archive into loose
    assets and generates PKGB manifests. It preserves the supplied modified menus.
 
 The game executable prepares `assetsfb.zip`; it does **not** extract a raw ISO.
 No Python, compiler, developer checkout, or separate launcher is needed to play.
-Current source builds statically link the Visual C++ runtimes and embed the
+The executable statically links the Visual C++ runtimes and embeds the
 32-bit renderer in **X-Men Legends.exe**. The renderer is unpacked automatically
 to `%LOCALAPPDATA%/OpenXML1` and uses Windows' system `d3d8.dll`. No adjacent
-runtime DLLs or renderer executable are required. The published 0.8b package
-predates this packaging change.
+runtime DLLs or renderer executable are required.
 
-Current source builds also compile Raven XML data during first-run setup to the
+The game also compiles Raven XML data during first-run setup to the
 later games' XMLB format (`.xmlb`, `.engb` and other language variants, `.chrb`,
 `.navb`). Existing loose installations upgrade once on launch. Original text files
 and saves are retained; loose-mode gameplay reads the compiled counterparts.
 Existing binary mods are validated and preserved. See [XMLB setup](docs/XMLB-SETUP.md).
-This feature is not in the published 0.8b package.
 
 The tested World ISO SHA-256 is:
 `0a1ef03e57458144609906bbc2d44d2c26028cf704f4698ce0f1e61c34030b44`.
@@ -78,15 +78,18 @@ key is absent, modder mode is off.
 
 ## Validation and remaining work
 
-The release payload was tested against a fresh World ISO extraction: first-run
-preparation, startup/story movies, the 3D menu, level-one gameplay, movement,
-pause/resume, restart, Options/Advanced and Quit. All 9,383 generated resources
-and 35 supplied files passed the installation integrity check. Native captures
-were inspected individually at 1920x1080.
+The underlying 0.8 beta flow was tested against a fresh World ISO extraction:
+first-run preparation, startup/story movies, the 3D menu, level-one gameplay,
+movement, pause/resume, restart, Options/Advanced and Quit. Its native captures
+were inspected individually at 1920x1080. The 0.9 engine and imported-character
+work adds focused automated contracts plus private Bishop and Sunfire gameplay
+runs that verify roster selection, models, HUD, effects, attacks, damage, power
+lifetimes and cleanup for the exercised cases.
 
-These checks ran headless and muted. They do not establish audio fidelity,
-physical device recovery, GUI setup appearance, or complete level/game coverage.
-Multi-level multiplayer testing and sustained audio assessment remain open.
+Most character checks ran headless and muted. They do not establish listening
+quality, every imported power at every rank, complete level/game coverage, or
+performance on the tester's hardware. Multi-machine performance, multi-level
+multiplayer testing, and sustained audio assessment remain open.
 See [TODO.MD](TODO.MD) and [HD evidence](docs/HD-OUTPUT.md).
 
 ## Building from source

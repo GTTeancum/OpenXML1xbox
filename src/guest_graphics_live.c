@@ -1,4 +1,5 @@
 #include "performance_log.h"
+#include "vertex_program.h"
 #include "xbox_memory_layout.h"
 #include "dx8_packet.h"
 #include "guest_input.h"
@@ -20,6 +21,10 @@ extern ptrdiff_t g_xbox_mem_offset;
 
 static int enabled=-1;
 static uint32_t matrices[10][16], matrix_mask, viewport[6], stream, stride, textures[4], fvf, pixel_shader;
+static float vertex_constants[192][4],vertex_offset[4],vertex_scale[4];
+static xml1_vertex_program vertex_program;
+static uint32_t vertex_program_words[1024],vertex_program_count;
+static uint32_t vertex_decl[0x114/4];
 static uint32_t methods[0x800], method_set[0x800];
 static uint32_t material[17];
 static xml1_light_state light_state;
@@ -293,10 +298,30 @@ static void append(const void* data,size_t bytes) {
     }
     memcpy(packet+used,data,bytes); used+=bytes;
 }
-static void append_texture(uint32_t address,unsigned width,unsigned height,uint32_t packed) {
+static void append_texture(uint32_t address,unsigned width,unsigned height,uint32_t packed,unsigned stage) {
     size_t total=xml1_texture_bytes(width,height,packed);
     if(!total) fatal("invalid mip chain");
-    const unsigned char *pixels=guest(address,total);
+    unsigned format=packed&255;
+    const unsigned char *pixels=guest(address,total-(format==11?1024:0));
+    unsigned char *indexed=NULL;
+    if(format==11) {
+        /* Native SetPalette 0035C210 stores the resource at device+F98+
+         * stage*4, then emits NV097_SET_TEXTURE_PALETTE (1B20+stage*40).
+         * Snapshot both indices and palette: either may change between draws. */
+        uint32_t device=*(const uint32_t*)guest(0x36CAF8,4);
+        uint32_t palette=*(const uint32_t*)guest(device+0xF98+stage*4,4);
+        if(!palette)fatal("P8 texture without bound palette");
+        const uint32_t *p=guest(palette,12);
+        unsigned entries=256u>>((p[0]>>30)&3);
+        indexed=malloc(total);if(!indexed)fatal("P8 snapshot allocation failed");
+        memset(indexed,0,1024);memcpy(indexed,guest(0x80000000u+p[1],entries*4),entries*4);
+        /* Compare the palette plus native indices before unswizzling. Palette
+         * animation changes this key, while repeated unchanged draws avoid the
+         * conversion. The wire still contains a linear index mip chain. */
+        for(size_t i=0;i<total-1024;++i)if(pixels[i]>=entries)fatal("P8 palette index out of bounds");
+        memcpy(indexed+1024,pixels,total-1024);
+        pixels=indexed;
+    }
     static int wire_enabled=-1;
     if(wire_enabled<0) wire_enabled=getenv("XML1_DX8_NO_WIRE_CACHE")==NULL;
     uint32_t token=wire_enabled?xml1_texture_wire_token_v9(&texture_wire,address,width,height,packed,pixels,total):0;
@@ -304,15 +329,24 @@ static void append_texture(uint32_t address,unsigned width,unsigned height,uint3
     append(&evictions,4);
     if(evictions)append(texture_wire.evicted,evictions*4);
     append(&token,4);
-    if(token && !(token&XML1_WIRE_TEXTURE_DEFINE)) return;
-    unsigned format=packed&255;
+    if(token && !(token&XML1_WIRE_TEXTURE_DEFINE)) {free(indexed);return;}
+    if(indexed) {
+        append(indexed,1024);size_t at=1024;unsigned w=width,h=height;
+        for(unsigned level=0;level<xml1_texture_levels(packed);++level) {
+            size_t bytes=(size_t)w*h;void *linear=malloc(bytes);
+            if(!linear)fatal("P8 mip allocation failed");
+            xbox_unswizzle_rect(linear,indexed+at,w,h,1);append(linear,bytes);free(linear);
+            at+=bytes;w=w>1?w/2:1;h=h>1?h/2:1;
+        }
+        free(indexed);return;
+    }
     for(unsigned level=0;level<xml1_texture_levels(packed);++level) {
         size_t bytes=xml1_texture_level_bytes(width,height,format);
-        if(format==14) append(pixels,bytes);
+        if(format==12||format==14) append(pixels,bytes);
         else {
             void *linear=malloc(bytes);
             if(!linear) fatal("mip conversion allocation failed");
-            xbox_unswizzle_rect(linear,pixels,width,height,format==6?4:1);
+            xbox_unswizzle_rect(linear,pixels,width,height,(format==6||format==7)?4:1);
             if(frames==299 && format==6 && level==0 && getenv("XML1_CAPTURE_MOVIE_SOURCE")) {
                 FILE *out=fopen("build/movie-upload-frame300.bgra","wb");
                 if(!out || fwrite(linear,1,bytes,out)!=bytes) fatal("movie upload capture failed");
@@ -379,9 +413,46 @@ int xml1_graphics_wait_fence(uint32_t device,uint32_t target) {
     return xml1_graphics_fence_complete(device,target);
 }
 
+/* Called at the verified D990 return only for E4D0's viewport upload. */
+void xml1_graphics_vertex_viewport(uint32_t offset,uint32_t scale) {
+    if(!live())return;
+    uint32_t device=*(const uint32_t*)guest(0x36CAF8,4);
+    if(*(const uint32_t*)guest(device+8,4)&0x200)return; /* Native NORESERVEDCONSTANTS branch. */
+    memcpy(vertex_offset,guest(offset,16),16);memcpy(vertex_scale,guest(scale,16),16);
+    memcpy(vertex_constants[58],vertex_scale,16);memcpy(vertex_constants[59],vertex_offset,16);
+}
+static void append_program_vertex(const void *data) {
+    float inputs[16][4]={{0}};
+    for(unsigned i=0;i<16;++i) {
+        inputs[i][3]=1;if(!(vertex_program.inputs&(1u<<i)))continue;
+        const uint32_t *decl=vertex_decl+5+i*4;
+        unsigned format=decl[2],components=format>>4,bytes=(format&15)==2?components*4:format==0x40?4:0;
+        if(decl[0]||!bytes||components>4||decl[1]>stride||bytes>stride-decl[1]) {
+            fprintf(stderr,"[DX8 VERTEX INPUT] reg=%u stream=%u offset=%u format=%X stride=%u\n",i,decl[0],decl[1],format,stride);
+            fatal("unsupported shader vertex input");
+        }
+        const unsigned char *input=(const unsigned char*)data+decl[1];
+        if(format==0x40) {
+            inputs[i][0]=input[2]/255.0f;inputs[i][1]=input[1]/255.0f;
+            inputs[i][2]=input[0]/255.0f;inputs[i][3]=input[3]/255.0f;
+        } else memcpy(inputs[i],input,bytes);
+    }
+    xml1_program_vertex result;
+    if(!xml1_vertex_program_run(&vertex_program,inputs,vertex_constants,vertex_offset,vertex_scale,&result))
+        fatal("vertex shader execution range or output");
+    append(&result,sizeof(result));
+}
 void xml1_graphics_live_observe(uint32_t va) {
     if (!live()||va<0x35ADA0||va>=0x36F300) return;
     const uint32_t *a=guest(g_esp+4,32);
+    /* These native fastcall entry points receive physical NV constant indices.
+     * D210 uploads without updating the XDK shadow when NORESERVEDCONSTANTS is
+     * set; reading only 36BA40 therefore loses viewport and bone constants. */
+    if(va==0x35D100 || va==0x35D160 || va==0x35D210) {
+        unsigned words=va==0x35D100?4:va==0x35D160?16:a[0];
+        if(g_ecx>=192 || words>192*4-g_ecx*4 || words%4)fatal("vertex constant range");
+        memcpy(vertex_constants[g_ecx],guest(g_edx,words*4),words*4);
+    }
     if(va==0x3680D0) {
         /* Original Direct3D_CreateDevice takes presentation parameters as
          * argument five (003680F6/003680FA). The initialization viewport may
@@ -456,7 +527,38 @@ void xml1_graphics_live_observe(uint32_t va) {
         if(!light) fatal("light definition allocation failed");
         light->enabled=a[1]!=0;
     }
-    else if (va==0x35D760) fvf=a[0];
+    else if (va==0x35D760) {
+        fvf=a[0];
+        if(fvf&1) {
+            const uint32_t *object=guest(fvf-1,0x114);
+            if(!(object[1]&0x10)||!object[3]||object[3]>1024)fatal("unsupported shader object");
+            const uint32_t *commands=guest(fvf-1+0x114,object[3]*4);
+            if(vertex_program_count!=object[3]||memcmp(vertex_program_words,commands,object[3]*4)) {
+                xml1_vertex_program_destroy(&vertex_program);
+                if(!xml1_vertex_program_decode(&vertex_program,commands,object[3]))fatal("unsupported vertex program");
+                memcpy(vertex_program_words,commands,object[3]*4);vertex_program_count=object[3];
+                fprintf(stderr,"[DX8 VERTEX PROGRAM] instructions=%u inputs=%04X\n",vertex_program.steps,vertex_program.inputs);
+            }
+            memcpy(vertex_decl,object,0x114);
+        }
+
+        if((fvf&1)&&getenv("XML1_TRACE_VERTEX_DECL")) {
+            static uint32_t seen[32];static unsigned count;
+            unsigned i;for(i=0;i<count;++i)if(seen[i]==fvf)break;
+            if(i==count&&count<32) {
+                seen[count++]=fvf;const uint32_t *data=guest(fvf-1,192);
+                fprintf(stderr,"[DX8 VERTEX DECL] handle=%08X",fvf);
+                for(i=0;i<48;++i)fprintf(stderr," %08X",data[i]);fputc('\n',stderr);
+                if(data[3]&&data[3]<=1024) {
+                    char path[96];snprintf(path,sizeof(path),"build/vertex-program-%08X.bin",fvf);
+                    FILE *capture=fopen(path,"wb");
+                    size_t bytes=0x114+(size_t)data[3]*4;
+                    if(!capture||fwrite(guest(fvf-1,bytes),1,bytes,capture)!=bytes)fatal("vertex program capture failed");
+                    fclose(capture);
+                }
+            }
+        }
+    }
     else if (va==0x3692E0) pixel_shader=a[0];
     else if (va==0x35D360&&a[0]==0) { stream=a[1]; stride=a[2]; }
     else if (va==0x35C060) { if (a[0]>=4) fatal("invalid texture stage"); textures[a[0]]=a[1]; }
@@ -478,7 +580,34 @@ void xml1_graphics_live_observe(uint32_t va) {
         uint32_t second_color_op=*(const uint32_t *)guest(0x36C660+128+12*4,4);
         const uint32_t *ts=guest(0x36C660,512);
         int second_active=ts[12]!=1&&second_color_op!=1;
-        if ((a[0]!=5&&a[0]!=6&&a[0]!=7)||(a[0]==5&&vertex_count%3)||vertex_count<3||vertex_count>1000000||!xml1_fvf_stride(fvf)||stride!=xml1_fvf_stride(fvf)||pixel_shader||!stream||!textures[0]||(second_active&&(!textures[1]||ts[76]!=1))) {
+        if((fvf&1)&&getenv("XML1_TRACE_VERTEX_DECL")) {
+            static unsigned mismatches;
+            const float *native=guest(0x36BA40+96*16,96*16);
+            if(memcmp(native,vertex_constants[96],96*16)&&mismatches++<8) {
+                fprintf(stderr,"[DX8 CONSTANT DIFFERENCE] frame=%u",frames);
+                for(unsigned i=96;i<192;++i)if(memcmp(native+(i-96)*4,vertex_constants[i],16))fprintf(stderr," %u",i);
+                fputc('\n',stderr);
+            }
+        }
+        if ((fvf&1)&&getenv("XML1_TRACE_VERTEX_DECL")) {
+            static unsigned captured;
+            if(!captured++ || capture_stream) {
+                char dump_path[128];snprintf(dump_path,sizeof(dump_path),"build/vertex-draw-%u.bin",frames);
+                FILE *fp=fopen(dump_path,"wb");
+                uint32_t device=*(const uint32_t*)guest(0x36CAF8,4);
+                const uint32_t *buffer=guest(stream,12);
+                uint32_t meta[8]={fvf,stride,vertex_count,indexed,a[1],a[2],buffer[1],device};
+                if(!fp)fatal("vertex draw capture open");
+                fwrite(meta,4,8,fp);fwrite(vertex_constants,16,192,fp);
+                fwrite(guest(device,0x2000),1,0x2000,fp);
+                fwrite(guest(0x36C660,512),1,512,fp);
+                fwrite(guest(0x36C860,168*4),4,168,fp);
+                if(indexed)fwrite(guest(a[2],vertex_count*2),2,vertex_count,fp);
+                size_t bytes=(size_t)(vertex_count+(indexed?0:a[1]))*stride;
+                fwrite(guest(0x80000000+buffer[1],bytes),1,bytes,fp);fclose(fp);
+            }
+        }
+        if ((a[0]!=5&&a[0]!=6&&a[0]!=7)||(a[0]==5&&vertex_count%3)||vertex_count<3||vertex_count>1000000||(!(fvf&1)&&(!xml1_fvf_stride(fvf)||stride!=xml1_fvf_stride(fvf)))||pixel_shader||!stream||!textures[0]||(second_active&&(!textures[1]||ts[76]!=1))) {
             for(unsigned stage=0;stage<4;++stage) if (textures[stage]) {
                 const uint32_t *t=guest(textures[stage],20);
                 const uint32_t *s=guest(0x36C660+stage*128,128);
@@ -510,21 +639,25 @@ void xml1_graphics_live_observe(uint32_t va) {
         uint32_t second_header[3]={0}; size_t second_bytes=0;
         if(tex1) {
             unsigned fmt=(tex1[3]>>8)&255;
-            if((fmt!=14&&fmt!=6&&fmt!=0&&fmt!=25)||tex1[4]) fatal("unimplemented second texture format");
+            if((fmt!=14&&fmt!=6&&fmt!=7&&fmt!=0&&fmt!=11&&fmt!=12&&fmt!=25)||tex1[4]) fatal("unimplemented second texture format");
             second_header[0]=1u<<((tex1[3]>>20)&15); second_header[1]=1u<<((tex1[3]>>24)&15); second_header[2]=fmt|(((tex1[3]>>16)&15)<<8);
             second_bytes=xml1_texture_bytes(second_header[0],second_header[1],second_header[2]);
             if(!second_bytes) fatal("invalid second mip chain");
-            if((uint64_t)tex1[1]+second_bytes>64u*1024*1024) fatal("second texture bounds");
+            if((uint64_t)tex1[1]+second_bytes-(fmt==11?1024:0)>64u*1024*1024) fatal("second texture bounds");
         }
         for(unsigned stage=0;stage<2;++stage)
             if(ts[stage*32+21]&&!(matrix_mask&(1u<<(stage+2)))) fatal("missing texture transform");
         uint32_t format=(tex[3]>>8)&255;
-        if ((format!=14&&format!=6&&format!=0&&format!=25)||tex[4]) fatal("unimplemented texture format");
-        uint32_t header[6]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),vertex_count,format|(((tex[3]>>16)&15)<<8),fvf,a[0]};
+        if ((format!=14&&format!=6&&format!=7&&format!=0&&format!=11&&format!=12&&format!=25)||tex[4]) {
+            fprintf(stderr,"[DX8 UNSUPPORTED TEXTURE] format=%u resource=%08X header=%08X/%08X/%08X/%08X/%08X\n",
+                format,textures[0],tex[0],tex[1],tex[2],tex[3],tex[4]);
+            fatal("unimplemented texture format");
+        }
+        uint32_t header[6]={1u<<((tex[3]>>20)&15),1u<<((tex[3]>>24)&15),vertex_count,format|(((tex[3]>>16)&15)<<8),(fvf&1)?XML1_VERTEX_PROGRAM_WIRE:fvf,a[0]};
         uint64_t offset=(uint64_t)vb[1]+(indexed?0:(uint64_t)a[1]*stride), bytes=(uint64_t)vertex_count*stride;
         size_t tex_bytes=xml1_texture_bytes(header[0],header[1],header[3]);
         if(!tex_bytes) fatal("invalid primary mip chain");
-        if (offset+bytes>64u*1024*1024||(uint64_t)tex[1]+tex_bytes>64u*1024*1024) fatal("resource bounds");
+        if (offset+bytes>64u*1024*1024||(uint64_t)tex[1]+tex_bytes-(format==11?1024:0)>64u*1024*1024) fatal("resource bounds");
         uint32_t rs[168]; memcpy(rs,guest(0x36C860,sizeof(rs)),sizeof(rs));
         uint32_t lights[32][26], light_mask;
         if(!xml1_light_snapshot(&light_state,lights,&light_mask)) fatal("more than 32 simultaneously enabled lights");
@@ -539,7 +672,7 @@ void xml1_graphics_live_observe(uint32_t va) {
         append(material,sizeof(material)); append(&light_mask,4);
         for(unsigned i=0;i<32;++i) if(light_mask&(1u<<i)) append(lights[i],104);
         append(second_header,sizeof(second_header)); append(matrices[2],64); append(matrices[3],64);
-        const void *pixels=guest(0x80000000+tex[1],tex_bytes);
+        const void *pixels=guest(0x80000000+tex[1],tex_bytes-(format==11?1024:0));
         if (format==6) {
             static unsigned argb_reports;
             if (argb_reports<4 || frames%60==0) {
@@ -554,8 +687,8 @@ void xml1_graphics_live_observe(uint32_t va) {
                 ++argb_reports;
             }
         }
-        append_texture(0x80000000+tex[1],header[0],header[1],header[3]);
-        if(tex1) append_texture(0x80000000+tex1[1],second_header[0],second_header[1],second_header[2]);
+        append_texture(0x80000000+tex[1],header[0],header[1],header[3],0);
+        if(tex1) append_texture(0x80000000+tex1[1],second_header[0],second_header[1],second_header[2],1);
         const int track_menu_vertices=xml1_pc_native_tracking();
         if(indexed) {
             const uint16_t *indices=guest(a[2],vertex_count*2);
@@ -577,7 +710,8 @@ void xml1_graphics_live_observe(uint32_t va) {
                 uint64_t at=(uint64_t)vb[1]+((uint64_t)base+unique[i])*stride;
                 if(at+stride>64u*1024*1024) fatal("indexed vertex bounds");
                 if(track_menu_vertices)menu_draw_vertex(0x80000000+(uint32_t)at,guest(0x80000000+(uint32_t)at,stride));
-                append(guest(0x80000000+(uint32_t)at,stride),stride);
+                if(fvf&1)append_program_vertex(guest(0x80000000+(uint32_t)at,stride));
+                else append(guest(0x80000000+(uint32_t)at,stride),stride);
             }
             append(compact,(size_t)vertex_count*2);
             static unsigned reports;
@@ -586,7 +720,8 @@ void xml1_graphics_live_observe(uint32_t va) {
             uint32_t index_count=0;append(&index_count,4);append(&vertex_count,4);
             const unsigned char *vertices=guest(0x80000000+(uint32_t)offset,(size_t)bytes);
             if(track_menu_vertices)for(unsigned i=0;i<vertex_count;++i)menu_draw_vertex(0x80000000+(uint32_t)offset+i*stride,vertices+(size_t)i*stride);
-            append(vertices,(size_t)bytes);
+            if(fvf&1)for(unsigned i=0;i<vertex_count;++i)append_program_vertex(vertices+(size_t)i*stride);
+            else append(vertices,(size_t)bytes);
         }
         ++draws;
         frame_geometry=1;

@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include "xbox_memory_layout.h"
 #include "guest_input.h"
+#include "raven_script_extensions.h"
+#include "raven_filter_guest.h"
+#include "raven_effect_sound_guest.h"
+#include "raven_victim_event_guest.h"
+#include "raven_harming_callbacks.h"
 extern volatile uint32_t g_icall_trace[16], g_icall_trace_idx;
 extern volatile uint64_t g_icall_count;
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_ebx, g_esi, g_edi, g_ebp, g_esp;
@@ -16,7 +21,12 @@ recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
     if (xbox_va == 0x00342AA0) return xml1_guest_memmove;
     if (xbox_va == 0x00368BE0) return xml1_graphics_swap;
     if (xbox_va == 0x0035B040) return xml1_graphics_wait_vblank;
-    return xml1_input_lookup(xbox_va);
+    recomp_func_t extension=xml1_script_extension_lookup(xbox_va);
+    if(!extension)extension=xml1_filter_event_lookup(xbox_va);
+    if(!extension)extension=raven_effect_sound_lookup(xbox_va);
+    if(!extension)extension=raven_harm_pulse_lookup(xbox_va);
+    if(!extension)extension=raven_harming_callback_lookup(xbox_va);
+    return extension ? extension : xml1_input_lookup(xbox_va);
 }
 
 /* Stop at the first unresolved call; skipped initialization is not success. */

@@ -39,6 +39,20 @@
 #include "build_settings.h"
 #include "loose_setup.h"
 #include "asset_routes.h"
+#include "raven_pc_sound_cache.h"
+#include "raven_shared_powerups_runtime.h"
+static int xml1_game_asset_filter(const char *input,char *output,unsigned size) {
+    char selected[4096];
+    int routed=xml1_asset_path_filter(input,selected,sizeof(selected));
+    if(routed<0)return -1;
+    const char *path=routed?selected:input;
+    int sound=raven_pc_sound_path(path,output,size);
+    if(sound)return sound;
+    if(!routed)return 0;
+    size_t length=strlen(selected)+1;if(length>size)return -1;
+    memcpy(output,selected,length);return 1;
+}
+#include "raven_imported_talents.h"
 #include "pc_menu.h"
 #include "pc_input_channel.h"
 
@@ -59,6 +73,10 @@ static int s_memory_query_test;
 static int s_irql_test;
 static int s_swizzle_test;
 static int s_progression_test;
+static int s_powerup_definition_test;
+static int s_filter_event_test;
+int xml1_filter_event_test(void);
+int xml1_powerup_definition_test(void);
 int xml1_progression_test(void);
 int xml1_swizzle_test(void);
 void xml1_native_probe_start(void);
@@ -326,7 +344,7 @@ static int irql_bridge_test(void)
         }
     }
     puts("[TEST] IRQL bridges: CL argument, previous-level return and zero-argument stack cleanup passed.");
-    const uint32_t addresses[]={0x80000000,0x808A4000,0x83FFFFFF,0x01080000,0x00010000};
+    const uint32_t addresses[]={0x80000000,0x808A4000,0x83FFFFFF};
     guest_fn physical=recomp_lookup_kernel(*(uint32_t *)(memory+0x003C6D6C));
     if (!physical) return 24;
     for (unsigned i=0;i<sizeof(addresses)/sizeof(addresses[0]);++i) {
@@ -339,7 +357,26 @@ static int irql_bridge_test(void)
             return 25;
         }
     }
-    puts("[TEST] Physical-address bridge: contiguous mirror translation, low identity and stack cleanup passed.");
+    /* Pageable buffers now receive stable physical page identities instead
+     * of low-VA identity mapping. Verify the bridge through real DMA reads;
+     * guest-physical-test separately covers page collisions and boundaries. */
+    extern void xml1_physical_read(void *,uint32_t,void *,size_t);
+    const uint32_t low_addresses[]={0x01080025,0x00010025};
+    uint32_t mapped_pages[2];
+    for(unsigned i=0;i<2;++i) {
+        uint32_t address=low_addresses[i];
+        g_esp=sp;*(uint32_t *)(memory+sp)=0xBEEF0001;
+        *(uint32_t *)(memory+sp+4)=address;physical();
+        mapped_pages[i]=g_eax;
+        if(g_esp!=sp+8 || (g_eax&4095)!=(address&4095))return 25;
+        uint32_t value=0;
+        xml1_physical_read(memory+0x80000000u,g_eax,&value,sizeof(value));
+        if(value!=*(uint32_t *)(memory+address))return 25;
+        g_esp=sp;physical();
+        if(g_esp!=sp+8 || g_eax!=mapped_pages[i])return 25;
+    }
+    if(mapped_pages[0]==mapped_pages[1])return 25;
+    puts("[TEST] Physical-address bridge: contiguous translation, stable pageable identities, DMA aliases and stack cleanup passed.");
     /* Force another thread's lookup between this lookup and invocation. */
     xbox_KfLowerIrql(0);
     guest_fn raise=recomp_lookup_kernel(*(uint32_t *)(memory+slots[0]));
@@ -417,7 +454,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     g_xbox_mem_offset = xbox_GetMemoryOffset();
     printf("Xbox memory mapped. Offset: 0x%llX\n", (unsigned long long)g_xbox_mem_offset);
-    if (getenv("XML1_APU") && !s_memory_query_test && !s_irql_test && !s_swizzle_test && !s_progression_test) {
+    if (getenv("XML1_APU") && !s_memory_query_test && !s_irql_test && !s_swizzle_test && !s_progression_test && !s_powerup_definition_test) {
         /* DSP scratch buffers and scatter/gather tables currently observed in
          * XML1 use physical allocations backed by the contiguous window. */
         g_apu_state = mcpx_apu_init_standalone((uint8_t *)((uintptr_t)g_xbox_mem_offset + 0x80000000u));
@@ -491,8 +528,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             return 4;
         }
         extern void xbox_set_asset_path_filter(int (*filter)(const char*,char*,unsigned));
-        xbox_set_asset_path_filter(xml1_asset_path_filter);
+        if(!raven_pc_sound_cache_init(test_game_dir ? test_game_dir : YOUR_GAME_DIR))return 4;
+        if(!raven_shared_powerups_init(test_game_dir ? test_game_dir : YOUR_GAME_DIR))return 4;
+        xbox_set_asset_path_filter(xml1_game_asset_filter);
         xbox_path_init(test_game_dir ? test_game_dir : YOUR_GAME_DIR, NULL);
+        if(!raven_imported_talents_init(test_game_dir ? test_game_dir : YOUR_GAME_DIR,
+                xml1_build_settings.text_language,settings_error,sizeof(settings_error))) {
+            fprintf(stderr,"[IMPORTED TALENTS ERROR] %s\n",settings_error);
+            return 4;
+        }
     }
 
     /* Step 5: Initialize kernel bridge (thunk table in Xbox memory) */
@@ -502,8 +546,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     /* Step 6: Initialize stack */
     g_esp = XBOX_STACK_TOP;
 
-    if (s_memory_query_test || s_irql_test || s_swizzle_test || s_progression_test) {
-        int result = s_progression_test ? xml1_progression_test() : s_swizzle_test ? xml1_swizzle_test() : s_irql_test ? irql_bridge_test() : memory_query_bridge_test();
+    if (s_memory_query_test || s_irql_test || s_swizzle_test || s_progression_test || s_powerup_definition_test || s_filter_event_test) {
+        int result = s_filter_event_test ? xml1_filter_event_test() : s_powerup_definition_test ? xml1_powerup_definition_test() : s_progression_test ? xml1_progression_test() : s_swizzle_test ? xml1_swizzle_test() : s_irql_test ? irql_bridge_test() : memory_query_bridge_test();
         xbox_kernel_shutdown();
         xbox_MemoryLayoutShutdown();
         free(xbe_data);
@@ -659,7 +703,7 @@ int main(int argc, char **argv)
                  "  --muted     Silence this game's output; preserve audio pacing.");
             return 0;
         } else if (strcmp(argv[i], "--memory-query-test") &&
-                   strcmp(argv[i], "--irql-test") && strcmp(argv[i], "--swizzle-test") && strcmp(argv[i], "--progression-test")) {
+                   strcmp(argv[i], "--irql-test") && strcmp(argv[i], "--swizzle-test") && strcmp(argv[i], "--progression-test") && strcmp(argv[i], "--powerup-definition-test") && strcmp(argv[i], "--filter-event-test")) {
             fprintf(stderr, "Unknown argument: %s\n", argv[i]);
             return 2;
         }
@@ -673,7 +717,9 @@ int main(int argc, char **argv)
     s_irql_test = argc == 2 && strcmp(argv[1], "--irql-test") == 0;
     s_swizzle_test = argc == 2 && strcmp(argv[1], "--swizzle-test") == 0;
     s_progression_test = argc == 2 && strcmp(argv[1], "--progression-test") == 0;
-    if(!s_memory_query_test && !s_irql_test && !s_swizzle_test && !s_progression_test && getenv("XML1_LIVE_DX8")) {
+    s_filter_event_test = argc == 2 && strcmp(argv[1], "--filter-event-test") == 0;
+    s_powerup_definition_test = argc == 2 && strcmp(argv[1], "--powerup-definition-test") == 0;
+    if(!s_memory_query_test && !s_irql_test && !s_swizzle_test && !s_progression_test && !s_powerup_definition_test && !s_filter_event_test && getenv("XML1_LIVE_DX8")) {
         Xml1PcSettings settings;char error[256],resolution[32];
         if(!xml1_pc_settings_load("pc-settings.ini",&settings,error,sizeof(error))) {
             fprintf(stderr,"[PC SETTINGS] %s\n",error);return 4;

@@ -1,0 +1,4 @@
+Source: https://github.com/xemu-project/nv2a_vsh_cpu
+Revision: 561fe80da57a881f89000256b459440c0178a7ce
+Pinned to xemu's subprojects/nv2a_vsh_cpu.wrap on 2026-09-17.
+Source files copied unmodified. See LICENSE and embedded Mesa notices.
