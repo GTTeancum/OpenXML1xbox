@@ -1540,4 +1540,13 @@ Reported by a player who installed 0.9b as the README describes (ISO filesystem,
 
 Routing is now per bank: a `sounds/zsds/<bank>` request goes to `sounds/<language>/<bank>` only when that file exists, and otherwise keeps the disc path. The imported PC banks still route to `sounds/eng`, where `raven_pc_sound_path` converts them by header as before; a complete translated folder routes exactly as before; a translated folder missing a bank now falls back to the disc bank instead of failing. Movie routing is unchanged.
 
-`asset-routes-test` covers a missing bank in a language folder (disc path kept), a present one (routed), and the 0.9b layout (Bishop routed to `sounds/eng`, menu bank kept on `sounds/zsds`); the new checks fail against the previous router. Not yet verified: an optimized game rebuild with this change. The player's audio was confirmed with the equivalent file layout (the two banks moved into `sounds/zsds`, removing `sounds/eng`), which the old router also resolves correctly.
+`asset-routes-test` covers a missing bank in a language folder (disc path kept), a present one (routed), and the 0.9b layout (Bishop routed to `sounds/eng`, menu bank kept on `sounds/zsds`); the new checks fail against the previous router. Optimized rebuild verified (fresh code generation from the supplied XBE with every generator guard, then `xml1-boot-probe`). A/B on one copy of a player install restored to the exact 0.9b README layout (`sounds/eng` holding only the two PC banks, `sounds/zsds` as extracted from the disc), each run hidden and muted, driven to the main menu with the process-local test pad and navigated with the D-pad, capturing the game's own DirectSound mix (`XML1_CAPTURE_DSOUND_PCM`):
+
+| | 0.9b release exe | this change |
+|---|---|---|
+| Sound bank files opened | 0 | 4 (`menu_a.zss`, `menu_c.zss`, `x_common.zsm`, `x_voice.zss`) |
+| Failed opens of banks the disc has | 3 | 0 |
+| Main-menu mix | silent (RMS 0 for about 30 s) | continuous (RMS 1,800-2,500 per second) |
+| Intro movies | audible | audible, same levels |
+
+Remaining failed opens in the second run are `.zss`/`.zsm` variants the disc does not contain. Not exercised in-game: the imported Bishop/Sunfire PC banks under `sounds/eng`, which only load with those characters; the unit test covers that route. The player separately confirmed audio with the equivalent file layout (the two banks moved into `sounds/zsds`).
