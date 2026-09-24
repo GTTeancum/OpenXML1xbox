@@ -1550,3 +1550,17 @@ Routing is now per bank: a `sounds/zsds/<bank>` request goes to `sounds/<languag
 | Intro movies | audible | audible, same levels |
 
 Remaining failed opens in the second run are `.zss`/`.zsm` variants the disc does not contain. Not exercised in-game: the imported Bishop/Sunfire PC banks under `sounds/eng`, which only load with those characters; the unit test covers that route. The player separately confirmed audio with the equivalent file layout (the two banks moved into `sounds/zsds`).
+
+### 2026-09-24: repeated team changes exhaust contiguous memory
+
+Changing the team at an Xtraction Point reloads the level. After about four reloads in one session the game ended with `[FATAL DX8 LIVE] unimplemented indexed/UP/immediate draw API`, preceded by `[CONTIG] arena exhausted (… 66976464 of 67108864 used)`. XboxRecomp's contiguous window was a bump allocator that never freed, and `MmFreeContiguousMemory` passed its addresses to the general heap, which does not own them. Xbox D3D places textures and vertex buffers in that window and frees them when a level unloads (589 frees on the first team change), so every reload leaked the previous level's resources until D3D fell back to a draw path the renderer does not implement.
+
+`patches/xboxrecomp-contiguous-free.patch` records each block, returns freed blocks to a sorted, merged free list reused first-fit, and lowers the bump pointer when the top range is freed. `xbox_ContiguousAllocatedBytes` stays a high-water mark, so the pushbuffer executor still recognises any address once handed out. The texture wire cache compares contents, so reused addresses cannot return stale textures. `XBOX_CONTIG_TRACE` logs each free.
+
+Each run hidden and muted from a new game at the first Xtraction Point, opening the team screen and accepting to reload the level:
+
+| | 0.9b release exe | this change |
+|---|---|---|
+| Reloads survived | 4 (fatal on the 5th, regular and alternate costumes alike) | 8 of 8 |
+| Contiguous use after reloads | 64 MB, exhausted | steady at about 22.5 MB |
+| Rendering after the last reload | n/a | level, characters, HUD correct |
