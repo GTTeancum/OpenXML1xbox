@@ -25,8 +25,34 @@ int main(void) {
     snprintf(path,sizeof(path),"%s/sounds",root);CHECK(CreateDirectoryA(path,NULL));
     snprintf(path,sizeof(path),"%s/sounds/fre",root);CHECK(CreateDirectoryA(path,NULL));
     CHECK(xml1_asset_routes_init(root,&s,error,sizeof(error)));
+    /* Only banks the language folder holds are routed; the rest stay on the disc copy. */
+    CHECK(xml1_asset_path_filter("D:\\sounds\\ZSDs\\x\\_\\x_common.zsm",output,sizeof(output))==0);
+    char bank[MAX_PATH];
+    snprintf(bank,sizeof(bank),"%s/sounds/fre/x",root);CHECK(CreateDirectoryA(bank,NULL));
+    snprintf(bank,sizeof(bank),"%s/sounds/fre/x/_",root);CHECK(CreateDirectoryA(bank,NULL));
+    snprintf(bank,sizeof(bank),"%s/sounds/fre/x/_/x_common.zsm",root);
+    {FILE *f=fopen(bank,"wb");CHECK(f);fclose(f);}
     CHECK(xml1_asset_path_filter("D:\\sounds\\ZSDs\\x\\_\\x_common.zsm",output,sizeof(output))==1);
     CHECK(!strcmp(output,"D:/sounds/fre/x/_/x_common.zsm"));
+    CHECK(xml1_asset_path_filter("D:/sounds/zsds/m/e/menu_a.zsm",output,sizeof(output))==0);
+    CHECK(DeleteFileA(bank));
+    snprintf(bank,sizeof(bank),"%s/sounds/fre/x/_",root);CHECK(RemoveDirectoryA(bank));
+    snprintf(bank,sizeof(bank),"%s/sounds/fre/x",root);CHECK(RemoveDirectoryA(bank));
+    CHECK(RemoveDirectoryA(path));
+    /* 0.9b: a partial sounds/eng (only imported PC banks) must not silence the disc's banks. */
+    strcpy(s.audio_language,"eng");
+    snprintf(path,sizeof(path),"%s/sounds/eng",root);CHECK(CreateDirectoryA(path,NULL));
+    snprintf(bank,sizeof(bank),"%s/sounds/eng/b",root);CHECK(CreateDirectoryA(bank,NULL));
+    snprintf(bank,sizeof(bank),"%s/sounds/eng/b/i",root);CHECK(CreateDirectoryA(bank,NULL));
+    snprintf(bank,sizeof(bank),"%s/sounds/eng/b/i/bishop_m.zsm",root);
+    {FILE *f=fopen(bank,"wb");CHECK(f);fclose(f);}
+    CHECK(xml1_asset_routes_init(root,&s,error,sizeof(error)));
+    CHECK(xml1_asset_path_filter("D:/sounds/zsds/b/i/bishop_m.zsm",output,sizeof(output))==1);
+    CHECK(!strcmp(output,"D:/sounds/eng/b/i/bishop_m.zsm"));
+    CHECK(xml1_asset_path_filter("\\Device\\CdRom0\\sounds/zsds/m/e/menu_a.zsm",output,sizeof(output))==0);
+    CHECK(DeleteFileA(bank));
+    snprintf(bank,sizeof(bank),"%s/sounds/eng/b/i",root);CHECK(RemoveDirectoryA(bank));
+    snprintf(bank,sizeof(bank),"%s/sounds/eng/b",root);CHECK(RemoveDirectoryA(bank));
     CHECK(RemoveDirectoryA(path));snprintf(path,sizeof(path),"%s/sounds",root);CHECK(RemoveDirectoryA(path));
     strcpy(s.audio_language,"eng");strcpy(s.movie_language,"fre");CHECK(!xml1_asset_routes_init(root,&s,error,sizeof(error)));
     snprintf(path,sizeof(path),"%s/movies",root);CHECK(CreateDirectoryA(path,NULL));

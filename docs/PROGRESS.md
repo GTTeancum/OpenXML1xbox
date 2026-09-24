@@ -1533,3 +1533,20 @@ Native queue regression compiles the real backend with mocked XAudio2: checks pr
 A55-second bounded original-data game run plus30-second OBS recording used the user's unchanged1280x720/30fps H264/AAC settings. All prior OBS source visibility and microphone mute state restored afterward; game exited via watchdog, no game left running. New telemetry reports0 empty observations over9750 submissions/52 seconds of PCM; maximum submission gap15.642ms. Compared captured OBS AAC waveform with simultaneously captured native DSP PCM using half-second windows at one-second intervals:26 audible windows all aligned at a constant6.655833-second source offset (6kHz comparison resolution); correlations0.9715-0.9990. This supports stable audio delivery during the tested intro, not complete gameplay audio fidelity or long-session correctness. Existing source/DSP clipping and mono-movie investigations remain separate from output starvation.
 
 Evidence: work/audio-headroom-game.log, work/audio-headroom-dsp.pcm/.csv, projectless work/audio-headroom-verification.json. New OBS video: C:/Users/smmel/Documents/Codex/2026-09-13/is/outputs/XML1-audio-headroom-test.mp4 (29.9667 sec). Old OBS smoke: outputs/XML1-OBS-smoke.mp4 (48.5333 sec). No new screenshot posted. Goal remains incomplete; save load and gameplay stutter/full level1 still need user confirmation. This user-requested audio fix was authorized after the earlier no-launch hold and used ordinary process management and OBS API only.
+
+### 2026-09-24: 0.9b installs silent because of a partial sounds/eng
+
+Reported by a player who installed 0.9b as the README describes (ISO filesystem, then the release zip over it): the game ran but played no sound. The release zip adds `sounds/eng/` holding only the two imported PC banks (`b/i/bishop_m.zsm`, `s/u/sun_m.zsm`). `xml1_asset_routes_init` enabled audio-language routing whenever `sounds/<audio language>` existed, and `xml1_asset_path_filter` then sent every `sounds/zsds/` request there, so every disc bank (menus, voices, levels) resolved to a missing file. That run's log shows 64 sound-bank path lookups, all under `sounds/eng/`, where only the two PC banks exist; the XAudio2 output itself was running and unmuted.
+
+Routing is now per bank: a `sounds/zsds/<bank>` request goes to `sounds/<language>/<bank>` only when that file exists, and otherwise keeps the disc path. The imported PC banks still route to `sounds/eng`, where `raven_pc_sound_path` converts them by header as before; a complete translated folder routes exactly as before; a translated folder missing a bank now falls back to the disc bank instead of failing. Movie routing is unchanged.
+
+`asset-routes-test` covers a missing bank in a language folder (disc path kept), a present one (routed), and the 0.9b layout (Bishop routed to `sounds/eng`, menu bank kept on `sounds/zsds`); the new checks fail against the previous router. Optimized rebuild verified (fresh code generation from the supplied XBE with every generator guard, then `xml1-boot-probe`). A/B on one copy of a player install restored to the exact 0.9b README layout (`sounds/eng` holding only the two PC banks, `sounds/zsds` as extracted from the disc), each run hidden and muted, driven to the main menu with the process-local test pad and navigated with the D-pad, capturing the game's own DirectSound mix (`XML1_CAPTURE_DSOUND_PCM`):
+
+| | 0.9b release exe | this change |
+|---|---|---|
+| Sound bank files opened | 0 | 4 (`menu_a.zss`, `menu_c.zss`, `x_common.zsm`, `x_voice.zss`) |
+| Failed opens of banks the disc has | 3 | 0 |
+| Main-menu mix | silent (RMS 0 for about 30 s) | continuous (RMS 1,800-2,500 per second) |
+| Intro movies | audible | audible, same levels |
+
+Remaining failed opens in the second run are `.zss`/`.zsm` variants the disc does not contain. Not exercised in-game: the imported Bishop/Sunfire PC banks under `sounds/eng`, which only load with those characters; the unit test covers that route. The player separately confirmed audio with the equivalent file layout (the two banks moved into `sounds/zsds`).
