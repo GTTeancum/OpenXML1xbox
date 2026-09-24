@@ -6,6 +6,7 @@ typedef struct Xml1BuildSettings {
     int modder_mode;
     int performance_logging;
     int graphics_adapter; /* -1: OS/driver preference; otherwise DX8 ordinal. */
+    int danger_room_unlock_all; /* Main-menu Danger Room: every mode, character and arena. */
 } Xml1BuildSettings;
 extern Xml1BuildSettings xml1_build_settings;
 /* Missing file uses defaults. Invalid values fail with a useful error. */

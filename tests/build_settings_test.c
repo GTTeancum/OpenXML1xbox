@@ -14,17 +14,19 @@ int main(void) {
         CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.prefer_files_loose==(i<3));
         snprintf(text,sizeof(text),"[BUILD]\nmodderMode = %s\n",values[i]);put(path,text);
         CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.modder_mode==(i<3));
+        snprintf(text,sizeof(text),"[BUILD]\ndangerRoomUnlockAll = %s\n",values[i]);put(path,text);
+        CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.danger_room_unlock_all==(i<3));
         snprintf(text,sizeof(text),"[BUILD]\nperformanceLogging = %s\n",values[i]);put(path,text);
         CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.performance_logging==(i<3));
     }
     put(path,"[BUILD]\nDefaultTextLanguage=fre\nAllowedTextLanguages=eng, fre, ger\n");
     CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(!strcmp(s.text_language,"fre"));CHECK(s.prefer_files_loose);
-    const char *invalid[]={"performanceLogging=yes","modderMode=yes","PreferFilesLoose=yes","DefaultTextLanguage=zzz","DefaultMovieLanguage=fre","AllowedTextLanguages=eng,","AllowedTextLanguages=","bad line"};
+    const char *invalid[]={"performanceLogging=yes","modderMode=yes","dangerRoomUnlockAll=yes","PreferFilesLoose=yes","DefaultTextLanguage=zzz","DefaultMovieLanguage=fre","AllowedTextLanguages=eng,","AllowedTextLanguages=","bad line"};
     for(unsigned i=0;i<sizeof(invalid)/sizeof(invalid[0]);++i) {
         char text[256];snprintf(text,sizeof(text),"[BUILD]\n%s\n",invalid[i]);put(path,text);
         CHECK(!xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(*error);
     }
-    CHECK(DeleteFileA(path));CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.prefer_files_loose);CHECK(!strcmp(s.text_language,"eng"));CHECK(!s.modder_mode);CHECK(s.performance_logging);
+    CHECK(DeleteFileA(path));CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.prefer_files_loose);CHECK(!strcmp(s.text_language,"eng"));CHECK(!s.modder_mode);CHECK(!s.danger_room_unlock_all);CHECK(s.performance_logging);
     CHECK(s.graphics_adapter==-1);
     put(path,"[BUILD]\ngraphicsAdapter=1\n");CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.graphics_adapter==1);
     put(path,"[BUILD]\ngraphicsAdapter=auto\n");CHECK(xml1_read_build_settings(path,&s,error,sizeof(error)));CHECK(s.graphics_adapter==-1);

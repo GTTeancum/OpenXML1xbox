@@ -58,4 +58,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Raven loop sound guard failed.' }
     & $python (Join-Path $PSScriptRoot 'guard-raven-effect-sound.py')
     if ($LASTEXITCODE -ne 0) { throw 'Effect/sound event guard failed.' }
+    & $python (Join-Path $PSScriptRoot 'guard-danger-room-unlock.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Danger Room unlock guard failed.' }
 } finally { Pop-Location }
