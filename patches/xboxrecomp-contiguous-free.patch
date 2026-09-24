@@ -1,0 +1,221 @@
+diff --git a/src/kernel/xbox_memory_layout.c b/src/kernel/xbox_memory_layout.c
+index c6daf37..ac5729c 100644
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -2156,45 +2156,179 @@ void xbox_FreeThreadStack(uint32_t stack_top)
+  *
+  * Grows up from the base; XBOX_GPU_INSTANCE_DEFAULT is carved off the top by
+  * the GPU-instance bridge, so the two do not meet until the window is full.
+- * Never freed: contiguous blocks are framebuffers and pushbuffers, which a
+- * title allocates once. */
++ *
++ * Blocks are also freed. Framebuffers and pushbuffers are allocated once, but
++ * Xbox D3D puts textures and vertex buffers here too and releases them with
++ * MmFreeContiguousMemory when a level unloads. X-Men Legends reloads its level
++ * on every team change; with a pure bump pointer each reload leaked the last
++ * level's resources until the window ran out and D3D fell back to a draw path
++ * the renderer does not implement. Freed ranges are kept sorted and merged,
++ * reused first-fit, and a range that reaches the bump pointer lowers it. */
+ static volatile LONG g_contig_next = (LONG)XBOX_CONTIG_BASE;
++/* Never lowered: callers use it to decide whether a physical address was ever
++ * handed out, which a later free does not change. */
++static volatile LONG g_contig_high = (LONG)XBOX_CONTIG_BASE;
++static SRWLOCK g_contig_lock = SRWLOCK_INIT;
++
++#define XBOX_CONTIG_MAX_BLOCKS 32768u
++typedef struct { uint32_t start, size; } xbox_contig_range;
++static xbox_contig_range g_contig_blocks[XBOX_CONTIG_MAX_BLOCKS];  /* live */
++static uint32_t g_contig_block_count;
++static xbox_contig_range g_contig_free[XBOX_CONTIG_MAX_BLOCKS];    /* sorted */
++static uint32_t g_contig_free_count;
++
++static int contig_trace(void)
++{
++    static int enabled = -1;
++    if (enabled < 0) enabled = getenv("XBOX_CONTIG_TRACE") != NULL;
++    return enabled;
++}
++
++/* Carve [result, result + size) out of free range i, keeping what is left. */
++static void contig_take_free(uint32_t i, uint32_t result, uint32_t size)
++{
++    xbox_contig_range r = g_contig_free[i];
++    uint32_t end = r.start + r.size;
++    int before = result > r.start, after = result + size < end;
++    if (before && after) {
++        if (g_contig_free_count >= XBOX_CONTIG_MAX_BLOCKS) return;  /* keep the head only */
++        memmove(&g_contig_free[i + 2], &g_contig_free[i + 1],
++                (g_contig_free_count - i - 1) * sizeof(g_contig_free[0]));
++        g_contig_free[i].size = result - r.start;
++        g_contig_free[i + 1].start = result + size;
++        g_contig_free[i + 1].size = end - (result + size);
++        g_contig_free_count++;
++    } else if (before) {
++        g_contig_free[i].size = result - r.start;
++    } else if (after) {
++        g_contig_free[i].start = result + size;
++        g_contig_free[i].size = end - (result + size);
++    } else {
++        memmove(&g_contig_free[i], &g_contig_free[i + 1],
++                (g_contig_free_count - i - 1) * sizeof(g_contig_free[0]));
++        g_contig_free_count--;
++    }
++}
+ 
+ uint32_t xbox_ContiguousAlloc(uint32_t size, uint32_t alignment)
+ {
+-    uint32_t result;
++    uint32_t result = 0;
+ 
+     if (alignment < 4096) alignment = 4096;
+-    uint32_t previous;
+-    for(;;) {
+-    previous=(uint32_t)InterlockedCompareExchange(&g_contig_next,0,0);
+-    result = (previous + alignment - 1) & ~(alignment - 1);
+-
+-    /* Leave the top of the window for GPU instance memory. */
+-    if ((uint64_t)result + size >
+-            (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE
+-                - XBOX_GPU_INSTANCE_DEFAULT) {
+-        fprintf(stderr, "  [CONTIG] arena exhausted (%u requested, %u of %u used)\n",
+-                size, g_contig_next - XBOX_CONTIG_BASE,
+-                (unsigned)XBOX_CONTIG_SIZE);
++    size = (size + 4095u) & ~4095u;
++    if (!size) size = 4096;
++    AcquireSRWLockExclusive(&g_contig_lock);
++    if (g_contig_block_count >= XBOX_CONTIG_MAX_BLOCKS) {
++        ReleaseSRWLockExclusive(&g_contig_lock);
++        fprintf(stderr, "  [CONTIG] block table full (%u blocks)\n", g_contig_block_count);
+         fflush(stderr);
+         return 0;
+     }
+-
+-    if((uint32_t)InterlockedCompareExchange(&g_contig_next,(LONG)(result+size),(LONG)previous)==previous) break;
++    for (uint32_t i = 0; i < g_contig_free_count; ++i) {
++        uint32_t start = (g_contig_free[i].start + alignment - 1) & ~(alignment - 1);
++        uint64_t end = (uint64_t)g_contig_free[i].start + g_contig_free[i].size;
++        if ((uint64_t)start + size <= end) {
++            contig_take_free(i, start, size);
++            result = start;
++            break;
++        }
+     }
++    if (!result) {
++        uint32_t previous = (uint32_t)g_contig_next;
++        result = (previous + alignment - 1) & ~(alignment - 1);
++
++        /* Leave the top of the window for GPU instance memory. */
++        if ((uint64_t)result + size >
++                (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE
++                    - XBOX_GPU_INSTANCE_DEFAULT) {
++            ReleaseSRWLockExclusive(&g_contig_lock);
++            fprintf(stderr, "  [CONTIG] arena exhausted (%u requested, %u of %u used)\n",
++                    size, (uint32_t)g_contig_next - XBOX_CONTIG_BASE,
++                    (unsigned)XBOX_CONTIG_SIZE);
++            fflush(stderr);
++            return 0;
++        }
++        /* Alignment padding below the block stays reusable. */
++        if (result > previous && g_contig_free_count < XBOX_CONTIG_MAX_BLOCKS) {
++            g_contig_free[g_contig_free_count].start = previous;
++            g_contig_free[g_contig_free_count].size = result - previous;
++            g_contig_free_count++;
++        }
++        InterlockedExchange(&g_contig_next, (LONG)(result + size));
++        if ((uint32_t)g_contig_high < result + size)
++            InterlockedExchange(&g_contig_high, (LONG)(result + size));
++    }
++    g_contig_blocks[g_contig_block_count].start = result;
++    g_contig_blocks[g_contig_block_count].size = size;
++    g_contig_block_count++;
++    ReleaseSRWLockExclusive(&g_contig_lock);
+     memset((void *)((uintptr_t)result + g_memory_offset), 0, size);
+     return result;
+ }
+ 
++/* Return a block MmAllocateContiguousMemory handed out. Returns 0 for an
++ * address this allocator does not own, so the caller can try the heap. */
++int xbox_ContiguousFree(uint32_t va)
++{
++    AcquireSRWLockExclusive(&g_contig_lock);
++    uint32_t i = 0;
++    while (i < g_contig_block_count && g_contig_blocks[i].start != va) ++i;
++    if (i == g_contig_block_count) {
++        ReleaseSRWLockExclusive(&g_contig_lock);
++        return 0;
++    }
++    uint32_t start = g_contig_blocks[i].start, size = g_contig_blocks[i].size;
++    g_contig_blocks[i] = g_contig_blocks[--g_contig_block_count];
++
++    /* Insert in address order, merging with the neighbours it touches. */
++    uint32_t at = 0;
++    while (at < g_contig_free_count && g_contig_free[at].start < start) ++at;
++    int merge_before = at > 0 && g_contig_free[at - 1].start + g_contig_free[at - 1].size == start;
++    int merge_after = at < g_contig_free_count && start + size == g_contig_free[at].start;
++    if (merge_before && merge_after) {
++        g_contig_free[at - 1].size += size + g_contig_free[at].size;
++        memmove(&g_contig_free[at], &g_contig_free[at + 1],
++                (g_contig_free_count - at - 1) * sizeof(g_contig_free[0]));
++        g_contig_free_count--;
++        at--;
++    } else if (merge_before) {
++        g_contig_free[at - 1].size += size;
++        at--;
++    } else if (merge_after) {
++        g_contig_free[at].start = start;
++        g_contig_free[at].size += size;
++    } else if (g_contig_free_count < XBOX_CONTIG_MAX_BLOCKS) {
++        memmove(&g_contig_free[at + 1], &g_contig_free[at],
++                (g_contig_free_count - at) * sizeof(g_contig_free[0]));
++        g_contig_free[at].start = start;
++        g_contig_free[at].size = size;
++        g_contig_free_count++;
++    } else {
++        at = g_contig_free_count;  /* table full: the block stays leaked */
++    }
++    /* The top free range gives its space back to the bump pointer. */
++    if (at < g_contig_free_count && at == g_contig_free_count - 1
++            && g_contig_free[at].start + g_contig_free[at].size == (uint32_t)g_contig_next) {
++        InterlockedExchange(&g_contig_next, (LONG)g_contig_free[at].start);
++        g_contig_free_count--;
++    }
++    if (contig_trace())
++        fprintf(stderr, "  [CONTIG] free %08X (%u bytes): %u live blocks, %u free ranges, next %u\n",
++                start, size, g_contig_block_count, g_contig_free_count,
++                (uint32_t)g_contig_next - XBOX_CONTIG_BASE);
++    ReleaseSRWLockExclusive(&g_contig_lock);
++    return 1;
++}
++
+ /* How much of the window has been handed out.
+  *
+  * Lets a caller holding a physical address decide whether it names contiguous
+  * memory this runtime allocated. The pushbuffer executor needs exactly that:
+- * a surface offset is physical, and only the window makes it addressable. */
++ * a surface offset is physical, and only the window makes it addressable.
++ * This is the high-water mark, so a free never makes an address unknown. */
+ uint32_t xbox_ContiguousAllocatedBytes(void)
+ {
+-    return g_contig_next - XBOX_CONTIG_BASE;
++    return (uint32_t)g_contig_high - XBOX_CONTIG_BASE;
+ }
+ 
+ 
+diff --git a/src/kernel/kernel_bridge.c b/src/kernel/kernel_bridge.c
+index 47b4087..edc5964 100644
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -738,8 +738,12 @@ static void bridge_MmAllocateContiguousMemoryEx(void)
+  */
+ static void bridge_MmFreeContiguousMemory(void)
+ {
++    extern int xbox_ContiguousFree(uint32_t va);
+     uint32_t addr = STACK_ARG(0);
+-    xbox_HeapFree(addr);
++    /* Blocks from MmAllocateContiguousMemory live in the contiguous window,
++     * which the heap does not know. */
++    if (!xbox_ContiguousFree(addr))
++        xbox_HeapFree(addr);
+     g_eax = 0;
+ }
+ 
