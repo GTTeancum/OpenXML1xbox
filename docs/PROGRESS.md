@@ -1564,3 +1564,9 @@ Each run hidden and muted from a new game at the first Xtraction Point, opening 
 | Reloads survived | 4 (fatal on the 5th, regular and alternate costumes alike) | 8 of 8 |
 | Contiguous use after reloads | 64 MB, exhausted | steady at about 22.5 MB |
 | Rendering after the last reload | n/a | level, characters, HUD correct |
+
+### 2026-09-24: dangerRoomUnlockAll (local, under test)
+
+`build.ini` `[BUILD] dangerRoomUnlockAll = 1` opens the whole main-menu Danger Room. Its three progression checks read as unlocked at their call sites only (`scripts/guard-danger-room-unlock.py`): the highest level reached (GameState+0x194, which gates Sparring above 5, Skirmish above 15 and the skirmish game types at 15/18/23/30) is read as the cap of 45, every character in the list counts as unlocked (GameState bitmap +0x150), and every arena counts as unlocked (arena record +0x28 bit 0). Nothing is written to GameState, so saves keep their real progress.
+
+Hidden and muted on a fresh profile: Sparring lists the nine non-training arenas and every playable hero and NPC (villains, Acolytes, Brotherhood, GRSO, Morlocks, Sentinels, Shades); an Astral Shade versus Toad match starts and plays. Skirmish lists the arenas and all four game types (Brawl, King Of The Hill, Last Man Standing, Last Man Ladder) and reaches character selection. With the option at 0 the same build shows the original "There are no unlocked characters for sparring".

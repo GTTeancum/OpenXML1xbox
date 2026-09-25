@@ -27,7 +27,7 @@ static int language(const char *s) {
     return 0;
 }
 int xml1_read_build_settings(const char *path,Xml1BuildSettings *out,char *error,unsigned size) {
-    Xml1BuildSettings settings={1,"eng","eng","eng",0,1,-1};
+    Xml1BuildSettings settings={1,"eng","eng","eng",0,1,-1,0};
     char allowed[3][128]={"eng,fre,ger","eng","eng"};
     char *defaults[]={settings.text_language,settings.movie_language,settings.audio_language};
     const char *allow_keys[]={"AllowedTextLanguages","AllowedMovieLanguages","AllowedAudioLanguages"};
@@ -50,6 +50,11 @@ int xml1_read_build_settings(const char *path,Xml1BuildSettings *out,char *error
             if(equal(value,"1")||equal(value,"true")) settings.prefer_files_loose=1;
             else if(equal(value,"0")||equal(value,"false")) settings.prefer_files_loose=0;
             else {ok=fail(error,size,"PreferFilesLoose must be 1, true, 0, or false");break;}
+        }
+        if(equal(s,"dangerRoomUnlockAll")) {
+            if(equal(value,"1")||equal(value,"true")) settings.danger_room_unlock_all=1;
+            else if(equal(value,"0")||equal(value,"false")) settings.danger_room_unlock_all=0;
+            else {ok=fail(error,size,"dangerRoomUnlockAll must be 1, true, 0, or false");break;}
         }
         if(equal(s,"performanceLogging")) {
             if(equal(value,"1")||equal(value,"true")) settings.performance_logging=1;
