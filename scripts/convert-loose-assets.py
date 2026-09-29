@@ -39,9 +39,7 @@ def logical_name(name,kind):
     prefix=PREFIXES.get(kind,'')
     if prefix and not name.startswith(prefix):raise ValueError(f'{kind} resource outside {prefix}: {name}')
     name=name[len(prefix):]
-    # XML1's motion-path package loader strips the last path component unless
-    # it sees .igb (sub_001210E0). A bundle name must retain this extension.
-    if kind=='motionpath':return name
+    # The package loader resolves extensionless motionpaths to physical IGBs.
     suffix=PurePosixPath(name).suffix
     if not suffix:raise ValueError(f'Resource has no extension: {name}')
     return name[:-len(suffix)]

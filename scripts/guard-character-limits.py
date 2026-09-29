@@ -118,6 +118,12 @@ for name in ('recomp_0005.c', 'recomp_0010.c', 'recomp_0014.c'):
     s = s.replace('#include "character_limits.h"\n', '')
     s = s.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n#include "character_limits.h"', 1)
     if name == 'recomp_0005.c':
+        # CharacterManager::SkinName (vtable +6C) folds its old +6D50
+        # displacement into (id+48E)*24. Literal-offset relocation cannot see
+        # this form. Bios and NPC dialogue use metadata, not a live CharacterDef.
+        s = replace_once(s,
+            'eax = eax + 0x48E;\n    eax = eax + eax * 2;\n    eax = ecx + eax * 8;',
+            'eax = eax + eax * 2;\n    eax = ecx + eax * 8 + XML1_MANAGER_OFFSET(0x6D50u); /* relocated metadata skin string */')
         # 56FC3 derives an index by adding the NEGATIVE old campaign-list base.
         # Relocating positive accesses alone makes save loading walk past it.
         s = replace_once(s, 'ebp = 0xFFFF2538u;',
@@ -268,4 +274,14 @@ s=p.read_text(encoding='utf-8')
 if '#include "build_settings.h"' not in s:
     s=s.replace('#include "recomp_funcs.h"','#include "recomp_funcs.h"\n#include "build_settings.h"',1)
 s=replace_once(s,'loc_0008C2F0: ;','loc_0008C2F0: ;\n    /* Modder mode remains effective even if a loaded save resets GameState. */\n    if (xml1_build_settings.modder_mode) { SET_LO8(eax,1); esp+=4; return; }')
+p.write_text(s,encoding='utf-8')
+
+# Optional resource diagnostics retain the native formatter and filename paths.
+p=ROOT/'src/recomp/gen/recomp_0014.c'
+s=p.read_text(encoding='utf-8')
+for anchor,trace in {
+ 'loc_000B0EA0: ;': 'if(getenv("XML1_RESOURCE_TRACE")) fprintf(stderr,"[SKIN INPUT] caller=%08X def=%08X family=%u variant=%u requested=%u\\n",MEM32(esp),ecx,MEM8(ecx+0x370),MEM8(ecx+0x1E),MEM32(esp+4));',
+ 'loc_000B0EFA: ;': 'if(getenv("XML1_RESOURCE_TRACE")) fprintf(stderr,"[SKIN OUTPUT] value=%s\\n",(char*)XBOX_PTR(0x4D4040));',
+}.items():
+ s=replace_once(s,anchor,anchor+'\n    '+trace)
 p.write_text(s,encoding='utf-8')

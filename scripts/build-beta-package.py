@@ -1,6 +1,7 @@
 """Build a private beta overlay from a reviewed ISO/loose delta audit."""
 from pathlib import Path
 import argparse, hashlib, json, shutil
+import importlib.util
 
 def digest(path):
     with path.open('rb') as stream:
@@ -11,6 +12,8 @@ def main():
     ap.add_argument('--stage',type=Path,required=True)
     ap.add_argument('--audit',type=Path,required=True)
     ap.add_argument('--output',type=Path,required=True)
+    ap.add_argument('--include-roster-dependencies',action='store_true',
+                    help='Include staged files explicitly required by the shipped herostat and character PKGBs')
     a=ap.parse_args()
     if a.output.exists():raise SystemExit('Choose a new output directory')
     entries=[]
@@ -27,6 +30,25 @@ def main():
     for rel,source,kind in entries:
         p=Path(rel)
         if p.is_absolute() or '..' in p.parts or ':' in rel or not source.is_file():raise SystemExit('Invalid entry: '+rel)
+    # A successful development run cannot prove that the selected overlay
+    # contains the costumes its herostat promises on a fresh installation.
+    spec=importlib.util.spec_from_file_location('release_roster_audit',Path(__file__).with_name('audit-release-roster.py'))
+    checker=importlib.util.module_from_spec(spec);spec.loader.exec_module(checker)
+    report=checker.audit(a.stage/'z/assetsfb.zip',{rel:source.read_bytes() for rel,source,kind in entries})
+    while report['problems'] and a.include_roster_dependencies:
+        selected={rel.replace('\\','/').lower() for rel,source,kind in entries}
+        missing=sorted({p for row in report['problems'] for p in row['missing']}-selected)
+        if not missing:break
+        for rel in missing:
+            source=(a.stage/rel).resolve()
+            if not source.is_relative_to(a.stage.resolve()) or not source.is_file():
+                raise SystemExit('Missing staged roster dependency: '+rel)
+            entries.append((rel,source,'roster dependency'))
+        # Adding a PKGB may expose further explicit model/effect dependencies.
+        report=checker.audit(a.stage/'z/assetsfb.zip',{rel:source.read_bytes() for rel,source,kind in entries})
+    if report['problems']:
+        details='\n'.join(f"{row['language']} {row['character']}: {', '.join(row['missing'])}" for row in report['problems'])
+        raise SystemExit('Release roster contains unresolved resources:\n'+details)
     manifest=[]
     for rel,source,kind in entries:
         target=a.output/'files'/rel;target.parent.mkdir(parents=True,exist_ok=True)

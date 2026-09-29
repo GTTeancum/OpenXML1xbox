@@ -273,6 +273,9 @@ static LONG CALLBACK veh_handler(PEXCEPTION_POINTERS ep)
 
 static int memory_query_bridge_test(void)
 {
+    extern int xml1_contiguous_reuse_test(void);
+    int contiguous_result=xml1_contiguous_reuse_test();
+    if(contiguous_result)return contiguous_result;
     typedef void (*guest_fn)(void);
     extern guest_fn recomp_lookup_kernel(uint32_t);
     uint8_t *memory = (uint8_t *)g_xbox_mem_offset;

@@ -185,7 +185,7 @@ extern "C" int xml1_prepare_loose_assets(const char *game_root,int headless,char
             TASKDIALOGCONFIG config{};config.cbSize=sizeof(config);config.hInstance=GetModuleHandleW(nullptr);
             config.dwFlags=TDF_SHOW_PROGRESS_BAR|TDF_CALLBACK_TIMER|TDF_ALLOW_DIALOG_CANCELLATION|TDF_SIZE_TO_CONTENT;
             config.dwCommonButtons=TDCBF_CANCEL_BUTTON;
-            config.pszWindowTitle=L"X-Men Legends — First-run setup";
+            config.pszWindowTitle=L"X-Men Legends - First-run setup";
             config.pszMainInstruction=L"Preparing game files";
             config.pszContent=L"Preparing loose assets, packages and compiled XMLB data. This only needs to run once.";
             config.pszFooter=L"Existing files and saved games will be kept.";

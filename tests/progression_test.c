@@ -12,6 +12,20 @@
 #include "modder_mode.h"
 #include "newgame_plus.h"
 #include "raven_filter_event.h"
+#include "xbox_memory_layout.h"
+
+/* Explicit process-local input fixture only; never called by modderMode or
+ * ordinary gameplay. World CharacterManager vtable +90 (56E10) reads bit 5
+ * of each metadata flags byte; +94 (56E30) sets that same bit. A fresh run has
+ * not discovered enemy biographies, so it cannot validate their resource loads.
+ * Keep every other progression flag intact and never write a save here. */
+int xml1_test_unlock_codex(void) {
+    unsigned manager = MEM32(0x48D59C);
+    if (!manager || (uint64_t)manager + XML1_MANAGER_BYTES > xbox_GetMappedSize()) return 0;
+    for (unsigned id = 0; id < 256; ++id)
+        MEM8(manager + id * 24 + XML1_MANAGER_OFFSET(0x6D5Eu)) |= 0x20;
+    return 1;
+}
 
 static int newgame_plus_boundaries(void) {
     unsigned old_manager=MEM32(0x48D59C);
@@ -295,6 +309,31 @@ int xml1_progression_test(void)
     unsigned manager = scratch, character = scratch + 0x100;
     unsigned cap, previous = 0;
     memset((void *)((uintptr_t)g_xbox_mem_offset + scratch), 0, 0x1000);
+    /* This getter uses an algebraically folded displacement in retail.
+     * Check every metadata ID (not only the 48 instantiated pool slots). */
+    for(unsigned id=1;id<=255;++id) {
+        unsigned sp=g_esp;
+        unsigned expected=manager+XML1_MANAGER_OFFSET(0x6D50u)+id*24u;
+        MEM32(expected)=0xAB000000u+id;
+        g_ecx=manager;PUSH32(g_esp,id);PUSH32(g_esp,0);
+        RECOMP_ABI_CALL(0x00056D30u,sub_00056D30);
+        if(g_esp!=sp||g_eax!=expected||MEM32(g_eax)!=0xAB000000u+id) {
+            fprintf(stderr,"[SKIN METADATA] id=%u expected=%08X actual=%08X\n",id,expected,g_eax);
+            return 1;
+        }
+        MEM32(expected)=0;
+    }
+    puts("[SKIN METADATA] all 255 native skin-name lookups use relocated character metadata");
+    /* Exercise the actual skin formatter used by bios and conversation HUDs,
+     * not merely the category-cycle helper. */
+    MEM8(character+0x370)=3;
+    unsigned skin_sp=g_esp;
+    g_ecx=character;PUSH32(g_esp,0);PUSH32(g_esp,1);PUSH32(g_esp,0);
+    RECOMP_ABI_CALL(0x000B0EA0u,sub_000B0EA0);
+    if(g_esp!=skin_sp || strcmp((char*)XBOX_PTR(g_eax),"0301")) {
+        fprintf(stderr,"[SKIN FORMAT] expected 0301, got '%s' at %08X\n",(char*)XBOX_PTR(g_eax),g_eax);
+        return 1;
+    }
     /* CharacterManager::XPThreshold only calls vtable + C4 (XP curve).
      * Level reconciliation also retrieves this singleton and this vtable.
      * It does not need the manager's pools or a fabricated game world. */

@@ -356,3 +356,113 @@ if hook not in s:
         raise SystemExit('Verified native music setter/stream-refresh boundary missing')
     s = s.replace(marker, hook, 1)
     p.write_text(s, encoding='utf-8')
+
+# The common font parser returns either one glyph (kind 0) or a localized
+# string id (kind 1). Add kind 2 for an immediate guest-addressable key label.
+# Native consumers expand it in normalization, width, wrapping and drawing.
+# This preserves original asset text, controller glyphs and unknown mod tokens.
+p=root/'src/recomp/gen/recomp_0030.c'
+s=p.read_text(encoding='utf-8')
+prompt_hooks={
+ 'loc_00153482: ;': '''loc_00153482: ;
+    {
+        unsigned pc_label=xml1_pc_prompt_guest((const char*)((uintptr_t)g_xbox_mem_offset+esp+8));
+        if(pc_label && MEM32(esp+0x5C)) {
+            if(getenv("XML1_TRACE_PROMPTS")) { static unsigned seen[16],n; unsigned caller=MEM32(esp+0x4C),i; for(i=0;i<n && seen[i]!=caller;++i) {} if(i==n && n<16) {seen[n++]=caller;fprintf(stderr,"[PC PROMPT CONSUMER] %08X\\n",caller);} }
+            MEM32(MEM32(esp+0x5C))=2;
+            eax=pc_label;
+            goto loc_0015355A;
+        }
+    }''',
+ 'loc_00152A1B: ;\n    ebx = ZX16(LO16(eax));': '''loc_00152A1B: ;
+    if(MEM32(esp+0x18)==2) {
+        MEM32(esp+0x10)=eax;
+        goto loc_00152A4D;
+    }
+    ebx = ZX16(LO16(eax));''',
+ 'loc_0015316C: ;': '''loc_0015316C: ;
+    if(MEM32(esp+0x2C)==2)goto loc_0015318E;''',
+ 'loc_00153778: ;': '''loc_00153778: ;
+    if(MEM32(esp+0x2C)==2)goto loc_0015379A;''',
+}
+for marker,hook in prompt_hooks.items():
+ if hook in s:continue
+ if s.count(marker)!=1:raise SystemExit('Missing shared prompt boundary: '+marker)
+ s=s.replace(marker,hook,1)
+if '#include "pc_prompts.h"' not in s:s='#include "pc_prompts.h"\n'+s
+p.write_text(s,encoding='utf-8')
+print('Installed shared keyboard prompt expansion in text normalization, width and wrapping')
+# The live renderer has its own expansion loop, in addition to font metrics.
+p=root/'src/recomp/gen/recomp_0034.c';s=p.read_text(encoding='utf-8')
+marker='loc_0018B264: ;'
+hook=marker+'\n    if(MEM32(esp+0x3C)==2)goto loc_0018B28A;'
+if hook not in s:
+ if s.count(marker)!=1:raise SystemExit('Missing native prompt draw boundary')
+ p.write_text(s.replace(marker,hook,1),encoding='utf-8')
+
+# Single-line CMenuItem labels and modal footer columns use fixed anchors.
+# Modal footer renderer 001865A0 draws its columns at 00186B80. Measure the original
+# controller representation to retain the authored footprint when keyboard
+# bindings expand. Textboxes keep their ordinary wrapping and font size.
+p=root/'src/recomp/gen/recomp_0034.c'
+s=p.read_text(encoding='utf-8')
+for marker,extra in {
+    'loc_0018ABEA: ;': '    xml1_pc_prompt_begin_measure();',
+    'loc_0018AC02: ;': r'''    if(getenv("XML1_TRACE_PROMPTS") && xml1_pc_prompt_was_expanded()) {
+        static unsigned callers[32],parents[32],count;
+        unsigned caller=MEM32(esp+0x424),parent=caller==0x0018AF51u?MEM32(esp+0x450):0,i;
+        for(i=0;i<count && (callers[i]!=caller || parents[i]!=parent);++i) {}
+        if(i==count && count<32) {
+            callers[count]=caller;parents[count++]=parent;
+            fprintf(stderr,"[PC PROMPT LAYOUT] caller=%08X parent=%08X\n",caller,parent);
+        }
+    }
+    if((MEM32(esp+0x424)==0x0017D583u || MEM32(esp+0x424)==0x00186B80u ||
+        (MEM32(esp+0x424)==0x0018AF51u && MEM32(esp+0x450)==0x00065D1Au)) && xml1_pc_prompt_was_expanded()) {
+        double pc_keyboard_width=fp_top(); fp_pop();
+        uint32_t pc_saved_eax=eax,pc_saved_ecx=ecx,pc_saved_edx=edx;
+        xml1_pc_prompt_native_measure(1);
+        PUSH32(esp,0x0018AC02u); RECOMP_ABI_CALL(0x00153570u,sub_00153570);
+        uint32_t pc_font_manager=eax,pc_width_target=MEM32(MEM32(eax)+0x2C);
+        uint32_t pc_width_esp=esp,pc_text=esp+0x20,pc_scale=MEM32(esp+0x438);
+        PUSH32(esp,MEM32(esi+4)); PUSH32(esp,pc_scale); PUSH32(esp,pc_text);
+        ecx=pc_font_manager;
+        PUSH32(esp,0x0018AC02u); RECOMP_ICALL_SAFE(pc_width_target,pc_width_esp);
+        xml1_pc_prompt_native_measure(0);
+        double pc_native_width=fp_top();
+        if(MEM32(esp+0x424)==0x0018AF51u) {
+            /* Conversation continuation draws its glyph and localized caption
+             * separately. Preserve the original glyph's right edge so the key
+             * name grows leftward without covering the caption. This applies
+             * to every conversation, using live font metrics and binding text. */
+            if(pc_native_width>0 && pc_keyboard_width>pc_native_width) {
+                int pc_right=SMEM32(esp+0x428)+(int)((SMEM32(esp+0x430)+pc_native_width)*0.5);
+                MEM32(esp+0x428)=pc_right-(int)(pc_keyboard_width+0.5);
+                MEM32(esp+0x43C)&=~3u;
+            }
+            fp_top()=pc_keyboard_width;
+        } else if(pc_native_width>0 && pc_keyboard_width>pc_native_width) {
+            MEMF(esp+0x438)=(float)(MEMF(esp+0x438)*pc_native_width/pc_keyboard_width);
+        } else fp_top()=pc_keyboard_width;
+        eax=pc_saved_eax;ecx=pc_saved_ecx;edx=pc_saved_edx;
+    }'''
+}.items():
+    hook=marker+'\n'+extra
+    if hook not in s:
+        if s.count(marker)!=1:raise SystemExit('Native prompt fit boundary missing: '+marker)
+        s=s.replace(marker,hook,1)
+if '#include "pc_prompts.h"' not in s:s='#include "pc_prompts.h"\n'+s
+p.write_text(s,encoding='utf-8')
+
+# At end-of-source, a final expansion can still contain unread characters.
+# The draw loop already drains this pending string; metrics must do so too.
+p=root/'src/recomp/gen/recomp_0030.c';s=p.read_text(encoding='utf-8')
+for marker,extra in {
+ 'loc_001531E1: ;':'    if(esi && MEM8(esi))goto loc_001530D0; /* finish trailing expansion */',
+ 'loc_00153704: ;':'    if(!LO8(eax) && !LO8(edx) && edi && MEM8(edi))goto loc_001536B9; /* finish trailing expansion */',
+}.items():
+ hook=marker+'\n'+extra
+ if hook not in s:
+  if s.count(marker)!=1:raise SystemExit('Prompt expansion end boundary missing: '+marker)
+  s=s.replace(marker,hook,1)
+p.write_text(s,encoding='utf-8')

@@ -12,6 +12,7 @@ typedef BOOL WINBOOL;
 #include <cerrno>
 #include "dx8_replay.h"
 #include "performance_report.h"
+#include "window_geometry.h"
 #include <io.h>
 #include <fcntl.h>
 
@@ -28,11 +29,36 @@ static ULONGLONG fps_title_started;
 static unsigned fps_title_frames;
 static unsigned captured_mouse_buttons;
 static bool publish_display_events=false;
+static unsigned window_render_width=1280,window_render_height=720;
+static bool window_borderless=false;
+static Xml1WindowSize fitted_window(HWND window,const RECT &area,bool enlarge) {
+    RECT frame={0,0,0,0};
+    AdjustWindowRect(&frame,(DWORD)GetWindowLongPtrW(window,GWL_STYLE),FALSE);
+    return xml1_fit_window(window_render_width,window_render_height,
+        area.right-area.left,area.bottom-area.top,frame.right-frame.left,frame.bottom-frame.top,enlarge);
+}
 static void publish_output_display(HWND window) {
     MONITORINFOEXA info={};info.cbSize=sizeof(info);
     if(GetMonitorInfoA(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&info))xml1_pc_channel_set_display(info.szDevice);
 }
 static LRESULT CALLBACK playtest_window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    if(message==WM_SIZE && wparam!=SIZE_MINIMIZED) {
+        RECT client={};GetClientRect(window,&client);
+        if(client.right>0 && client.bottom>0) {
+            pc_ui::client_width=client.right;pc_ui::client_height=client.bottom;
+        }
+    }
+    if(message==WM_GETMINMAXINFO && !window_borderless) {
+        MONITORINFO monitor={};monitor.cbSize=sizeof(monitor);
+        if(GetMonitorInfoW(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&monitor)) {
+            auto size=fitted_window(window,monitor.rcWork,true);
+            auto info=reinterpret_cast<MINMAXINFO*>(lparam);
+            info->ptMaxSize={size.width,size.height};
+            info->ptMaxPosition={monitor.rcWork.left-monitor.rcMonitor.left+(monitor.rcWork.right-monitor.rcWork.left-size.width)/2,
+                monitor.rcWork.top-monitor.rcMonitor.top+(monitor.rcWork.bottom-monitor.rcWork.top-size.height)/2};
+            return 0;
+        }
+    }
     if(publish_display_events && (message==WM_MOVE || message==WM_DISPLAYCHANGE))publish_output_display(window);
     if (message == WM_CLOSE) { user_closed = true; return 0; }
     if(message==WM_SETFOCUS || message==WM_KILLFOCUS) {
@@ -40,11 +66,15 @@ static LRESULT CALLBACK playtest_window_proc(HWND window, UINT message, WPARAM w
     }
     if(message==WM_KEYDOWN || message==WM_KEYUP || message==WM_SYSKEYDOWN || message==WM_SYSKEYUP) {
         bool down=message==WM_KEYDOWN || message==WM_SYSKEYDOWN;
-        // Alt+F4 and other system shortcuts remain normal window behavior.
-        if(message==WM_SYSKEYDOWN || message==WM_SYSKEYUP)return DefWindowProcW(window,message,wparam,lparam);
+        // Deliver bindable Alt combinations through the same mapping as other
+        // keys. Leaving these to DefWindowProc activates the window menu and
+        // interrupts gameplay. Alt+F4 remains the normal close shortcut.
+        if((message==WM_SYSKEYDOWN || message==WM_SYSKEYUP) && wparam==VK_F4)
+            return DefWindowProcW(window,message,wparam,lparam);
         if(!down || !(lparam&(1u<<30)))pc_ui::input_key((unsigned)wparam,down);
         return 0;
     }
+    if(message==WM_SYSCOMMAND && (wparam&0xfff0)==SC_KEYMENU)return 0;
     if(message==WM_MOUSEMOVE || message==WM_LBUTTONDOWN || message==WM_LBUTTONUP ||
        message==WM_RBUTTONDOWN || message==WM_RBUTTONUP || message==WM_MBUTTONDOWN || message==WM_MBUTTONUP) {
         int x=(short)LOWORD(lparam),y=(short)HIWORD(lparam);
@@ -166,8 +196,12 @@ int main(int argc, char** argv) {
     if(pc_connected && (!xml1_pc_channel_connect() || !xml1_pc_channel_read(&initial_input,1))) {
         std::fprintf(stderr,"Cannot connect PC input channel\n");return 2;
     }
-    bool borderless=visible && pc_connected && initial_input.settings.fullscreen;
-    const DWORD windowStyle = borderless?WS_POPUP:WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+    // A hidden process-local layout check uses the same window setup as a
+    // player run without showing or activating the window.
+    const bool apply_window_layout=visible || std::getenv("XML1_TEST_WINDOW_LAYOUT");
+    bool borderless=apply_window_layout && pc_connected && initial_input.settings.fullscreen;
+    window_borderless=borderless;
+    const DWORD windowStyle = borderless?WS_POPUP:WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
     unsigned render_width=liveMode&&!vblankMode?1280:640,render_height=liveMode&&!vblankMode?720:480;
     const char* resolution=vblankMode?nullptr:std::getenv("XML1_DX8_RESOLUTION");
     if(resolution) {
@@ -177,12 +211,22 @@ int main(int argc, char** argv) {
         else {std::fprintf(stderr,"Unsupported XML1_DX8_RESOLUTION\n");return 2;}
     }
     output_width=render_width;output_height=render_height;
+    window_render_width=render_width;window_render_height=render_height;
     pc_ui::client_width=render_width;pc_ui::client_height=render_height;
     RECT client = {0, 0, (LONG)render_width, (LONG)render_height};
     AdjustWindowRect(&client, windowStyle, FALSE);
     HWND window = CreateWindowW(wc.lpszClassName, visible ? L"OpenXML1 - DX8 Playtest" : L"XML1 D3D8 probe", windowStyle,
         CW_USEDEFAULT, CW_USEDEFAULT, client.right-client.left, client.bottom-client.top,
         nullptr, nullptr, wc.hInstance, nullptr);
+    if(apply_window_layout && !borderless) {
+        MONITORINFO monitor={};monitor.cbSize=sizeof(monitor);
+        if(GetMonitorInfoW(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&monitor)) {
+            auto size=fitted_window(window,monitor.rcWork,false);
+            const RECT &r=monitor.rcWork;
+            SetWindowPos(window,nullptr,r.left+(r.right-r.left-size.width)/2,r.top+(r.bottom-r.top-size.height)/2,
+                size.width,size.height,SWP_NOZORDER|SWP_NOACTIVATE);
+        }
+    }
     if(borderless) {
         MONITORINFO monitor={};monitor.cbSize=sizeof(monitor);
         if(!GetMonitorInfoW(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&monitor))return 2;
@@ -190,6 +234,19 @@ int main(int argc, char** argv) {
         SetWindowPos(window,nullptr,r.left,r.top,r.right-r.left,r.bottom-r.top,SWP_NOZORDER|SWP_NOACTIVATE);
         // Mouse coordinates are client pixels; scale hit targets to this size.
         pc_ui::client_width=r.right-r.left;pc_ui::client_height=r.bottom-r.top;
+    }
+    {
+        RECT outer={},client_area={};MONITORINFO monitor={};monitor.cbSize=sizeof(monitor);
+        GetWindowRect(window,&outer);GetClientRect(window,&client_area);
+        if(GetMonitorInfoW(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),&monitor)) {
+            auto maximum=fitted_window(window,monitor.rcWork,true);
+            std::printf("[WINDOW GEOMETRY] mode=%s client=%ldx%ld outer=%ld,%ld,%ld,%ld work=%ld,%ld,%ld,%ld monitor=%ld,%ld,%ld,%ld maximize=%ldx%ld render=%ux%u\n",
+                borderless?"borderless":"windowed",client_area.right,client_area.bottom,
+                outer.left,outer.top,outer.right,outer.bottom,
+                monitor.rcWork.left,monitor.rcWork.top,monitor.rcWork.right,monitor.rcWork.bottom,
+                monitor.rcMonitor.left,monitor.rcMonitor.top,monitor.rcMonitor.right,monitor.rcMonitor.bottom,
+                maximum.width,maximum.height,render_width,render_height);
+        }
     }
     if(pc_connected)publish_output_display(window);
     D3DPRESENT_PARAMETERS pp = {};

@@ -22,6 +22,32 @@ for marker,hook in hooks.items():
 p.write_text(s,encoding='utf-8')
 print('Installed strict loose package selection hooks')
 
+# World motionpath packagedef callback copies its input to a 128-byte stack
+# buffer, then historically strips the last directory component if .igb is
+# absent. Resolve the conventional extension before the native manager call.
+# Old extension-bearing manifests continue to identify the same file.
+p=root/'src/recomp/gen/recomp_0023.c'
+s=p.read_text(encoding='utf-8')
+start=s.index('void sub_001210E0(void)')
+end=s.index('\nvoid sub_',start+1)
+body=s[start:end]
+marker='    POP32(esp, esi);\n    if (TEST_NZ(_fa, _fb)) goto loc_00121132;'
+hook='''    POP32(esp, esi);
+    if (xml1_prefer_files_loose()) {
+        /* Buffer ends immediately before the original stack cookie. */
+        if (!xml1_motionpath_name((char *)((uintptr_t)g_xbox_mem_offset+esp),128)) {
+            fprintf(stderr,"[MOTIONPATH ERROR] Invalid or oversized package name\\n"); _exit(4);
+        }
+        goto loc_00121132;
+    }
+    if (TEST_NZ(_fa, _fb)) goto loc_00121132;'''
+if hook not in body:
+    if body.count(marker)!=1:raise SystemExit('Verified motionpath boundary missing')
+    s=s[:start]+body.replace(marker,hook,1)+s[end:]
+for header in ('motionpath_name.h','build_settings.h'):
+    if f'#include "{header}"' not in s:s=f'#include "{header}"\n'+s
+p.write_text(s,encoding='utf-8')
+
 # The native text-language getter returns this constructor's 16-byte field.
 for p in (root/'src/recomp/gen').glob('recomp_*.c'):
     s=p.read_text(encoding='utf-8')

@@ -3,6 +3,7 @@
 #include "pc_input_channel.h"
 #include "pc_gamepad.h"
 #include "pc_menu.h"
+#include "pc_prompts.h"
 #include <windows.h>
 #include <cstdio>
 #include <cstring>
@@ -241,6 +242,39 @@ int main(int argc,char **argv) {
         xml1_pc_control_focus(&keys,0);xml1_pc_control_focus(&keys,1);
         REQUIRE(!xml1_pc_action_down(&defaults,&keys,XML1_PC_FORWARD));
         Xml1PcInputSnapshot mapped{};mapped.settings=defaults;mapped.controls.focused=1;
+        {
+            auto input=mapped;input.last_device=1;char label[128]={};
+            REQUIRE(xml1_pc_prompt_text(&input,"MENU_ACCEPT",label,sizeof(label)));
+            REQUIRE(!std::strcmp(label,"[Enter]"));
+            REQUIRE(xml1_pc_prompt_text(&input,"ATTACK",label,sizeof(label)));
+            REQUIRE(!std::strcmp(label,"[Num4 / LMB]"));
+            REQUIRE(xml1_pc_prompt_text(&input,"MENU_BACK",label,sizeof(label)));
+            REQUIRE(!std::strcmp(label,"[Bksp]"));
+            REQUIRE(xml1_pc_prompt_text(&input,"MENU_OTHER",label,sizeof(label)));
+            REQUIRE(!std::strcmp(label,"[Space]"));
+            REQUIRE(xml1_pc_prompt_text(&input,"MENU_NEXT",label,sizeof(label)));
+            REQUIRE(!std::strcmp(label,"[Num5]"));
+            REQUIRE(xml1_pc_prompt_text(&input,"MENU_PREV",label,sizeof(label)));
+            REQUIRE(!std::strcmp(label,"[C]"));
+            input.settings.keyboard_player=2;
+            input.settings.keys[2][XML1_PC_ATTACK]='Q';
+            input.settings.alternate_keys[2][XML1_PC_ATTACK]=0;
+            REQUIRE(xml1_pc_prompt_text(&input,"ATTACK",label,sizeof(label)));
+            REQUIRE(!std::strcmp(label,"[Q]"));
+            REQUIRE(!xml1_pc_prompt_text(&input,"C",label,sizeof(label)));
+            REQUIRE(!xml1_pc_prompt_text(&input,"UNKNOWN_MOD_TOKEN",label,sizeof(label)));
+            REQUIRE(!xml1_pc_prompt_text(&input,"ATTACK",label,2));
+            input.last_device=0;REQUIRE(!xml1_pc_prompt_text(&input,"ATTACK",label,sizeof(label)));
+        }
+        // An unbound modifier must not synthesize a legacy attack. Conversely,
+        // explicit rebinding must work, rather than blacklisting Alt globally.
+        for(unsigned modifier : {VK_MENU,VK_LMENU,VK_RMENU}) {
+            Xml1PcInputSnapshot alt=mapped;alt.controls.held[modifier]=1;
+            Xml1PcGamepad actual{},neutral{};xml1_pc_map_gamepad(&alt,&actual);
+            REQUIRE(!std::memcmp(&actual,&neutral,sizeof(actual)));
+            alt.settings.keys[0][XML1_PC_ATTACK]=modifier;
+            xml1_pc_map_gamepad(&alt,&actual);REQUIRE(actual.analog[0]==255);
+        }
         mapped.controls.held['W']=mapped.controls.held['D']=1;
         Xml1PcGamepad pad{};xml1_pc_map_gamepad(&mapped,&pad);
         REQUIRE(pad.lx==23169 && pad.ly==23169);

@@ -94,6 +94,7 @@ void xml1_graphics_observe(uint32_t va)
     if(script_trace && g_esp<xbox_GetMappedSize()-32) {
         const char *verb=NULL;
         switch(va) {
+        case 0x9E3D0: verb="startConversation"; break;
         case 0x98EC0: verb="screenFade"; break;
         case 0x9B8A0: verb="copyOriginAndAngles"; break;
         case 0x99FA0: verb="cameraToLocationAngles"; break;

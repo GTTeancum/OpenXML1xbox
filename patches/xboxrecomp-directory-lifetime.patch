@@ -1,0 +1,170 @@
+--- a/src/kernel/kernel_file.c
++++ b/src/kernel/kernel_file.c
+@@ -309,12 +309,14 @@
+     return STATUS_UNSUCCESSFUL;
+ }
+ 
++static void close_directory_context(HANDLE handle);
++
+ NTSTATUS __stdcall xbox_NtClose(HANDLE Handle)
+ {
+     XBOX_TRACE(XBOX_LOG_FILE, "NtClose(handle=%p)", Handle);
+     if (Handle && Handle != INVALID_HANDLE_VALUE) {
+-        CloseHandle(Handle);
+-        return STATUS_SUCCESS;
++        close_directory_context(Handle);
++        return CloseHandle(Handle) ? STATUS_SUCCESS : STATUS_INVALID_HANDLE;
+     }
+     return STATUS_INVALID_HANDLE;
+ }
+@@ -583,42 +585,49 @@
+     return STATUS_SUCCESS;
+ }
+ 
+-#define MAX_DIR_CONTEXTS 64
+-typedef struct {
++typedef struct DIR_CONTEXT {
+     HANDLE file_handle;
+     HANDLE find_handle;
+     BOOL   first_done;
++    BOOL   exhausted;
+     WIN32_FIND_DATAW find_data;
++    struct DIR_CONTEXT *next;
+ } DIR_CONTEXT;
+ 
+-static DIR_CONTEXT s_dir_contexts[MAX_DIR_CONTEXTS];
+-static CRITICAL_SECTION s_dir_cs;
+-static BOOL s_dir_cs_init = FALSE;
++/* Search state belongs to an open directory, never its reusable host handle
++ * value. Keep EOF until restart/close, and allow any number of open searches. */
++static DIR_CONTEXT *s_dir_contexts;
++static SRWLOCK s_dir_lock = SRWLOCK_INIT;
++
++static void close_directory_context(HANDLE handle)
++{
++    AcquireSRWLockExclusive(&s_dir_lock);
++    DIR_CONTEXT **link=&s_dir_contexts;
++    while(*link) {
++        DIR_CONTEXT *ctx=*link;
++        if(ctx->file_handle==handle) {
++            if(ctx->find_handle && ctx->find_handle!=INVALID_HANDLE_VALUE)FindClose(ctx->find_handle);
++            *link=ctx->next;
++            HeapFree(GetProcessHeap(),0,ctx);
++            break;
++        }
++        link=&ctx->next;
++    }
++    ReleaseSRWLockExclusive(&s_dir_lock);
++}
+ 
+ static DIR_CONTEXT* find_or_create_dir_context(HANDLE FileHandle, BOOL create)
+ {
+-    if (!s_dir_cs_init) { InitializeCriticalSection(&s_dir_cs); s_dir_cs_init = TRUE; }
+-    EnterCriticalSection(&s_dir_cs);
+-    for (int i = 0; i < MAX_DIR_CONTEXTS; i++) {
+-        if (s_dir_contexts[i].file_handle == FileHandle && s_dir_contexts[i].find_handle != NULL) {
+-            LeaveCriticalSection(&s_dir_cs);
+-            return &s_dir_contexts[i];
+-        }
+-    }
+-    if (!create) { LeaveCriticalSection(&s_dir_cs); return NULL; }
+-    for (int i = 0; i < MAX_DIR_CONTEXTS; i++) {
+-        if (s_dir_contexts[i].find_handle == NULL) {
+-            s_dir_contexts[i].file_handle = FileHandle;
+-            s_dir_contexts[i].first_done = FALSE;
+-            LeaveCriticalSection(&s_dir_cs);
+-            return &s_dir_contexts[i];
+-        }
+-    }
+-    LeaveCriticalSection(&s_dir_cs);
+-    return NULL;
+-}
+-
+-NTSTATUS __stdcall xbox_NtQueryDirectoryFile(
++    /* Caller holds s_dir_lock throughout the query, including FindNextFile. */
++    for(DIR_CONTEXT *ctx=s_dir_contexts;ctx;ctx=ctx->next)
++        if(ctx->file_handle==FileHandle)return ctx;
++    if(!create)return NULL;
++    DIR_CONTEXT *ctx=HeapAlloc(GetProcessHeap(),HEAP_ZERO_MEMORY,sizeof(*ctx));
++    if(ctx) {ctx->file_handle=FileHandle;ctx->next=s_dir_contexts;s_dir_contexts=ctx;}
++    return ctx;
++}
++
++static NTSTATUS query_directory_locked(
+     HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext,
+     PXBOX_IO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation, ULONG Length,
+     XBOX_FILE_INFORMATION_CLASS FileInformationClass,
+@@ -640,7 +649,13 @@
+     if (!ctx)
+         return STATUS_INSUFFICIENT_RESOURCES;
+ 
++    if(ctx->exhausted && !RestartScan) {
++        IoStatusBlock->Status=STATUS_NO_MORE_FILES;
++        return STATUS_NO_MORE_FILES;
++    }
++
+     if (RestartScan || !ctx->first_done) {
++        ctx->exhausted=FALSE;
+         if (ctx->find_handle && ctx->find_handle != INVALID_HANDLE_VALUE) {
+             FindClose(ctx->find_handle);
+             ctx->find_handle = NULL;
+@@ -668,6 +683,7 @@
+         ctx->find_handle = FindFirstFileW(search_path, &ctx->find_data);
+         if (ctx->find_handle == INVALID_HANDLE_VALUE) {
+             ctx->find_handle = NULL;
++            ctx->exhausted = TRUE;
+             IoStatusBlock->Status = STATUS_NO_MORE_FILES;
+             return STATUS_NO_MORE_FILES;
+         }
+@@ -676,7 +692,7 @@
+         if (!FindNextFileW(ctx->find_handle, &ctx->find_data)) {
+             FindClose(ctx->find_handle);
+             ctx->find_handle = NULL;
+-            ctx->file_handle = NULL;
++            ctx->exhausted = TRUE;
+             IoStatusBlock->Status = STATUS_NO_MORE_FILES;
+             return STATUS_NO_MORE_FILES;
+         }
+@@ -688,7 +704,7 @@
+         if (!FindNextFileW(ctx->find_handle, &ctx->find_data)) {
+             FindClose(ctx->find_handle);
+             ctx->find_handle = NULL;
+-            ctx->file_handle = NULL;
++            ctx->exhausted = TRUE;
+             IoStatusBlock->Status = STATUS_NO_MORE_FILES;
+             return STATUS_NO_MORE_FILES;
+         }
+@@ -724,6 +740,19 @@
+     return STATUS_SUCCESS;
+ }
+ 
++NTSTATUS __stdcall xbox_NtQueryDirectoryFile(
++    HANDLE FileHandle, HANDLE Event, PIO_APC_ROUTINE ApcRoutine, PVOID ApcContext,
++    PXBOX_IO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation, ULONG Length,
++    XBOX_FILE_INFORMATION_CLASS FileInformationClass,
++    PXBOX_ANSI_STRING FileName, BOOLEAN RestartScan)
++{
++    AcquireSRWLockExclusive(&s_dir_lock);
++    NTSTATUS status=query_directory_locked(FileHandle,Event,ApcRoutine,ApcContext,
++        IoStatusBlock,FileInformation,Length,FileInformationClass,FileName,RestartScan);
++    ReleaseSRWLockExclusive(&s_dir_lock);
++    return status;
++}
++
+ /* ======================================================================== */
+ #else /* !_WIN32 */
+ /* ====================  POSIX backend  =================================== */
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -607,8 +607,10 @@
+     /* Close real handles but skip fake/synthetic ones */
+     if (raw_handle && raw_handle != 0xDEAD0001u && raw_handle != 0xBEEF0010u) {
+         HANDLE h = bridge_take_handle(raw_handle);
++        /* File searches belong to the open handle. Route through the kernel
++         * close path so a reused Windows handle cannot inherit an old scan. */
+         if (h && h != INVALID_HANDLE_VALUE)
+-            CloseHandle(h);
++            xbox_NtClose(h);
+     }
+     g_eax = 0; /* STATUS_SUCCESS */
+ }

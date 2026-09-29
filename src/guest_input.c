@@ -8,6 +8,7 @@
 extern RECOMP_TLS uint32_t g_eax, g_esp;
 extern ptrdiff_t g_xbox_mem_offset;
 extern xml1_guest_function recomp_lookup_kernel(uint32_t va);
+extern int xml1_test_unlock_codex(void);
 
 #define GAMEPAD_TYPE 0x003BF474u /* XbSymbolDatabase, supplied XDK 5849 image */
 #define DISCONNECTED 1167u
@@ -105,6 +106,13 @@ static void test_file_input(uint32_t frame) {
                 _exit(4);
             }
             mem[0x4A03A5u]|=1;
+            duration=0;
+        }
+        else if(!strcmp(part,"unlockbios") && !strcmp(command,part)) {
+            if(!xml1_test_unlock_codex()) {
+                fprintf(stderr,"[FATAL INPUT] biography fixture requested before CharacterManager initialization\n");
+                _exit(4);
+            }
             duration=0;
         }
         else if((!strcmp(part,"neutral") || !strcmp(part,"disconnect")) && !strcmp(command,part)) duration=0;

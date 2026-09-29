@@ -81,7 +81,6 @@ std::string logical(std::string name,const std::string& kind) {
     if(kind=="effect")prefix="effects/";if(kind=="motionpath")prefix="motionpaths/";
     if(name.compare(0,prefix.size(),prefix))throw std::runtime_error("Resource outside expected directory: "+name);
     name.erase(0,prefix.size());
-    if(kind=="motionpath")return name;
     size_t dot=name.rfind('.');
     if(dot==name.npos||name.find('/',dot)!=name.npos)throw std::runtime_error("Resource extension missing: "+name);
     return name.substr(0,dot);

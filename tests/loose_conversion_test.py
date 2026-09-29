@@ -14,7 +14,7 @@ def fb(name,kind,payload):
     return name.encode().ljust(128,b'\0')+kind.encode().ljust(64,b'\0')+struct.pack('<I',len(payload))+payload
 
 class ConversionTests(unittest.TestCase):
-    def test_motionpath_bundle_keeps_extension_in_both_extractors(self):
+    def test_motionpath_manifest_is_extensionless_but_physical_file_is_unchanged(self):
         import subprocess
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);archive=root/'input.zip'
@@ -25,7 +25,7 @@ class ConversionTests(unittest.TestCase):
             subprocess.run([str(exe),str(archive),str(root/'native')],check=True,capture_output=True)
             for output in ('python','native'):
                 nodes=read_pkgb((root/output/'packages/generated/menu.pkgb').read_bytes())
-                self.assertEqual(dict(nodes[0].attributes)['filename'],'menus/main_back.igb')
+                self.assertEqual(dict(nodes[0].attributes)['filename'],'menus/main_back')
                 self.assertEqual((root/output/'motionpaths/menus/main_back.igb').read_bytes(),b'camera bundle')
 
     def test_localized_conflict_keeps_one_manifest_name(self):
@@ -76,7 +76,7 @@ class ConversionTests(unittest.TestCase):
         for path in ('../outside','/absolute','a/../b','c:/outside','a//b','a./b','data/CON.xml','a/lpt1','data/x?.xml','data/x\x01.xml'):
             with self.subTest(path=path),self.assertRaises(ValueError):converter.safe_path(path)
     def test_type_mapping(self):
-        self.assertEqual(converter.logical_name('motionpaths/menus/main_back.igb','motionpath'),'menus/main_back.igb')
+        self.assertEqual(converter.logical_name('motionpaths/menus/main_back.igb','motionpath'),'menus/main_back')
         self.assertEqual(converter.logical_name('actors/0301.igb','actorskin'),'0301')
         self.assertEqual(converter.logical_name('effects/a.xml','effect'),'a')
         with self.assertRaises(ValueError):converter.logical_name('other/0301.igb','actorskin')
