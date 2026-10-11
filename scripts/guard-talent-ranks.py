@@ -230,14 +230,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fixture-output', type=Path)
     parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--generated-dir',type=Path,default=ROOT/'src/recomp/gen')
     args = parser.parse_args()
     if not args.fixture_output and not args.apply:
         parser.error('Specify --fixture-output or --apply')
-    index = RecompSources(ROOT / 'src/recomp/gen')
-    bodies = [migrate(address, extract(index.path(address).read_text(), address)) for address in FUNCTIONS]
+    index = RecompSources(args.generated_dir)
+    bodies = [migrate(address, extract(index.canonical_read(index.path(address)), address)) for address in FUNCTIONS]
     updates = {}
     for path, addresses in index.grouped((*FUNCTIONS, *EXTRA_READERS)).items():
-        text = path.read_text()
+        text = index.canonical_read(path)
         for address in addresses:
             migrated = migrate(address, extract(text, address))
             if migrate(address, migrated) != migrated:
@@ -260,7 +261,7 @@ def main():
         # No mutation until every expected method has validated successfully.
         for path, text in updates.items():
             if path.read_text() != text:
-                path.write_text(text)
+                path.write_text(index.restore_names(text))
         print(f'Applied {len(FUNCTIONS)+len(EXTRA_READERS)} audited native migrations')
 
 

@@ -12,12 +12,13 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apply',action='store_true')
     parser.add_argument('--fixture-output',type=Path)
+    parser.add_argument('--generated-dir',type=Path,default=ROOT/'src/recomp/gen')
     args=parser.parse_args()
-    index=RecompSources(ROOT/'src/recomp/gen')
+    index=RecompSources(args.generated_dir)
     pending={}; bodies={}
     for address,count in COUNTS.items():
         path=index.path(address)
-        source=pending.get(path, path.read_text())
+        source=pending.get(path, index.canonical_read(path))
         match=find_function(source,address)
         if not match:raise ValueError('Missing native talent source method')
         body=match[0]
@@ -40,7 +41,7 @@ def main():
         for path,source in pending.items():
             if '#include "engine/progression/talent_source_table.h"' not in source:
                 source='#include "engine/progression/talent_source_table.h"\n'+source
-            path.write_text(source)
+            path.write_text(index.restore_names(source))
     print('Validated all five native talent source readers/writer')
 
 if __name__=='__main__':main()

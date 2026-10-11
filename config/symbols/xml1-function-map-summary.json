@@ -1,0 +1,10 @@
+{
+  "total": 25855,
+  "statuses": {
+    "unidentified": 25574,
+    "registered": 160,
+    "unresolved_entry_stub": 121
+  },
+  "unregistered_with_direct_known_relationships": 1673,
+  "relationship_limit": "Direct static calls only; indirect/vtable calls omitted. Related modules are navigation hints, not ownership or naming evidence."
+}

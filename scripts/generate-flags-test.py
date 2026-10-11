@@ -1,6 +1,11 @@
 from pathlib import Path
 import sys
 root = Path(__file__).resolve().parents[1]
+import argparse
+parser=argparse.ArgumentParser()
+parser.add_argument('--output',type=Path,default=root/'build/flags-fixture.inc')
+args=parser.parse_args()
+args.output.parent.mkdir(parents=True,exist_ok=True)
 sys.path.insert(0, str(root / 'external/xboxrecomp'))
 from tools.recomp.test_flag_join import translate_join
 from tools.recomp.test_incdec_carry import translate_incdec
@@ -27,4 +32,4 @@ for width,dec,inc in ((8,'fec8','fec0'),(16,'6648','6640'),(32,'48','40')):
             code+=FunctionTranslator(image,db).translate_function(base,db[base]).replace('sub_00010000',name)
 code+='\nstatic void (*saved_incdec_fixtures[24])(void)={'+','.join(names)+'};\n'
 (root / 'build').mkdir(exist_ok=True)
-(root / 'build/flags-fixture.inc').write_text(code, encoding='utf-8')
+args.output.write_text(code, encoding='utf-8')

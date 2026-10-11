@@ -99,21 +99,26 @@ tools. XboxRecomp and libsamplerate are pinned submodules; the setup script appl
 our ordered toolkit patches.
 
 ```powershell
+git clone --recurse-submodules https://github.com/GTTeancum/OpenXML1xbox.git
+cd OpenXML1xbox
 ./scripts/setup.ps1
-./scripts/build-toolkit.ps1
-./scripts/import-iso.ps1 -IsoPath 'D:\path\to\X-Men Legends (World).iso'
-./scripts/generate-code.ps1 -Disassemble
-cmake -S . -B build/optimized -A x64 -DOPENXML1_BUILD_BOOT_PROBE=ON -DOPENXML1_OPTIMIZE_RECOMP=ON
+cmake -S . -B build/optimized -A x64 -DOPENXML1_BUILD_BOOT_PROBE=ON -DOPENXML1_OPTIMIZE_RECOMP=ON -DPython3_EXECUTABLE="$PWD/.venv/Scripts/python.exe"
 cmake --build build/optimized --config Release --target xml1-boot-probe
-cmake -S renderer -B build/renderer -A Win32
-cmake --build build/renderer --config Release --target xml1-dx8-worker
 ```
 
-The game host is 64-bit; the native DX8 renderer is a separate 32-bit process.
-An original-Xbox hardware build is not implemented.
-[PC menu documentation](docs/PC-OPTIONS-CONTROLS.md) covers the menu asset build,
-which also requires locally installed XML2 reference assets and the IGB writer.
-Original assets and generated game code remain outside Git.
+Compilation uses the committed `src/recomp/game` tree, including the remaining
+address-named functions. It does not require an ISO, XBE, disassembly or code
+generation. The 32-bit DX8 renderer is built and embedded automatically.
+The result is `build/optimized/Release/xml1-boot-probe.exe`; deploy it as
+`X-Men Legends.exe` beside your own extracted game data and `default.xbe`.
+Running the game still requires those original files and the release's modified
+assets. Compiling the executable does not create a complete playable asset set.
+
+See [Git-only build and regeneration](docs/GIT-ONLY-BUILD.md) for the source map,
+checks and optional maintainer regeneration. The game host is 64-bit; an
+original-Xbox hardware build is not implemented. [PC menu documentation](docs/PC-OPTIONS-CONTROLS.md)
+covers optional menu asset authoring, which needs local XML2 reference assets
+and the IGB writer. Original game assets remain outside Git.
 
 This is an unofficial project, not affiliated with the original game's publishers
 or developers. X-Men Legends and its artwork belong to their respective owners.

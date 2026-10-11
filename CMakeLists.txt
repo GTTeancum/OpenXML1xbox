@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 project(OpenXML1xbox LANGUAGES C CXX RC)
+find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)
 include(cmake/Generated.cmake)
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-parser-text-methods.inc"
-    COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-parser-text-arena.py"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-parser-text-arena.py"
+        --generated-dir "${XML1_RECOMP_SOURCE_DIR}"
         --fixture-output "${CMAKE_CURRENT_BINARY_DIR}/native-parser-text-methods.inc"
     DEPENDS scripts/guard-parser-text-arena.py ${XML1_GENERATED_INPUTS}
     VERBATIM)
@@ -11,7 +13,8 @@ add_executable(parser-text-arena-native-test tests/parser_text_arena_native_test
     "${CMAKE_CURRENT_BINARY_DIR}/native-parser-text-methods.inc")
 target_include_directories(parser-text-arena-native-test PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}")
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-registry-methods.inc"
-    COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-registry.py"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-registry.py"
+        --generated-dir "${XML1_RECOMP_SOURCE_DIR}"
         --fixture-output "${CMAKE_CURRENT_BINARY_DIR}/native-registry-methods.inc"
     DEPENDS scripts/guard-talent-registry.py scripts/talent_registry_layout.py
         src/engine/progression/talent_registry_layout.h ${XML1_GENERATED_INPUTS}
@@ -20,7 +23,8 @@ add_executable(talent-registry-native-test tests/engine/progression/talent_regis
     "${CMAKE_CURRENT_BINARY_DIR}/native-registry-methods.inc")
 target_include_directories(talent-registry-native-test PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}")
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-source-cache-methods.inc"
-    COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-source-cache.py"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-source-cache.py"
+        --generated-dir "${XML1_RECOMP_SOURCE_DIR}"
         --fixture-output "${CMAKE_CURRENT_BINARY_DIR}/native-source-cache-methods.inc"
     DEPENDS scripts/guard-talent-source-cache.py scripts/talent_registry_layout.py
         ${XML1_GENERATED_INPUTS}
@@ -30,7 +34,8 @@ add_executable(talent-source-cache-native-test tests/engine/progression/talent_s
 target_include_directories(talent-source-cache-native-test PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}")
 add_executable(talent-slot-layout-test tests/engine/progression/talent_slot_layout_test.c)
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-source-method.inc"
-    COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-sources.py"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-sources.py"
+        --generated-dir "${XML1_RECOMP_SOURCE_DIR}"
         --fixture-output "${CMAKE_CURRENT_BINARY_DIR}/native-source-method.inc"
     DEPENDS scripts/guard-talent-sources.py ${XML1_GENERATED_INPUTS}
     VERBATIM)
@@ -96,7 +101,8 @@ target_link_libraries(raven-talent-data-test PRIVATE raven-talent-data)
 add_executable(character-talent-record-test tests/engine/progression/character_talent_record_test.c)
 target_include_directories(character-talent-record-test PRIVATE src)
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-rank-methods.inc"
-    COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-ranks.py"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-talent-ranks.py"
+        --generated-dir "${XML1_RECOMP_SOURCE_DIR}"
         --fixture-output "${CMAKE_CURRENT_BINARY_DIR}/native-rank-methods.inc"
     DEPENDS scripts/guard-talent-ranks.py ${XML1_GENERATED_INPUTS}
     VERBATIM)
@@ -104,7 +110,8 @@ add_executable(character-talent-native-test tests/engine/progression/character_t
     "${CMAKE_CURRENT_BINARY_DIR}/native-rank-methods.inc")
 target_include_directories(character-talent-native-test PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}")
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-character-map-methods.inc"
-    COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-character-talent-map.py"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/guard-character-talent-map.py"
+        --generated-dir "${XML1_RECOMP_SOURCE_DIR}"
         --fixture-output "${CMAKE_CURRENT_BINARY_DIR}/native-character-map-methods.inc"
     DEPENDS scripts/guard-character-talent-map.py scripts/character_talent_layout.py
         scripts/talent_registry_layout.py ${XML1_GENERATED_INPUTS}
@@ -201,11 +208,12 @@ if(RAVEN_XML2_CURVE_REFERENCE)
     target_compile_definitions(raven-talent-curve-test PRIVATE RAVEN_XML2_CURVE_REFERENCE=1)
     target_include_directories(raven-talent-curve-test PRIVATE build)
 endif()
-add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/x87-status-fixture.inc"
-    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-x87-status-test.py"
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/x87-status-fixture.inc"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-x87-status-test.py"
+        --output "${CMAKE_CURRENT_BINARY_DIR}/x87-status-fixture.inc"
     DEPENDS scripts/generate-x87-status-test.py external/xboxrecomp/tools/recomp/lifter.py)
-add_executable(x87-status-test tests/x87_status_test.c "${CMAKE_CURRENT_SOURCE_DIR}/build/x87-status-fixture.inc")
-target_include_directories(x87-status-test PRIVATE external/xboxrecomp/templates/runtime build)
+add_executable(x87-status-test tests/x87_status_test.c "${CMAKE_CURRENT_BINARY_DIR}/x87-status-fixture.inc")
+target_include_directories(x87-status-test PRIVATE external/xboxrecomp/templates/runtime "${CMAKE_CURRENT_BINARY_DIR}")
 
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "The initial XboxRecomp baseline requires Windows x64.")
@@ -278,27 +286,23 @@ add_executable(guest-crt-test tests/runtime/guest/guest_crt_test.c src/runtime/g
 target_include_directories(guest-crt-test PRIVATE external/xboxrecomp/src/kernel external/xboxrecomp/src)
 add_executable(guest-input-test tests/input/guest_input_test.c src/input/guest_input.c)
 target_include_directories(guest-input-test PRIVATE src external/xboxrecomp/src/input external/xboxrecomp/src/kernel external/xboxrecomp/src)
-message(STATUS "XML1 CPU/kernel bring-up; game rendering and audio integration remain pending")
+message(STATUS "OpenXML1: native DX8 game with committed guest source")
 
-option(OPENXML1_BUILD_BOOT_PROBE "Build the XML1 CPU/kernel diagnostic (graphics integration pending)" OFF)
+option(OPENXML1_BUILD_BOOT_PROBE "Build the XML1 game executable with embedded DX8 renderer" OFF)
 option(OPENXML1_OPTIMIZE_RECOMP "Optimize generated game code for playback testing" OFF)
-set(_xml1_default_generated "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/named/naming-report.json")
-    set(_xml1_default_generated "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/named")
-endif()
-set(XML1_RECOMP_SOURCE_DIR "${_xml1_default_generated}" CACHE PATH "Generated guest code tree for the game target")
 if(OPENXML1_BUILD_BOOT_PROBE)
     file(GLOB_RECURSE RECOMP_SOURCES CONFIGURE_DEPENDS "${XML1_RECOMP_SOURCE_DIR}/*.c")
     if(NOT RECOMP_SOURCES)
-        message(FATAL_ERROR "Generate the supplied XBE first using scripts/generate-code.ps1")
+        message(FATAL_ERROR "Committed guest sources are missing. Restore src/recomp/game or select a complete XML1_RECOMP_SOURCE_DIR.")
     endif()
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/flags-fixture.inc"
-        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-flags-test.py"
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/flags-fixture.inc"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-flags-test.py"
+        --output "${CMAKE_CURRENT_BINARY_DIR}/flags-fixture.inc"
         DEPENDS scripts/generate-flags-test.py external/xboxrecomp/tools/recomp/translator.py
                 external/xboxrecomp/tools/recomp/test_flag_join.py external/xboxrecomp/tools/recomp/lifter.py
                 external/xboxrecomp/tools/recomp/test_incdec_carry.py)
-    add_executable(guest-flags-test tests/guest_flags_test.c "${CMAKE_CURRENT_SOURCE_DIR}/build/flags-fixture.inc")
-    target_include_directories(guest-flags-test PRIVATE src src/recomp/gen build)
+    add_executable(guest-flags-test tests/guest_flags_test.c "${CMAKE_CURRENT_BINARY_DIR}/flags-fixture.inc")
+    target_include_directories(guest-flags-test PRIVATE src "${XML1_RECOMP_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
     add_executable(xml1-boot-probe src/engine/resources/asset_routes.c src/app/build_settings.c src/app/main.c src/diagnostics/performance_log.c src/game/xml1/newgame_plus.c src/diagnostics/native_probe.c src/runtime/guest/recomp_manual.c src/runtime/guest/guest_crt.c src/input/guest_input.c src/graphics/dx8/guest_graphics_trace.c src/graphics/dx8/guest_graphics_live.c src/audio/dsound_hle.c src/audio/dsound_mixer.c src/audio/dsound_output.c tests/guest_swizzle_test.c tests/engine/progression/progression_test.c ${RECOMP_SOURCES})
     target_include_directories(xml1-boot-probe PRIVATE src "${XML1_RECOMP_SOURCE_DIR}" external/xboxrecomp/include external/xboxrecomp/src/apu)
     target_sources(xml1-boot-probe PRIVATE src/diagnostics/raven_operand_trace.c)
@@ -367,11 +371,13 @@ target_include_directories(video-settings-test PRIVATE external/xboxrecomp/src/k
 target_link_libraries(video-settings-test PRIVATE xboxrecomp)
 target_include_directories(worker-lifetime-test PRIVATE src)
 if(OPENXML1_BUILD_BOOT_PROBE)
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/fence-wait-fixture.inc"
-        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-fence-wait-test.py"
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/fence-wait-fixture.inc"
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-fence-wait-test.py"
+        --output "${CMAKE_CURRENT_BINARY_DIR}/fence-wait-fixture.inc"
+        --generated-dir "${XML1_RECOMP_SOURCE_DIR}"
         DEPENDS scripts/generate-fence-wait-test.py ${XML1_GENERATED_INPUTS})
-    add_executable(graphics-fence-wait-test tests/graphics_fence_wait_test.c "${CMAKE_CURRENT_SOURCE_DIR}/build/fence-wait-fixture.inc")
-    target_include_directories(graphics-fence-wait-test PRIVATE external/nv2a-vsh-cpu src src/recomp/gen build external/xboxrecomp/src/kernel external/xboxrecomp/src/input external/xboxrecomp/src)
+    add_executable(graphics-fence-wait-test tests/graphics_fence_wait_test.c "${CMAKE_CURRENT_BINARY_DIR}/fence-wait-fixture.inc")
+    target_include_directories(graphics-fence-wait-test PRIVATE external/nv2a-vsh-cpu src "${XML1_RECOMP_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}" external/xboxrecomp/src/kernel external/xboxrecomp/src/input external/xboxrecomp/src)
     target_link_libraries(graphics-fence-wait-test PRIVATE xml1-nv2a-vertex)
 endif()
 

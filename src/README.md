@@ -1,8 +1,9 @@
 # Source modules
 
 Handwritten code is grouped by responsibility. Generated guest code remains
-as raw guard input under `recomp/gen` and named build output under
-`recomp/named`; unidentified functions retain their numbered chunk files.
+in the committed `recomp/game` tree; unidentified functions retain their
+numbered chunk files. Optional maintainer regeneration uses ignored `recomp/gen`
+and `recomp/named` scratch trees. Normal builds do not read them.
 Header paths are explicit relative to the `src` include root.
 
 | Directory | Responsibility |

@@ -35,36 +35,18 @@ remain compatible through generated aliases.
 
 ## Regeneration and building
 
-Run `scripts/generate-code.ps1 -Disassemble -XbePath <original-default.xbe>`
-from the project on a fresh checkout (after the normal Python/toolchain setup).
-Later runs may omit `-Disassemble` when the verified analysis already exists.
-Without `-XbePath`, the script uses `XBOXgame/default.xbe`.
-The script checks the pinned executable identity, exports the manual mapping,
-runs XboxRecomp and the guards, then emits a separate named candidate. The
-emitter checks all guest entry addresses and compares every function body after
-reversing symbol substitutions. It preserves entry labels and inline comments.
-
-Raw guard input stays in `src/recomp/gen`. Validated named output is published
-to `src/recomp/named`; the previous named directory is retained under
-`work/generated-names` for recovery. Both generated trees are local-only.
-The actual publication block passed initial and replacement runs in a private
-generation fixture, preserving the previous output byte-for-byte. The actual
-CMake default-selection block selected the published tree. The complete top-level command subsequently passed in the private pipeline
-fixture using the verified pinned disassembly. Its exact output built successfully.
-
-New CMake configurations prefer the named tree when its report exists.
-Existing build caches must explicitly select it:
-
-```powershell
-cmake -S . -B build/<build-name> -DXML1_RECOMP_SOURCE_DIR=<absolute-named-tree>
-cmake --build build/<build-name> --config Release --target xml1-boot-probe
-```
+Normal builds now use the committed `src/recomp/game` tree. No game image or
+regeneration step is required to compile. See [GIT-ONLY-BUILD.md](GIT-ONLY-BUILD.md)
+for commands and maintainer publication. The local-only `gen` and `named` trees
+are optional regeneration intermediates, not dependencies of the default build.
+Older build caches retain their selected source path; use a fresh build folder
+or explicitly select `src/recomp/game`.
 
 Do not edit emitted names by hand. Add an evidenced identity to the registry,
 then regenerate. Keep functions in their original unit when splitting would
 change shared static state or lose required declarations.
 
-## Verification and completion audit
+## Previous organization verification (before Git-only publication)
 
 The completed registry has 209 identities: 49 maintained manual overrides and
 160 generated functions. 152 generated functions live under subsystem paths;

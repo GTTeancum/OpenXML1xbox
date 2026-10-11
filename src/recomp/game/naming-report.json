@@ -1,0 +1,16 @@
+{
+  "named": 160,
+  "guest_entries": 25855,
+  "retained_unit_names": [
+    "xml1_guest_parser_text_destroy",
+    "xml1_guest_parser_text_ensure_initialized",
+    "xml1_guest_parser_text_reset",
+    "xml1_guest_parser_text_literal_store",
+    "xml1_guest_dx8_block_on_time",
+    "xml1_guest_dx8_kickoff",
+    "xml1_guest_dx8_insert_fence",
+    "xml1_guest_xml_attribute_text"
+  ],
+  "unknown_chunks_retained": true,
+  "body_equivalence": true
+}

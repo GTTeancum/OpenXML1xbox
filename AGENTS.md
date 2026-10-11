@@ -6,7 +6,7 @@
 - Keep the GameCube project untouched. This is an independent feasibility project.
 - Preserve a future original-Xbox build path. The current64-bit Windows target is interim; keep host-specific backends separate and retain Xbox-compatible game data and mod formats. See docs/XBOX-RETURN.md. An Xbox hardware build is not implemented yet.
 - Never use Computer Use, desktop capture, screen takeover, UI automation, or host input injection. Use files, logs, non-interactive terminal commands, and process-local test harnesses only. Use the game's native capture for visual evidence.
-- Keep original ISO files unchanged. Inputs, extracted assets, generated game code, saves, captures, and build products stay local and excluded from Git.
+- Keep original ISO files unchanged. Inputs, extracted assets, saves, captures, and build products stay local and excluded from Git. The user-authorized Git-only build tracks canonical guest code under src/recomp/game; raw gen and maintainer named output remain ignored.
 - Pin XboxRecomp as a submodule. Record any required upstream changes rather than silently updating the pinned revision.
 - Do not invent XBE addresses, title IDs, or compatibility results. Derive them from the user's supplied image.
 - Community mod-hook documentation is out of scope. Focus upstream contribution work on reusable toolkit fixes.
