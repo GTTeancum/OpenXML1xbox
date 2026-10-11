@@ -4,9 +4,9 @@
 #include <string>
 #include <cwchar>
 #include <stdexcept>
-#include "../src/dx8_packet.h"
-#include "../src/texture_wire_cache.h"
-#include "../src/palette_texture.h"
+#include "../src/graphics/dx8/dx8_packet.h"
+#include "../src/graphics/dx8/texture_wire_cache.h"
+#include "../src/graphics/dx8/palette_texture.h"
 
 static void checked_result(HRESULT hr,const char* expression,const char* file,int line) {
     if (FAILED(hr)) {

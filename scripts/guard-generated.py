@@ -5,10 +5,11 @@ startup/gameplay service from masquerading as successful execution.
 """
 from pathlib import Path
 import re
+from recomp_source import RecompSources, find_function
 
 root = Path(__file__).resolve().parents[1] / 'src/recomp/gen'
 count = 0
-for path in root.glob('*.c'):
+for path in root.rglob('*.c'):
     original = path.read_text(encoding='utf-8')
     def guard(match):
         global count
@@ -22,41 +23,49 @@ for path in root.glob('*.c'):
         path.write_text(result, encoding='utf-8')
 print(f'Installed {count} fail-fast missing-function guards')
 
+index=RecompSources(root)
+
+def read(address):
+    path=index.path(address)
+    source=index.canonical_read(path)
+    match=find_function(source,address)
+    return (path,source,match),match[0]
+
+def write(state, body, declaration=''):
+    path,source,match=state
+    source=source[:match.start()]+body+source[match.end():]
+    if declaration and declaration not in source:
+        # Keep declarations after the unit's type includes, before this function.
+        source=source[:match.start()]+declaration+'\n'+source[match.start():]
+    source=index.restore_names(source)
+    if source!=path.read_text():path.write_text(source,encoding='utf-8')
+
 # BlockOnTime can insert the current fence itself. Native kickoff only queues
 # work; demand actual completion here, before the Xbox-only interrupt wait.
-fence_path = root / 'recomp_0095.c'
-text = fence_path.read_text(encoding='utf-8')
+state,text=read(0x35FDE0)
 fence_hook = '''loc_0035FE0F: ;
     /* Complete the issued fence before entering the Xbox hardware wait. */
     if (xml1_graphics_wait_fence(esi, edi)) goto loc_0035FF23;'''
 old_fence_hook = '''loc_0035FE0F: ;
     /* Native DX8 may have completed the fence inserted just above. */
     if (xml1_graphics_fence_complete(esi, edi)) goto loc_0035FF23;'''
-if old_fence_hook in text:
-    text = text.replace(old_fence_hook, fence_hook, 1).replace(
-        'int xml1_graphics_fence_complete(uint32_t device, uint32_t target);',
-        'int xml1_graphics_wait_fence(uint32_t device, uint32_t target);')
-    fence_path.write_text(text, encoding='utf-8')
+if old_fence_hook in text:text=text.replace(old_fence_hook,fence_hook,1)
 if fence_hook not in text:
-    if text.count('loc_0035FE0F: ;') != 1 or text.count('void sub_0035FDE0(void)') != 1:
+    if text.count('loc_0035FE0F: ;')!=1:
         raise SystemExit('Cannot locate the verified XML1 BlockOnTime boundary')
-    text = text.replace('void sub_0035FDE0(void)',
-                        'int xml1_graphics_wait_fence(uint32_t device, uint32_t target);\n'
-                        'void sub_0035FDE0(void)', 1)
-    text = text.replace('loc_0035FE0F: ;', fence_hook, 1)
-    fence_path.write_text(text, encoding='utf-8')
+    text=text.replace('loc_0035FE0F: ;',fence_hook,1)
+write(state,text,'int xml1_graphics_wait_fence(uint32_t device, uint32_t target);')
 
 # The XDK software push-buffer path normally writes latest-2 immediately at
 # 0035FC76. That was safe only while our entry hook synchronously drained GPU
 # work. With deferred kickoff, the native backend owns completion publication.
-text = fence_path.read_text(encoding='utf-8')
+state,text=read(0x35FC00)
 old_tag = '    eax = eax - 2;\n    MEM32(ecx) = eax;\n    edx = MEM32(esi + 0x2478);'
 new_tag = '    eax = eax - 2;\n    xml1_graphics_kickoff_tag(ecx, eax);\n    edx = MEM32(esi + 0x2478);'
 if new_tag not in text:
     if text.count(old_tag) != 1: raise SystemExit('Cannot locate verified XDK software kickoff completion store')
-    text = text.replace(old_tag, new_tag).replace('void sub_0035FC00(void)',
-        'void xml1_graphics_kickoff_tag(uint32_t pointer, uint32_t value);\nvoid sub_0035FC00(void)', 1)
-    fence_path.write_text(text, encoding='utf-8')
+    text=text.replace(old_tag,new_tag,1)
+write(state,text,'void xml1_graphics_kickoff_tag(uint32_t pointer, uint32_t value);')
 
 types = root / 'recomp_types.h'
 original = types.read_text(encoding='utf-8')
@@ -71,11 +80,10 @@ if result != original:
 
 # Diagnose the first broken callback contract in the movie worker's dispatch
 # loop. Stop at the producer of corruption, not a later invalid table entry.
-for path in root.glob('recomp_*.c'):
-    text = path.read_text(encoding='utf-8')
-    marker = 'PUSH32(esp, 0x0030BBE7u); RECOMP_ICALL_SAFE'
-    if marker not in text or 'XML1 movie callback contract' in text:
-        continue
+state,text=read(0x30BBB0)
+marker='PUSH32(esp, 0x0030BBE7u); RECOMP_ICALL_SAFE'
+if 'XML1 movie callback contract' not in text:
+    if text.count(marker)!=1:raise SystemExit('Cannot locate movie callback diagnostics boundary')
     at = text.index(marker)
     start = text.rfind('    { uint32_t _icall_esp = g_esp;', 0, at)
     end = text.index('\n    }', at) + len('\n    }')
@@ -91,29 +99,19 @@ for path in root.glob('recomp_*.c'):
         _exit(4);
     }
     }'''
-    path.write_text(text[:start]+checked+text[end:], encoding='utf-8')
+    write(state,text[:start]+checked+text[end:])
 
-for path in root.glob('recomp_*.c'):
-    text = path.read_text(encoding='utf-8')
-    original = text
-    for name in ('0030FF50', '003072A0', '0030BDA0'):
-        marker = 'void sub_' + name + '(void)'
-        if marker not in text:
-            continue
-        start = text.index(marker)
-        end = text.index('\nvoid sub_', start+len(marker))
-        block = text[start:end]
-        # 00307210 has a caller-cleaned argument; it obeys the same return rule.
-        text = text[:start] + block.replace('RECOMP_ABI_CALL(', 'XML1_CHECK_CDECL0(') + text[end:]
-    if text != original:
-        path.write_text(text, encoding='utf-8')
+for address in (0x30FF50,0x3072A0,0x30BDA0):
+    state,text=read(address)
+    # 00307210 has a caller-cleaned argument; it obeys the same return rule.
+    write(state,text.replace('RECOMP_ABI_CALL(', 'XML1_CHECK_CDECL0('))
 
 # Time the converter itself, excluding later graphics and synchronization calls.
-for path in root.glob('recomp_*.c'):
-    text = path.read_text(encoding='utf-8')
+path=index.path(0x32B8A0)
+text=index.canonical_read(path)
+if 'xml1_movie_convert_begin' not in text:
     marker = 'void sub_0032B8A0(void)\n{'
-    if marker not in text or 'xml1_movie_convert_begin' in text:
-        continue
+    if text.count(marker)!=1:raise SystemExit('Cannot locate native movie converter')
     text = text.replace(marker, 'static void xml1_movie_convert_impl(void)\n{', 1)
     text += """
 extern void xml1_movie_convert_begin(void);
@@ -124,4 +122,4 @@ void sub_0032B8A0(void) {
     xml1_movie_convert_end();
 }
 """
-    path.write_text(text, encoding='utf-8')
+    path.write_text(index.restore_names(text), encoding='utf-8')

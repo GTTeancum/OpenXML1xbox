@@ -6,8 +6,10 @@ ordinary game clock until that interval elapses. Keep that whole path, its
 actual elapsed timestamp and the original upper bound of 60 intact.
 """
 from pathlib import Path
+from recomp_source import RecompSources
 
-path = Path(__file__).resolve().parents[1] / 'src/recomp/gen/recomp_0000.c'
+index = RecompSources(Path(__file__).resolve().parents[1] / 'src/recomp/gen')
+path = index.label_path(0x00011178)
 text = path.read_text(encoding='utf-8')
 old = 'loc_00011178: ;\n    edx = MEM32(eax);\n    { uint32_t _icall_esp = g_esp;\n    PUSH32(esp, 0x31);'
 new = old.replace('PUSH32(esp, 0x31);',

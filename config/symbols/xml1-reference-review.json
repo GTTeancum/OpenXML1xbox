@@ -1,0 +1,1752 @@
+{
+  "schema_version": 1,
+  "scope": "Address-based guest references in handwritten src C/C++/headers; excludes generated recomp trees. References are candidates, not proven identities.",
+  "entries": [
+    {
+      "address": "0x00012A90",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x00014500",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x00016180",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x00016650",
+      "name": "xml1_guest_effect_group_release",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000183D0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x0001BF90",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x0001CD30",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_victim_event_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x00025EE0",
+      "name": "xml1_guest_effect_resource_interval",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000260B0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x00026DD0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x00026E60",
+      "name": "xml1_guest_entity_team",
+      "status": "registered",
+      "proposed_name": "xml1_guest_entity_team",
+      "review_evidence": {
+        "path": "src/engine/combat/raven_bishop_guest.c",
+        "detail": "character_team wrapper uses the return as the actor team."
+      },
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/combat/raven_filter_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000277E0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_event_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x00027B00",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/combat/raven_native_energy_guest.c",
+        "src/engine/powers/raven_power_bindings_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x00027EF0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/combat/raven_native_energy_guest.c",
+        "src/engine/powers/raven_power_bindings_guest.c",
+        "src/engine/powers/raven_powerup_guest.c",
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x00028FA0",
+      "name": "xml1_guest_active_powerup_retire",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00028FF0",
+      "name": "xml1_guest_powerup_end_time",
+      "status": "registered",
+      "proposed_name": "xml1_guest_powerup_end_time",
+      "review_evidence": {
+        "path": "src/engine/powers/raven_powerup_guest.c",
+        "detail": "end_time wrapper consumes the native floating-point result."
+      },
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000293F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "src/engine/powers/raven_victim_event_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x0002AA90",
+      "name": "xml1_guest_actor_attach_powerup",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0002AF30",
+      "name": "xml1_guest_actor_remove_powerup",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0002B250",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0002B270",
+      "name": "xml1_guest_active_powerup_share",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0002B810",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x0002C8C0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x0002E220",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0002E280",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0002E290",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/combat/raven_native_energy_guest.c",
+        "src/engine/powers/raven_victim_event_guest.c",
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0002E5B0",
+      "name": "xml1_guest_actor_set_health",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0002E6C0",
+      "name": "xml1_guest_actor_character_name",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0002E9F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x000322B0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x000381F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x00038340",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0003A3E0",
+      "name": "xml1_guest_actor_animation_fraction",
+      "status": "registered",
+      "proposed_name": "xml1_guest_actor_animation_fraction",
+      "review_evidence": {
+        "path": "src/engine/combat/raven_bishop_guest.c",
+        "detail": "Existing comment explicitly identifies animation progress API and absence of output-delta argument."
+      },
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0003B100",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0003CDF0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0003D600",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x0003F410",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_native_energy_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x00040B90",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x00045260",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x00048950",
+      "name": "xml1_guest_talent_pending_commit",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c",
+        "tests/engine/progression/character_talent_native_test.c",
+        "scripts/guard-talent-ranks.py"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00048D50",
+      "name": "xml1_guest_character_talent_insert_declaration",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00049480",
+      "name": "xml1_guest_damage_type_from_name",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000494C0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Existing shared-powerup integration documents a local resource, type or ownership operation. This pass retains the address name rather than infer a whole-function/class name from that local use."
+    },
+    {
+      "address": "0x000541E0",
+      "name": "xml1_guest_character_manager_xp_threshold",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c",
+        "tests/engine/progression/progression_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00054BA0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Package integration establishes an insertion, resource or character lookup call within a larger operation. The individual callee identity requires additional contract tracing, which is deferred."
+    },
+    {
+      "address": "0x00055A90",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Package integration establishes an insertion, resource or character lookup call within a larger operation. The individual callee identity requires additional contract tracing, which is deferred."
+    },
+    {
+      "address": "0x00056E90",
+      "name": "xml1_guest_character_manager_get_or_create",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/saves/raven_saved_stats_guest.c",
+        "src/engine/world/raven_campaign_state_guest.c",
+        "docs/ROSTER-COSTUME-EXPANSION.md"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00057250",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x00059CE0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x00060C00",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x00066AB0",
+      "name": "xml1_guest_simulation_time",
+      "status": "registered",
+      "evidence_paths": [
+        "src/audio/raven_loop_sound_guest.c",
+        "src/engine/combat/raven_native_energy_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00069A20",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_actor.c",
+        "src/engine/actors/raven_leader_event_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x00069DC0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_actor.c",
+        "src/engine/actors/raven_leader_event_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x0006A3F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_actor.c",
+        "src/engine/actors/raven_leader_event_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x0006BF80",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0006BFA0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_ai_modes_guest.c",
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0006E880",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x0006E920",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x0006EB00",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x0006F940",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x00072CF0",
+      "name": "xml1_guest_effect_manager_get",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "src/engine/scripting/raven_script_extensions.c",
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00074990",
+      "name": "xml1_guest_entity_fade_in",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000749E0",
+      "name": "xml1_guest_entity_fade_out",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000760D0",
+      "name": "xml1_guest_entity_set_velocity",
+      "status": "registered",
+      "proposed_name": "xml1_guest_entity_set_velocity",
+      "review_evidence": {
+        "path": "docs/XML2-INTEGRATION.md",
+        "detail": "Existing lunge integration identifies the native velocity setter."
+      },
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "docs/XML2-INTEGRATION.md"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00076B40",
+      "name": "xml1_guest_entity_set_alpha",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0007E0B0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x0007E2F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x0007F850",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/saves/raven_saved_stats_guest.c"
+      ],
+      "review_reason": "Saved-stat integration documents controller/buffer ownership or stream ordering at this call; keep the original address identity until the complete native operation is established."
+    },
+    {
+      "address": "0x000801F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x00080C80",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x00084980",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x00086000",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x0008A600",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/combat/raven_filter_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x0008C030",
+      "name": "xml1_guest_progress_save",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0008C050",
+      "name": "xml1_guest_progress_load",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0008C300",
+      "name": "xml1_guest_progress_set_campaign_complete",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0008C5F0",
+      "name": "xml1_guest_progress_merge_snapshot",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0008C820",
+      "name": "xml1_guest_progress_snapshot",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0008C930",
+      "name": "xml1_guest_progress_restore_snapshot",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0008C980",
+      "name": "xml1_guest_progress_manager_get",
+      "status": "registered",
+      "proposed_name": "xml1_guest_progress_manager_get",
+      "review_evidence": {
+        "path": "src/engine/world/raven_progress_guest.c",
+        "detail": "progress_require_owner verifies exact singleton identity and guest ABI."
+      },
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0008F130",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_ai_modes_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x0008F170",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x00094F00",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Existing shared-powerup integration documents a local resource, type or ownership operation. This pass retains the address name rather than infer a whole-function/class name from that local use."
+    },
+    {
+      "address": "0x00094FE0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Existing shared-powerup integration documents a local resource, type or ownership operation. This pass retains the address name rather than infer a whole-function/class name from that local use."
+    },
+    {
+      "address": "0x000953A0",
+      "name": "xml1_guest_powerup_definition_copy",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000955C0",
+      "name": "xml1_guest_powerup_definition_parse_attribute",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00096740",
+      "name": "xml1_guest_powerup_definition_allocate",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000967B0",
+      "name": "xml1_guest_powerup_definition_release",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c",
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0009AE60",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x0009FF10",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x000A0780",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing combat code uses a collision/query result at this call. The local caller is not enough to distinguish the complete native query or result-access contract. No new reverse engineering in this pass."
+    },
+    {
+      "address": "0x000A07B0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing combat code uses a collision/query result at this call. The local caller is not enough to distinguish the complete native query or result-access contract. No new reverse engineering in this pass."
+    },
+    {
+      "address": "0x000A07E0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing combat code uses a collision/query result at this call. The local caller is not enough to distinguish the complete native query or result-access contract. No new reverse engineering in this pass."
+    },
+    {
+      "address": "0x000A2880",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x000A2D00",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing combat code uses a collision/query result at this call. The local caller is not enough to distinguish the complete native query or result-access contract. No new reverse engineering in this pass."
+    },
+    {
+      "address": "0x000A5380",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/saves/raven_saved_stats_guest.c"
+      ],
+      "review_reason": "Saved-stat integration documents controller/buffer ownership or stream ordering at this call; keep the original address identity until the complete native operation is established."
+    },
+    {
+      "address": "0x000A81F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/saves/raven_saved_stats_guest.c"
+      ],
+      "review_reason": "Saved-stat integration documents controller/buffer ownership or stream ordering at this call; keep the original address identity until the complete native operation is established."
+    },
+    {
+      "address": "0x000A9F60",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_event_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x000AA240",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_event_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x000AA4A0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_event_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x000AE0F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x000AE120",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x000AF4E0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x000AF700",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x000B3540",
+      "name": "xml1_guest_talent_definition_by_id",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B3BE0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Package integration establishes an insertion, resource or character lookup call within a larger operation. The individual callee identity requires additional contract tracing, which is deferred."
+    },
+    {
+      "address": "0x000B3E90",
+      "name": "xml1_guest_talent_definition_resolve_handle",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_power_bindings_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B41B0",
+      "name": "xml1_guest_talent_source_intern",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B4250",
+      "name": "xml1_guest_talent_definition_parse",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c",
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B4870",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Package integration establishes an insertion, resource or character lookup call within a larger operation. The individual callee identity requires additional contract tracing, which is deferred."
+    },
+    {
+      "address": "0x000B4B30",
+      "name": "xml1_guest_talent_source_cache_release",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B4D90",
+      "name": "xml1_guest_talent_id_by_name",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c",
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B4EA0",
+      "name": "xml1_guest_talent_name_by_id",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B5080",
+      "name": "xml1_guest_talent_definition_release",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c",
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B53A0",
+      "name": "xml1_guest_talent_source_document_load",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B5620",
+      "name": "xml1_guest_talent_definition_register_node",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B5980",
+      "name": "xml1_guest_talent_manager_get",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_power_bindings_guest.c",
+        "src/engine/progression/talent_identity_guest.c",
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B59D0",
+      "name": "xml1_guest_talent_selector_resolve",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/progression/talent_identity_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B7E60",
+      "name": "xml1_guest_values_evaluate",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000B8550",
+      "name": "xml1_guest_values_manager_get",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000BF750",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_filter_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x000CA950",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x000CA9B0",
+      "name": "xml1_guest_script_integer_result",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000CACD0",
+      "name": "xml1_guest_script_game_variable_lookup",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000CAD40",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x000CB850",
+      "name": "xml1_guest_script_game_variable_set",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000CC120",
+      "name": "xml1_guest_script_manager_get",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000CCCF0",
+      "name": "xml1_guest_script_string_result",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x000CEE80",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_filter_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x000E17C0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x000E3FB0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_filter_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x000E6D10",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x000E6D80",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x000E7460",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x000E7AF0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x000E7C20",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x000E8B70",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x000ED500",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_native_energy_guest.c",
+        "src/engine/powers/raven_power_bindings_guest.c",
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x000ED6E0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/powers/raven_victim_event_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x000FC260",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_ai_modes_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x000FC5A0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_ai_modes_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x00101940",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_ai_modes_guest.c"
+      ],
+      "review_reason": "Existing AI/leader integration identifies a lifecycle or state-transition call site, not a complete uniquely named callee contract. Further identification is deferred."
+    },
+    {
+      "address": "0x0010C8D0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/actors/raven_ai_modes_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x0011CD90",
+      "name": "xml1_guest_command_manager_get",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/saves/raven_saved_stats_guest.c",
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0011FE10",
+      "name": "xml1_guest_options_storage_write",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00120090",
+      "name": "xml1_guest_options_storage_read",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_progress_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x001209C0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c",
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x00121040",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Package integration establishes an insertion, resource or character lookup call within a larger operation. The individual callee identity requires additional contract tracing, which is deferred."
+    },
+    {
+      "address": "0x00123100",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/combat/raven_bishop_guest.c"
+      ],
+      "review_reason": "Combat callers establish a local dispatch, target, animation or record operation. They do not establish a sufficiently specific complete callee identity; retain address naming and existing inline notes."
+    },
+    {
+      "address": "0x00123330",
+      "name": "xml1_guest_random_float",
+      "status": "registered",
+      "proposed_name": "xml1_guest_random_float",
+      "review_evidence": {
+        "path": "src/engine/powers/raven_powerup_guest.c",
+        "detail": "Existing comment establishes seed ownership, recurrence and floating result."
+      },
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x001233C0",
+      "name": "xml1_guest_random_integer_range",
+      "status": "registered",
+      "proposed_name": "xml1_guest_random_integer_range",
+      "review_evidence": {
+        "path": "src/engine/actors/raven_leader_actor.c",
+        "detail": "native_random passes minimum and maximum and returns the native integer."
+      },
+      "evidence_paths": [
+        "src/engine/actors/raven_leader_actor.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00123490",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/audio/raven_effect_sound_guest.c",
+        "src/engine/combat/raven_filter_guest.c",
+        "src/engine/combat/raven_harming_callbacks.c",
+        "src/engine/powers/raven_victim_event_guest.c",
+        "src/engine/progression/character_talent_map_guest.c",
+        "src/engine/progression/talent_source_table.c",
+        "src/engine/resources/parser_text_arena_guest.h",
+        "src/engine/scripting/raven_script_extensions.c"
+      ],
+      "review_reason": "Script integration proves how this call is used in an adapter, but its full native manager, object or result contract has not been established in this pass. Retain address naming; no speculative XML2-to-XML1 class naming."
+    },
+    {
+      "address": "0x001234F0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/resources/parser_text_arena_guest.h"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x00123550",
+      "name": "xml1_guest_save_buffer_release",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/saves/raven_saved_stats_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00125890",
+      "name": "xml1_guest_xml_symbol_release",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/actors/raven_character_race_guest.c",
+        "src/engine/actors/raven_leader_definition_guest.c",
+        "src/engine/actors/raven_transform_definition_guest.c",
+        "src/engine/powers/raven_powerup_guest.c",
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00125BD0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x00125DA0",
+      "name": "xml1_guest_xml_symbol_construct",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/actors/raven_character_race_guest.c",
+        "src/engine/actors/raven_leader_definition_guest.c",
+        "src/engine/actors/raven_transform_definition_guest.c",
+        "src/engine/powers/raven_powerup_guest.c",
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00125F40",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_state_guest.c"
+      ],
+      "review_reason": "Existing call-site evidence covers a local allocation, stream, definition or lifecycle operation. It is insufficient here for a precise whole-function identity; preserve address naming and the source evidence for a later sweep."
+    },
+    {
+      "address": "0x001260E0",
+      "name": "xml1_guest_xml_node_find_attribute",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/actors/raven_character_race_guest.c",
+        "src/engine/actors/raven_leader_definition_guest.c",
+        "src/engine/actors/raven_transform_definition_guest.c",
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00126C30",
+      "name": "xml1_guest_xml_node_next_named_child",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/actors/raven_character_race_guest.c",
+        "src/engine/powers/raven_powerup_guest.c",
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x001282C0",
+      "name": null,
+      "status": "deferred",
+      "review_reason": "Comment describes XML token behavior but does not establish the complete parser function contract.",
+      "evidence_paths": [
+        "src/engine/resources/xmlb.cpp"
+      ]
+    },
+    {
+      "address": "0x00138870",
+      "name": "xml1_guest_bone_name_lookup",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0014A130",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Package integration establishes an insertion, resource or character lookup call within a larger operation. The individual callee identity requires additional contract tracing, which is deferred."
+    },
+    {
+      "address": "0x0014A660",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/progression/talent_package_guest.c"
+      ],
+      "review_reason": "Package integration establishes an insertion, resource or character lookup call within a larger operation. The individual callee identity requires additional contract tracing, which is deferred."
+    },
+    {
+      "address": "0x00150360",
+      "name": "xml1_guest_sound_stop",
+      "status": "registered",
+      "proposed_name": "xml1_guest_sound_stop",
+      "review_evidence": {
+        "path": "src/audio/raven_loop_sound_guest.c",
+        "detail": "raven_loop_guest_stop converts the normalized handle and invokes native stop."
+      },
+      "evidence_paths": [
+        "src/audio/raven_loop_sound_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00151880",
+      "name": "xml1_guest_sound_play_positional",
+      "status": "registered",
+      "proposed_name": "xml1_guest_sound_play_positional",
+      "review_evidence": {
+        "path": "src/audio/raven_loop_sound_guest.c",
+        "detail": "Existing argument documentation lists sound ID, initial position, volume and near/far ranges."
+      },
+      "evidence_paths": [
+        "src/audio/raven_loop_sound_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00151EF0",
+      "name": "xml1_guest_sound_manager_get",
+      "status": "registered",
+      "proposed_name": "xml1_guest_sound_manager_get",
+      "review_evidence": {
+        "path": "src/audio/raven_loop_sound_guest.c",
+        "detail": "Shared native manager used by playback and stop wrappers."
+      },
+      "evidence_paths": [
+        "src/audio/raven_loop_sound_guest.c",
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x0015E8C0",
+      "name": null,
+      "status": "deferred",
+      "review_reason": "XML2 diagnostic definition, not XML1 guest naming evidence.",
+      "evidence_paths": [
+        "src/diagnostics/raven_xml2_query_guest.c"
+      ]
+    },
+    {
+      "address": "0x00185B50",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x00185BC0",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c"
+      ],
+      "review_reason": "Existing references primarily exercise a native fixture boundary; the fixture label describes the test, not a sufficiently established full native function identity."
+    },
+    {
+      "address": "0x00185C30",
+      "name": "xml1_guest_popup_add_choice",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c",
+        "src/game/xml1/newgame_plus.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00185DF0",
+      "name": "xml1_guest_popup_set_selection",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00185E40",
+      "name": "xml1_guest_popup_select_page",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c",
+        "src/game/xml1/newgame_plus.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00186BC0",
+      "name": "xml1_guest_popup_set_title",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c",
+        "src/game/xml1/newgame_plus.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00186CB0",
+      "name": "xml1_guest_popup_set_cancel_script",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x001872E0",
+      "name": "xml1_guest_popup_show",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c",
+        "src/game/xml1/newgame_plus.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00187AF0",
+      "name": "xml1_guest_popup_manager_get",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/world/raven_campaign_menu_guest.c",
+        "src/game/xml1/newgame_plus.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x00199C10",
+      "name": null,
+      "status": "deferred",
+      "evidence_paths": [
+        "src/engine/powers/raven_powerup_guest.c"
+      ],
+      "review_reason": "Powerup integration establishes a local handle/resource/type or effect operation, sometimes with several callees in one wrapper. Preserve the native address and inline ownership notes rather than assign the wrapper name to this callee."
+    },
+    {
+      "address": "0x00199EE0",
+      "name": "xml1_guest_xml_attribute_text",
+      "status": "registered",
+      "evidence_paths": [
+        "src/engine/actors/raven_character_race_guest.c",
+        "src/engine/actors/raven_leader_definition_guest.c",
+        "src/engine/actors/raven_transform_definition_guest.c",
+        "src/engine/combat/raven_native_energy_guest.c",
+        "src/engine/powers/raven_powerup_guest.c",
+        "src/engine/world/raven_extraction_guest.c"
+      ],
+      "review_reason": "Identity recorded in the symbol registry with supporting source/test evidence."
+    },
+    {
+      "address": "0x005A03C0",
+      "name": null,
+      "status": "deferred",
+      "review_reason": "Documentation example in the host crash-report comment; not a recovered identity.",
+      "evidence_paths": [
+        "src/app/main.c"
+      ]
+    }
+  ]
+}

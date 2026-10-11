@@ -1,6 +1,6 @@
 /* Execute the generated InsertFence/BlockOnTime and production native bridge.
  * Only the renderer acknowledgement is replaced by a controlled pipe peer. */
-#include "../src/guest_graphics_live.c"
+#include "../src/graphics/dx8/guest_graphics_live.c"
 #define RECOMP_GENERATED_CODE
 #include "recomp_types.h"
 #include <setjmp.h>
@@ -11,7 +11,7 @@ size_t xbox_GetMappedSize(void) { return 64u*1024*1024; }
 void xml1_input_test_frame(uint32_t frame) { (void)frame; }
 void xml1_graphics_observe(uint32_t va) { xml1_graphics_live_observe(va); }
 /* This fixture supplies a pipe peer; it must never launch the embedded worker. */
-const char *xml1_embedded_worker(void) { abort(); }
+const wchar_t *xml1_embedded_worker(void) { abort(); }
 
 /* No menu exists in this graphics fixture. Unexpected menu work must fail. */
 int xml1_pc_native_tracking(void) { return 0; }

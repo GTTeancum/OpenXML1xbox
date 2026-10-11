@@ -7,6 +7,7 @@
 /XBOXgame/
 /analysis/
 /src/recomp/gen/
+/src/recomp/named/
 *.iso
 *.xiso
 *.ciso

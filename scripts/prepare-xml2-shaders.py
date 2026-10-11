@@ -11,7 +11,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 source, output, chunk, chunk_output = map(Path, sys.argv[1:])
 s = source.read_text()
-xml1 = (root / 'src/guest_graphics_live.c').read_text()
+xml1 = (root / 'src/graphics/dx8/guest_graphics_live.c').read_text()
 
 def replace(old, new):
     global s
@@ -19,7 +19,7 @@ def replace(old, new):
         raise SystemExit(f'XML2 shader adaptation anchor changed: {old[:90]}')
     s = s.replace(old, new)
 
-replace('#include "xbox_memory_layout.h"', '#include "vertex_program.h"\n#include "xbox_memory_layout.h"')
+replace('#include "xbox_memory_layout.h"', '#include "graphics/dx8/vertex_program.h"\n#include "xbox_memory_layout.h"')
 state = xml1[xml1.index('static float vertex_constants'):xml1.index('static uint32_t methods')]
 replace('static uint32_t methods', state+'static uint32_t methods')
 helpers = xml1[xml1.index('void xml1_graphics_vertex_viewport'):xml1.index('void xml1_graphics_live_observe')]

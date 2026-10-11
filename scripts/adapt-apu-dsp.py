@@ -71,4 +71,4 @@ s=s.replace('        g_dbg.gp.cycles = dsp_get_cycle_count(d->gp.dsp);', '''    
             xml1_apu_capture_gp(stereo);
         }''')
 assert 'case NV_PAPU_' not in s and 'default:' not in s
-(root/'src/apu_dsp_real.c').write_text(s,encoding='utf-8')
+(root/'src/audio/apu_dsp_real.c').write_text(s,encoding='utf-8')

@@ -62,7 +62,7 @@ emu_text = emu_text.replace(conditional_anchor, '''    /* DSP56300FM Rev.5 pp.13
     }
 
 ''' + conditional_anchor)
-emu.write_text(emu_text + '\n' + (root/'src/dsp_extractu.c.inc').read_text(encoding='utf-8'), encoding='utf-8')
+emu.write_text(emu_text + '\n' + (root/'src/audio/dsp_extractu.c.inc').read_text(encoding='utf-8'), encoding='utf-8')
 cpu = dest/'interp/dsp_cpu.c'
 cpu_text = cpu.read_text(encoding='utf-8').replace('"extractu #CO, S2, D", NULL, NULL', '"extractu #CO, S2, D", NULL, emu_extractu_imm')
 cpu_text = cpu_text.replace('    dsp->cur_inst = read_memory_p(dsp, dsp->pc);', '''    dsp->cur_inst = read_memory_p(dsp, dsp->pc);
@@ -100,7 +100,7 @@ enables launch-time XML1_DSP_JIT=ep or1 comparison, without UI settings or live
 backend switching. Narrow qemu compatibility headers provide allocation/endian helpers;
 trace event macros are disabled. DSP instructions and DMA operations retain
 upstream implementations except the EXTRACTU immediate extension imported from
-src/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics),
+src/audio/dsp_extractu.c.inc (normal arithmetic mode, manual-derived semantics),
 and IFcc/IFcc.U conditional ALU decoding (DSP56300FM Rev.5 pp.13-74/75).
 Y-memory bounds failures log register/program context before the original assert.
 Standalone CMake and tests are project additions.

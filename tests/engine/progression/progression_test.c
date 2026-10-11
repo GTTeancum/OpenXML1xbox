@@ -1,0 +1,451 @@
+/* Runs real generated progression routines against the mapped retail image.
+ * No renderer, OS input, game save, or player data is used by this test.
+ * The scratch objects occupy reserved space in this process's guest stack.
+ */
+#define RECOMP_GENERATED_CODE
+#include "recomp_funcs.h"
+#include <stdio.h>
+#include <string.h>
+#include <limits.h>
+#include "game/xml1/character_limits.h"
+#include "engine/progression/character_save.h"
+#include "game/xml1/modder_mode.h"
+#include "game/xml1/newgame_plus.h"
+#include "engine/combat/raven_filter_event.h"
+#include "xbox_memory_layout.h"
+#include "engine/progression/character_talent_map_guest.h"
+#include "engine/progression/talent_registry_layout.h"
+
+/* This executable test runs before guest startup creates its allocator.
+ * Exercise the real owned-map constructors with the isolated heap adapter,
+ * as the native stats lifecycle fixtures do, rather than skipping them. */
+static uint32_t progression_fixture_allocate(unsigned bytes) {
+    return xbox_HeapAlloc(bytes,16);
+}
+
+/* Explicit process-local input fixture only; never called by modderMode or
+ * ordinary gameplay. World CharacterManager vtable +90 (56E10) reads bit 5
+ * of each metadata flags byte; +94 (56E30) sets that same bit. A fresh run has
+ * not discovered enemy biographies, so it cannot validate their resource loads.
+ * Keep every other progression flag intact and never write a save here. */
+int xml1_test_unlock_codex(void) {
+    unsigned manager = MEM32(0x48D59C);
+    if (!manager || (uint64_t)manager + XML1_MANAGER_BYTES > xbox_GetMappedSize()) return 0;
+    for (unsigned id = 0; id < 256; ++id)
+        MEM8(manager + id * 24 + XML1_MANAGER_OFFSET(0x6D5Eu)) |= 0x20;
+    return 1;
+}
+
+static int newgame_plus_boundaries(void) {
+    unsigned old_manager=MEM32(0x48D59C);
+    unsigned char old_init=MEM8(0x4A0540),old_flags=MEM8(0x4A03A5);
+    MEM32(0x48D59C)=1;MEM8(0x4A0540)=1;
+    for(unsigned flags=0;flags<4;flags++) {
+        MEM8(0x4A03A5)=(unsigned char)flags;
+        if(!!xml1_newgame_plus_available()!=!!(flags&2))return 1;
+    }
+    MEM32(0x48D59C)=0;if(xml1_newgame_plus_available())return 1;
+    MEM32(0x48D59C)=1;MEM8(0x4A0540)=0;if(xml1_newgame_plus_available())return 1;
+    MEM32(0x48D59C)=old_manager;MEM8(0x4A0540)=old_init;MEM8(0x4A03A5)=old_flags;
+    unsigned stack=g_esp,buffer=stack-0x60000;
+    memset((void*)XBOX_PTR(buffer),0xA5,0x2000);
+    xml1_newgame_plus_starting=1;
+    g_ecx=buffer;PUSH32(g_esp,0x0018CFD8);RECOMP_ABI_CALL(0x0007E2F0u,sub_0007E2F0);
+    if(g_esp!=stack)return 1;
+    for(unsigned i=0;i<0x2000;i++)if(MEM8(buffer+i)!=0xA5)return 1;
+    g_ecx=buffer;PUSH32(g_esp,0x0018CFFC);RECOMP_ABI_CALL(0x00054A10u,sub_00054A10);
+    if(g_esp!=stack)return 1;
+    for(unsigned i=0;i<0x2000;i++)if(MEM8(buffer+i)!=0xA5)return 1;
+    g_ecx=buffer;PUSH32(g_esp,0x0018CFB5);RECOMP_ABI_CALL(0x000C0700u,sub_000C0700);
+    if(g_esp!=stack)return 1;
+    for(unsigned i=0;i<0x2000;i++)if(MEM8(buffer+i)!=0xA5)return 1;
+    g_ecx=buffer;PUSH32(g_esp,0x0018D008);RECOMP_ABI_CALL(0x00054F10u,sub_00054F10);
+    if(g_esp!=stack)return 1;
+    for(unsigned i=0;i<0x2000;i++)if(MEM8(buffer+i)!=0xA5)return 1;
+    xml1_newgame_plus_finish();if(xml1_newgame_plus_starting)return 1;
+    /* A populated native manager distinguishes preserving equipped copies
+     * from merely preserving the unequipped shared inventory. Also prove the
+     * exception cannot leak into ordinary New Game or another caller. */
+    memset((void*)XBOX_PTR(buffer),0,XML1_MANAGER_BYTES);
+    MEM32(buffer+XML1_MANAGER_OFFSET(0x8534))=1;
+    MEM32(buffer+4+XML1_POOL_INDEX_MASK)=63;
+    MEM32(buffer+XML1_MANAGER_OFFSET(0x6D58))=0;
+    MEM8(buffer+XML1_MANAGER_OFFSET(0x6D5E))=1;
+    unsigned equipped=buffer+4+4+0x1E0;
+    for(unsigned mode=0;mode<3;++mode) {
+        MEM32(equipped)=1;
+        xml1_newgame_plus_starting=mode!=2;
+        g_ecx=buffer;PUSH32(g_esp,mode==1?0:0x0018D008);
+        RECOMP_ABI_CALL(0x00054F10u,sub_00054F10);
+        if(g_esp!=stack || MEM32(equipped)!=(mode==0?1u:0u))return 1;
+    }
+    puts("[PROGRESSION] NG+ completion gate, inventory/campaign/equipment boundaries and stack balance passed");
+    return 0;
+}
+
+static int save_section_cases(void)
+{
+    unsigned manager = g_esp - 0xB0000u, stream = g_esp - 0x70000u;
+    memset((void *)((uintptr_t)g_xbox_mem_offset + manager), 0, XML1_MANAGER_BYTES);
+    MEM32(manager + 0x8534u + XML1_MANAGER_DELTA) = 38;
+    for (unsigned id = 1; id <= 37; ++id) {
+        unsigned meta = manager + 0x6D48u + XML1_MANAGER_DELTA + id * 24u;
+        MEM8(meta + 22) = 1;
+        MEM32(meta + 16) = 64u + id - 1;
+    }
+    memset((void *)((uintptr_t)g_xbox_mem_offset + stream), 0xA5, 0x2FC10u);
+    MEM32(stream + XML1_SAVE_STREAM_BYTES) = stream;
+    if (!xml1_character_save_header(manager, stream)) return 1;
+    unsigned header_end=MEM32(stream + XML1_SAVE_STREAM_BYTES);
+    if (MEM16(stream+8)!=XML1_CHARACTER_SECTION_VERSION ||
+        header_end!=stream+MEM16(stream+10) || header_end<stream+48) return 1;
+    xml1_save_layout layout;
+    MEM32(stream + XML1_SAVE_STREAM_BYTES) = stream;
+    if (!xml1_character_load_header(manager, stream, &layout) || layout.snapshot_count != 48 ||
+        MEM32(stream + XML1_SAVE_STREAM_BYTES)!=header_end) return 1;
+    for (unsigned id = 0; id < 256; ++id)
+        if (xml1_saved_definition(&layout, id) != (id >= 1 && id <= 37)) return 1;
+    MEM32(stream + XML1_SAVE_STREAM_BYTES) = stream;
+    MEM16(stream + 8) = XML1_CHARACTER_SECTION_VERSION+1; /* Unsupported future version. */
+    if (xml1_character_load_header(manager, stream, &layout) ||
+        MEM32(stream + XML1_SAVE_STREAM_BYTES) != stream) return 1;
+    MEM16(stream + 8) = XML1_CHARACTER_SECTION_VERSION;
+    MEM8(stream + 16 + 10) = 1; /* Missing definition 80. */
+    if (xml1_character_load_header(manager, stream, &layout)) return 1;
+    memset((void *)((uintptr_t)g_xbox_mem_offset + stream), 0, 48);
+    if (!xml1_character_load_header(manager, stream, &layout) ||
+        layout.snapshot_count != 17 || MEM32(stream + XML1_SAVE_STREAM_BYTES) != stream) return 1;
+    for (unsigned id = 0; id < 256; ++id)
+        if (xml1_saved_definition(&layout, id) != (id >= 1 && id <= 16)) return 1;
+    MEM32(stream + XML1_SAVE_STREAM_BYTES) = stream + XML1_SAVE_STREAM_BYTES - 24;
+    if (xml1_character_save_header(manager, stream) ||
+        xml1_character_load_header(manager, stream, &layout)) return 1;
+    puts("[PROGRESSION] New/retail save framing, slot-32 bit, unknown version and bounds passed");
+    return 0;
+}
+
+static int save_section_boundaries(void)
+{
+    /* Save version 4+ writes the live talent identity table. This isolated
+     * pre-startup fixture has no registered talents, but still needs the real
+     * native registry constructor and serializer (not fake header callbacks).
+     * Use private guest heap storage because the game allocator is not up yet. */
+    unsigned previous=MEM32(0x4D7300u),stack=g_esp;
+    unsigned registry=progression_fixture_allocate(XML1_TALENT_REGISTRY_SIZE);
+    if(!registry)return 1;
+    g_ecx=registry;PUSH32(g_esp,0);
+    RECOMP_ABI_CALL(0x000B58A0u,sub_000B58A0);
+    if(g_esp!=stack||g_eax!=registry)return 1;
+    MEM32(0x4D7300u)=registry;
+    int failed=save_section_cases();
+    MEM32(0x4D7300u)=previous;
+    /* Empty registry owns no definitions; backing allocation belongs to this
+     * short-lived test process, not the game's allocator or saved campaign. */
+    return failed;
+}
+
+static int pool_boundaries(unsigned pool)
+{
+    /* Poison the whole region: missing initialization of the second bitmap
+     * must fail even when a fresh OS allocation would happen to be zero. */
+    memset((void *)((uintptr_t)g_xbox_mem_offset + pool), 0xA5, XML1_POOL_BYTES + 16);
+    g_ecx = pool; PUSH32(g_esp, 0);
+    RECOMP_ABI_CALL(0x00055E30u, sub_00055E30);
+    if (MEM32(pool + XML1_POOL_INDEX_MASK) != 63 ||
+        MEM32(pool + XML1_POOL_INDEX_BITS) != 6 ||
+        MEM32(pool + XML1_POOL_CONSTRUCTED + 4) != 0 ||
+        MEM32(pool + XML1_POOL_ALLOCATED + 4) != 0) return 1;
+    for (unsigned slot = 0; slot < XML1_CHARACTER_POOL_CAPACITY; ++slot) {
+        g_ecx = pool; PUSH32(g_esp, 0);
+        RECOMP_ABI_CALL(0x00054AC0u, sub_00054AC0);
+        if (g_eax != slot || MEM32(pool + XML1_POOL_HANDLES + slot*4) != (64 | slot)) return 1;
+    }
+    if (MEM32(pool + XML1_POOL_LIVE_COUNT) != 48 ||
+        MEM32(pool + XML1_POOL_FREE_COUNT) != 0 ||
+        MEM32(pool + XML1_POOL_ALLOCATED) != UINT_MAX ||
+        MEM32(pool + XML1_POOL_ALLOCATED + 4) != 0xFFFF) return 1;
+    /* No constructors ran, so the reset must retire handles without trying
+     * to destroy poisoned character storage. Its unrolled loop visits 48. */
+    g_ecx = pool; PUSH32(g_esp, 0);
+    RECOMP_ABI_CALL(0x00055F70u, sub_00055F70);
+    for (unsigned slot = 0; slot < 48; ++slot)
+        if (MEM32(pool + XML1_POOL_HANDLES + slot*4) != (128 | slot)) return 1;
+    if (MEM32(pool + XML1_POOL_BYTES) != 0xA5A5A5A5 ||
+        MEM32(pool + XML1_POOL_LIVE_COUNT) != 0 ||
+        MEM32(pool + XML1_POOL_ALLOCATED + 4) != 0 ||
+        MEM32(pool + XML1_POOL_FREE_COUNT) != 48) return 1;
+    puts("[PROGRESSION] 48-slot allocation/reset and slot-32 bitmap boundary passed");
+    return 0;
+}
+
+static int snapshot_boundaries(unsigned snapshot)
+{
+    /* Real retail constructor/destructor, expanded iteration count. Poison
+     * every slot so a seventeen-entry loop cannot pass by zero initialization. */
+    memset((void *)((uintptr_t)g_xbox_mem_offset + snapshot), 0xA5, XML1_SNAPSHOT_BYTES + 16);
+    g_ecx = snapshot; PUSH32(g_esp, 0);
+    RECOMP_ABI_CALL(0x000549A0u, sub_000549A0);
+    for (unsigned slot = 0; slot < XML1_SNAPSHOT_COUNT; ++slot) {
+        unsigned state = snapshot + slot * 0x1E4u;
+        if (MEM8(state + 0x18) != 1 || MEM8(state + 0x1A) != 255) return 1;
+    }
+    if (MEM32(snapshot + XML1_SNAPSHOT_BYTES) != 0xA5A5A5A5) return 1;
+    /* Exercise the actual variable-length retail serializer, not a memcpy
+     * substitute. Ten-costume physical IDs and slot 47 must survive while XP
+     * retains its existing 32-bit representation and level 45 remains intact.
+     * This checks state records; full manager/save-file compatibility is a
+     * separate integration requirement. Empty inventories isolate the layout. */
+    unsigned stream = g_esp - 0x70000u, stack = g_esp;
+    memset((void *)((uintptr_t)g_xbox_mem_offset + stream), 0xA5, 0x2FC10u);
+    MEM32(stream + 0x2FC00u) = stream;
+    for (unsigned slot = 0; slot < XML1_SNAPSHOT_COUNT; ++slot) {
+        unsigned state = snapshot + slot * 0x1E4u;
+        MEM32(state + 0x14) = 589255845u;
+        MEM8(state + 0x18) = 45;
+        MEM8(state + 0x1A) = (uint8_t)(slot == 47 ? 99 : slot + 1);
+        g_ecx = state; PUSH32(g_esp, stream); PUSH32(g_esp, 0);
+        RECOMP_ABI_CALL(0x00047F80u, sub_00047F80);
+        if (g_esp != stack) return 1;
+    }
+    unsigned end = MEM32(stream + 0x2FC00u);
+    if (end != stream + XML1_SNAPSHOT_COUNT * 46u) return 1;
+    MEM32(stream + 0x2FC00u) = stream;
+    for (unsigned slot = 0; slot < XML1_SNAPSHOT_COUNT; ++slot) {
+        unsigned state = snapshot + slot * 0x1E4u;
+        memset((void *)((uintptr_t)g_xbox_mem_offset + state + 4), 0, 44);
+        g_ecx = state; PUSH32(g_esp, stream); PUSH32(g_esp, 0);
+        RECOMP_ABI_CALL(0x00049280u, sub_00049280);
+        if (g_esp != stack || MEM32(state + 0x14) != 589255845u ||
+            MEM8(state + 0x18) != 45 ||
+            MEM8(state + 0x1A) != (slot == 47 ? 99 : slot + 1)) return 1;
+    }
+    if (MEM32(stream + 0x2FC00u) != end || MEM32(end) != 0xA5A5A5A5 ||
+        MEM32(stream + 0x2FC04u) != 0xA5A5A5A5) return 1;
+    puts("[PROGRESSION] 48 native state records round-trip level 45, XP and physical skins through 99");
+    g_ecx = snapshot; PUSH32(g_esp, 0);
+    RECOMP_ABI_CALL(0x00054AA0u, sub_00054AA0);
+    if (MEM32(snapshot + XML1_SNAPSHOT_BYTES) != 0xA5A5A5A5) return 1;
+    puts("[PROGRESSION] 48-slot snapshot construction/destruction passed");
+    return 0;
+}
+
+static int costume_boundaries(unsigned character)
+{
+    static const unsigned skins[11] = {1, 3, 3, 2, 5, 6, 7, 8, 20, 98, 99};
+    static const unsigned expected[10] = {2, 3, 5, 6, 7, 8, 20, 98, 99, 1};
+    memset((void *)((uintptr_t)g_xbox_mem_offset + character), 0, XML1_CHARACTER_BYTES);
+    MEM32(character + 0x37A) = 0xDEADBEEF;
+    MEM8(character + 0x371) = 1;
+    MEM8(character + 0x1E) = 255;
+    for (unsigned i = 0; i < 11; ++i) XML1_SKIN_BYTE(character, i) = skins[i] - 1;
+    for (unsigned i = 0; i < 10; ++i) {
+        unsigned next = xml1_next_character_skin(character);
+        if (next != expected[i]) return 1;
+        MEM8(character + 0x1E) = next;
+    }
+    if (MEM32(character + 0x37A) != 0xDEADBEEF ||
+        xml1_extra_skin_category("aoa") != 8 ||
+        xml1_extra_skin_category("ASTONISHING") != 9 ||
+        xml1_extra_skin_category("90s") != 10 ||
+        xml1_extra_skin_category("future") != -1) return 1;
+    puts("[PROGRESSION] Ten distinct skins, sparse IDs, duplicate categories and wrap passed");
+    return 0;
+}
+
+static unsigned threshold(unsigned manager, unsigned level)
+{
+    unsigned sp = g_esp;
+    g_ecx = manager;
+    PUSH32(g_esp, level);
+    PUSH32(g_esp, 0);
+    RECOMP_ABI_CALL(0x000541E0u, sub_000541E0);
+    if (g_esp != sp) { fprintf(stderr, "[PROGRESSION] XP ABI mismatch\n"); return UINT_MAX; }
+    return g_eax;
+}
+
+static int modder_boundaries(void)
+{
+    unsigned manager=g_esp-0xB0000;
+    memset((void *)((uintptr_t)g_xbox_mem_offset+manager),0,XML1_MANAGER_BYTES);
+    MEM32(manager+XML1_MANAGER_OFFSET(0xDCCC))=3;
+    const unsigned ids[]={1,2,37};
+    const char *names[]={"default","Beast","DummyNPC21"};
+    for(unsigned i=0;i<3;++i) {
+        MEM8(manager+XML1_MANAGER_OFFSET(0xDBCC)+i)=ids[i];
+        unsigned meta=manager+0x6D48+XML1_MANAGER_DELTA+ids[i]*24;
+        MEM32(meta+16)=64+i; MEM8(meta+22)=1;
+        strcpy((char *)((uintptr_t)g_xbox_mem_offset+manager+4+i*XML1_CHARACTER_BYTES+0x20C),names[i]);
+    }
+    int mode=xml1_build_settings.modder_mode;
+    unsigned char init=MEM8(0x4A0540),flags=MEM8(0x4A03A5);
+    unsigned bits0=MEM32(0x4A0360),bits1=MEM32(0x4A0364);
+    MEM8(0x4A0540)|=1; MEM8(0x4A03A5)=0; MEM32(0x4A0360)=0;MEM32(0x4A0364)=0;
+    xml1_build_settings.modder_mode=0;xml1_modder_unlock(manager);
+    int failed=MEM32(manager+XML1_MANAGER_OFFSET(0xDBC8))!=0;
+    xml1_build_settings.modder_mode=1;xml1_modder_unlock(manager);xml1_modder_unlock(manager);
+    failed|=MEM32(manager+XML1_MANAGER_OFFSET(0xDBC8))!=2;
+    failed|=MEM8(manager+XML1_MANAGER_OFFSET(0xDAC8))!=2;
+    failed|=MEM8(manager+XML1_MANAGER_OFFSET(0xDAC8)+1)!=37;
+    failed|=MEM32(0x4A0360)!=4 || MEM32(0x4A0364)!=32 || MEM8(0x4A03A5)!=1;
+    MEM8(0x4A0540)=init;MEM8(0x4A03A5)=flags;MEM32(0x4A0360)=bits0;MEM32(0x4A0364)=bits1;
+    xml1_build_settings.modder_mode=mode;
+    if(!failed) puts("[MODDER MODE] disabled/enabled, definition 37, bitmap, costumes and repeat application passed");
+    return failed;
+}
+
+static int filter_fixture_read(void *context,uint32_t address,void *out,size_t size) {
+    unsigned base=*(unsigned *)context;
+    if(address<base||(uint64_t)address+size>(uint64_t)base+0xc00)return 0;
+    memcpy(out,(void*)XBOX_PTR(address),size);return 1;
+}
+
+static int character_filter_boundaries(unsigned character) {
+    unsigned stack=g_esp,key=character+0x600,value=character+0x700;
+    const char *keys[]={"nonhumanoidskeleton","NONHUMANOIDSKELETON","nonhumanoidskeleton","nonhumanoidskeleton"};
+    const char *values[]={"TrUe","false","1","true"};
+    const unsigned expected[]={0xa5,0xa4,0xa4,0xa5};
+    unsigned char before[XML1_CHARACTER_BYTES];
+    /* Use the real constructor on poisoned reused storage. It must clear the
+     * appended combat byte along with the three extra costume bytes. */
+    memset((void*)XBOX_PTR(character),0xa5,XML1_CHARACTER_BYTES+4);
+    g_ecx=character;PUSH32(g_esp,0);RECOMP_ABI_CALL(0x000B1640u,sub_000B1640);
+    if(g_esp!=stack||g_eax!=character||MEM32(character+0x484)!=0||
+       MEM32(character+XML1_CHARACTER_BYTES)!=0xa5a5a5a5)return 1;
+    /* Retire the constructor's owned stats/map before poisoning the storage.
+     * Parser checks below need fields, not a live CharacterStats instance. */
+    g_ecx=character+4;PUSH32(g_esp,0);RECOMP_ABI_CALL(0x00048F90u,sub_00048F90);
+    if(g_esp!=stack)return 1;
+    memset((void*)XBOX_PTR(character),0xa5,XML1_CHARACTER_BYTES);
+    for(unsigned i=0;i<4;++i) {
+        memcpy(before,(void*)XBOX_PTR(character),sizeof(before));
+        strcpy((char*)XBOX_PTR(key),keys[i]);strcpy((char*)XBOX_PTR(value),values[i]);
+        g_ecx=character;PUSH32(g_esp,value);PUSH32(g_esp,key);PUSH32(g_esp,0);
+        RECOMP_ABI_CALL(0x000AFD70u,sub_000AFD70);
+        if(g_esp!=stack||(g_eax&255)!=1||MEM8(character+XML1_CHARACTER_COMBAT_FLAGS)!=expected[i])return 1;
+        before[XML1_CHARACTER_COMBAT_FLAGS]=(unsigned char)expected[i];
+        if(memcmp(before,(void*)XBOX_PTR(character),sizeof(before)))return 1;
+    }
+    /* Exercise native fallthrough with a real recognized field. Poisoned
+     * other fields are safe because dangerRating changes only its float. */
+    strcpy((char*)XBOX_PTR(key),"dangerRating");strcpy((char*)XBOX_PTR(value),"7.5");
+    g_ecx=character;PUSH32(g_esp,value);PUSH32(g_esp,key);PUSH32(g_esp,0);
+    RECOMP_ABI_CALL(0x000AFD70u,sub_000AFD70);
+    if(g_esp!=stack||(g_eax&255)!=1||MEMF(character+0x478)!=7.5f||
+       MEM8(character+XML1_CHARACTER_COMBAT_FLAGS)!=0xa5)return 1;
+    unsigned actor=character+0x800;
+    MEM32(actor+0x2d8)=character;
+    raven_filter_target target={0};target.character_path=1;
+    if(!raven_filter_xml1_character(filter_fixture_read,&character,actor,&target)||
+       target.danger!=7.5f||!target.is_nonhumanoid)return 1;
+    raven_filter_event event;raven_filter_event_init(&event);
+    event.pass_tag=101;event.fail_tag=102;event.flags=2;
+    if(raven_filter_event_tag(&event,&target)!=102)return 1;
+    MEM8(character+XML1_CHARACTER_COMBAT_FLAGS)&=(uint8_t)~1u;
+    if(!raven_filter_xml1_character(filter_fixture_read,&character,actor,&target)||
+       raven_filter_event_tag(&event,&target)!=101)return 1;
+    event.max_danger=7;
+    if(raven_filter_event_tag(&event,&target)!=102)return 1;
+    /* Invalid or unreadable definition must not turn into a default pass. */
+    raven_filter_target previous=target;
+    for(unsigned i=0;i<3;++i) {
+        const unsigned invalid[]={0,0xfffffff0,character+0xb00};
+        MEM32(actor+0x2d8)=invalid[i];
+        if(raven_filter_xml1_character(filter_fixture_read,&character,actor,&target)||
+           memcmp(&previous,&target,sizeof(target)))return 1;
+    }
+    memset((void*)XBOX_PTR(character),0,0xc00);
+    puts("[CHARACTER FILTER] constructor reuse and generated parser: boolean replacement, case, native fallthrough, adjacent skins, live property reads, filter decisions and stack passed");
+    return 0;
+}
+
+int xml1_progression_test(void)
+{
+    if(!xml1_character_talent_map_fixture_allocator(progression_fixture_allocate))return 1;
+    unsigned scratch = g_esp - 0x30000;
+    unsigned manager = scratch, character = scratch + 0x100;
+    unsigned cap, previous = 0;
+    memset((void *)((uintptr_t)g_xbox_mem_offset + scratch), 0, 0x1000);
+    /* This getter uses an algebraically folded displacement in retail.
+     * Check every metadata ID (not only the 48 instantiated pool slots). */
+    for(unsigned id=1;id<=255;++id) {
+        unsigned sp=g_esp;
+        unsigned expected=manager+XML1_MANAGER_OFFSET(0x6D50u)+id*24u;
+        MEM32(expected)=0xAB000000u+id;
+        g_ecx=manager;PUSH32(g_esp,id);PUSH32(g_esp,0);
+        RECOMP_ABI_CALL(0x00056D30u,sub_00056D30);
+        if(g_esp!=sp||g_eax!=expected||MEM32(g_eax)!=0xAB000000u+id) {
+            fprintf(stderr,"[SKIN METADATA] id=%u expected=%08X actual=%08X\n",id,expected,g_eax);
+            return 1;
+        }
+        MEM32(expected)=0;
+    }
+    puts("[SKIN METADATA] all 255 native skin-name lookups use relocated character metadata");
+    /* Exercise the actual skin formatter used by bios and conversation HUDs,
+     * not merely the category-cycle helper. */
+    MEM8(character+0x370)=3;
+    unsigned skin_sp=g_esp;
+    g_ecx=character;PUSH32(g_esp,0);PUSH32(g_esp,1);PUSH32(g_esp,0);
+    RECOMP_ABI_CALL(0x000B0EA0u,sub_000B0EA0);
+    if(g_esp!=skin_sp || strcmp((char*)XBOX_PTR(g_eax),"0301")) {
+        fprintf(stderr,"[SKIN FORMAT] expected 0301, got '%s' at %08X\n",(char*)XBOX_PTR(g_eax),g_eax);
+        return 1;
+    }
+    /* CharacterManager::XPThreshold only calls vtable + C4 (XP curve).
+     * Level reconciliation also retrieves this singleton and this vtable.
+     * It does not need the manager's pools or a fabricated game world. */
+    MEM32(manager) = 0x003CB824;
+    MEM32(0x0048D59C) = manager;
+    g_ecx = manager; PUSH32(g_esp, 0);
+    RECOMP_ABI_CALL(0x00056C80u, sub_00056C80);
+    cap = g_eax;
+    if(character_filter_boundaries(character))return 1;
+    printf("[PROGRESSION] level-cap=%u\n", cap);
+    if (cap != 45) return 1;
+    for (unsigned level = 1; level <= cap; ++level) {
+        unsigned xp = threshold(manager, level);
+        printf("[PROGRESSION] threshold level=%u xp=%u\n", level, xp);
+        /* Retail XP grows exponentially: level 2 is 100; level 45 is
+         * 589255845. Preserve that curve and its signed-32-bit sentinel. */
+        if (xp >= INT_MAX || (level > 1 && xp <= previous)) return 1;
+        previous = xp;
+    }
+    if (threshold(manager, cap + 1) != INT_MAX) return 1;
+    for (unsigned level = 3; level <= cap; ++level) {
+        unsigned xp = threshold(manager, level);
+        for (unsigned below = 0; below < 2; ++below) {
+            MEM8(character + 0x1C) = 2;
+            MEM32(character + 0x18) = xp - below;
+            g_ecx = character; PUSH32(g_esp, 0);
+            RECOMP_ABI_CALL(0x000AF950u, sub_000AF950);
+            if (MEM8(character + 0x1C) != level - below) {
+                fprintf(stderr, "[PROGRESSION] level boundary failed %u below=%u actual=%u\n",
+                    level, below, MEM8(character + 0x1C));
+                return 1;
+            }
+        }
+    }
+    puts("[PROGRESSION] XP thresholds and level boundaries passed");
+    if (pool_boundaries(scratch + 0x2000)) {
+        fputs("[PROGRESSION] Character pool boundary failed\n", stderr);
+        return 1;
+    }
+    if (snapshot_boundaries(scratch + 0x11000)) {
+        fputs("[PROGRESSION] Snapshot boundary failed\n", stderr);
+        return 1;
+    }
+    if (costume_boundaries(character)) {
+        fputs("[PROGRESSION] Costume boundary failed\n", stderr);
+        return 1;
+    }
+    if (modder_boundaries()) return 1;
+    if (newgame_plus_boundaries()) return 1;
+    if (save_section_boundaries()) {
+        fputs("[PROGRESSION] Save section boundary failed\n", stderr);
+        return 1;
+    }
+    if(!xml1_character_talent_map_fixture_allocator(NULL)) {
+        fputs("[PROGRESSION] Native fixture leaked character talent maps\n",stderr);
+        return 1;
+    }
+    return 0;
+}

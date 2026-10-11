@@ -1,15 +1,15 @@
 """Use the actual generated XDK functions in the native fence regression."""
 from pathlib import Path
-import re
 import sys
+from recomp_source import RecompSources, find_function
 
 root = Path(__file__).resolve().parents[1]
-text = (root / 'src/recomp/gen/recomp_0095.c').read_text(encoding='utf-8')
+index = RecompSources(root / 'src/recomp/gen')
 blocks = []
 for name in ('0035FC00', '0035FD20', '0035FDE0'):
-    match = re.search(r'void sub_' + name + r'\(void\)\n\{.*?\n\}', text, re.S)
-    if not match:
-        raise SystemExit(f'Missing verified XDK function {name}')
+    address = int(name, 16)
+    text = index.canonical_read(index.path(address))
+    match = find_function(text, address)
     blocks.append(match.group())
 fixture = '\n\n'.join(blocks) + '\n'
 if '--unpatched' in sys.argv:

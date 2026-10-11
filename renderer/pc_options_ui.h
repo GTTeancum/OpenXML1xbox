@@ -1,5 +1,5 @@
 #pragma once
-#include "pc_input_channel.h"
+#include "input/pc_input_channel.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

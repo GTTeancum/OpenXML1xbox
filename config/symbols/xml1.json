@@ -1,0 +1,3276 @@
+{
+  "schema_version": 1,
+  "title": "X-Men Legends (Xbox)",
+  "executable": {
+    "sha256": "2ea531f11e0b5b7ca651485012b871ef99a5099c566a6d7cb8ec327ee73d62ac",
+    "source": "User-provided XBOXgame/default.xbe; hash only, no executable bytes"
+  },
+  "functions": [
+    {
+      "address": "0x00342AA0",
+      "name": "xml1_guest_memmove",
+      "module": "runtime/guest",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/runtime/guest/guest_crt.c",
+          "detail": "References or implements the existing host symbol."
+        },
+        {
+          "path": "src/runtime/guest/recomp_manual.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003BF897",
+      "name": "xml1_XInitDevices",
+      "module": "input",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/input/guest_input.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003C0465",
+      "name": "xml1_XGetDevices",
+      "module": "input",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/input/guest_input.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003C0487",
+      "name": "xml1_XGetDeviceChanges",
+      "module": "input",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/input/guest_input.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003C0336",
+      "name": "xml1_XInputOpen",
+      "module": "input",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/input/guest_input.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003C038C",
+      "name": "xml1_XInputClose",
+      "module": "input",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/input/guest_input.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003C0398",
+      "name": "xml1_XInputGetState",
+      "module": "input",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/input/guest_input.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003C040B",
+      "name": "xml1_XInputSetState",
+      "module": "input",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/input/guest_input.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00368BE0",
+      "name": "xml1_graphics_swap",
+      "module": "graphics/dx8",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/graphics/dx8/guest_graphics_live.c",
+          "detail": "References or implements the existing host symbol."
+        },
+        {
+          "path": "src/runtime/guest/recomp_manual.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0035B040",
+      "name": "xml1_graphics_wait_vblank",
+      "module": "graphics/dx8",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/graphics/dx8/guest_graphics_live.c",
+          "detail": "References or implements the existing host symbol."
+        },
+        {
+          "path": "src/runtime/guest/recomp_manual.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036FE18",
+      "name": "xml1_CDirectSoundStream_AddRef",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036FF14",
+      "name": "xml1_CDirectSoundStream_Discontinuity",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036FF61",
+      "name": "xml1_CDirectSoundStream_Flush",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036FEAD",
+      "name": "xml1_CDirectSoundStream_GetInfo",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036FFAC",
+      "name": "xml1_CDirectSoundStream_GetStatus",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036FFFD",
+      "name": "xml1_CDirectSoundStream_Process",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036FE5F",
+      "name": "xml1_CDirectSoundStream_Release",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00371AF8",
+      "name": "xml1_DirectSoundCreate",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00371B3F",
+      "name": "xml1_DirectSoundCreateStream",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0037084D",
+      "name": "xml1_DirectSoundDoWork",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036F5F2",
+      "name": "xml1_DirectSoundUseLightHRTF",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003707B5",
+      "name": "xml1_IDirectSoundBuffer_GetCurrentPosition",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370799",
+      "name": "xml1_IDirectSoundBuffer_GetStatus",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003707F1",
+      "name": "xml1_IDirectSoundBuffer_Lock",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370719",
+      "name": "xml1_IDirectSoundBuffer_Play",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036F5DC",
+      "name": "xml1_IDirectSoundBuffer_Release",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00371384",
+      "name": "xml1_IDirectSoundBuffer_SetBufferData",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003707D5",
+      "name": "xml1_IDirectSoundBuffer_SetCurrentPosition",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003706C5",
+      "name": "xml1_IDirectSoundBuffer_SetEG",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00371368",
+      "name": "xml1_IDirectSoundBuffer_SetFormat",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370D0C",
+      "name": "xml1_IDirectSoundBuffer_SetFrequency",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003706E1",
+      "name": "xml1_IDirectSoundBuffer_SetHeadroom",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370779",
+      "name": "xml1_IDirectSoundBuffer_SetLoopRegion",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003706FD",
+      "name": "xml1_IDirectSoundBuffer_SetMixBinVolumes",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370D28",
+      "name": "xml1_IDirectSoundBuffer_SetMixBins",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003706A9",
+      "name": "xml1_IDirectSoundBuffer_SetVolume",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0037073D",
+      "name": "xml1_IDirectSoundBuffer_Stop",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370755",
+      "name": "xml1_IDirectSoundBuffer_StopEx",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370835",
+      "name": "xml1_IDirectSoundStream_FlushEx",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370830",
+      "name": "xml1_IDirectSoundStream_Pause",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x003713A4",
+      "name": "xml1_IDirectSoundStream_SetFormat",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370826",
+      "name": "xml1_IDirectSoundStream_SetHeadroom",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0037082B",
+      "name": "xml1_IDirectSoundStream_SetMixBinVolumes",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370D44",
+      "name": "xml1_IDirectSoundStream_SetMixBins",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370821",
+      "name": "xml1_IDirectSoundStream_SetVolume",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0037192E",
+      "name": "xml1_IDirectSound_CreateSoundBuffer",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x00370666",
+      "name": "xml1_IDirectSound_DownloadEffectsImage",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0037068D",
+      "name": "xml1_IDirectSound_GetTime",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x0036F5C1",
+      "name": "xml1_IDirectSound_Release",
+      "module": "audio",
+      "kind": "manual_override",
+      "confidence": "established_mapping",
+      "abi": "guest_register_state",
+      "evidence": [
+        {
+          "path": "config/manual-functions.json",
+          "detail": "Existing maintained guest-address-to-host-implementation mapping; not a newly inferred original symbol."
+        },
+        {
+          "path": "src/audio/dsound_hle.c",
+          "detail": "References or implements the existing host symbol."
+        }
+      ]
+    },
+    {
+      "address": "0x000B5980",
+      "name": "xml1_guest_talent_manager_get",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain existing RECOMP_ABI_CALL and stack handling",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "manager() calls this entry and uses EAX as the talent manager."
+        }
+      ]
+    },
+    {
+      "address": "0x000B3540",
+      "name": "xml1_guest_talent_definition_by_id",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain existing RECOMP_ABI_CALL and stack handling",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "by_id() passes an ID pointer on the guest stack; write path uses EAX as the definition."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4D90",
+      "name": "xml1_guest_talent_id_by_name",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain existing RECOMP_ABI_CALL and stack handling",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "by_name() passes a name pointer and returns the low byte of EAX as the talent ID."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4EA0",
+      "name": "xml1_guest_talent_name_by_id",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain existing RECOMP_ABI_CALL and stack handling",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Identity writer passes the ID pointer and copies EAX as the persistent talent name."
+        }
+      ]
+    },
+    {
+      "address": "0x000B53A0",
+      "name": "xml1_guest_talent_source_document_load",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain existing RECOMP_ABI_CALL and stack handling",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Identity loader passes the source descriptor and uses EAX as the loaded document."
+        }
+      ]
+    },
+    {
+      "address": "0x000B59D0",
+      "name": "xml1_guest_talent_selector_resolve",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain existing RECOMP_ABI_CALL and stack handling",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Identity loader places the descriptor in ECX and uses EAX as its resolved node."
+        }
+      ]
+    },
+    {
+      "address": "0x001716F0",
+      "name": "xml1_guest_danger_room_progression_read",
+      "module": "ui/menus",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original calling convention and stack behavior",
+      "evidence": [
+        {
+          "path": "scripts/guard-danger-room-unlock.py",
+          "detail": "Reads highest level into native menu+0xEDC."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C020",
+      "name": "xml1_guest_game_state_highest_level",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original calling convention and stack behavior",
+      "evidence": [
+        {
+          "path": "scripts/guard-danger-room-unlock.py",
+          "detail": "GameState vtable+0x38; highest level at +0x194."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C3B0",
+      "name": "xml1_guest_game_state_character_unlocked",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original calling convention and stack behavior",
+      "evidence": [
+        {
+          "path": "scripts/guard-danger-room-unlock.py",
+          "detail": "GameState vtable+0x34; unlocked bitmap at +0x150."
+        }
+      ]
+    },
+    {
+      "address": "0x00170E90",
+      "name": "xml1_guest_danger_room_character_list",
+      "module": "ui/menus",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original calling convention and stack behavior",
+      "evidence": [
+        {
+          "path": "scripts/guard-danger-room-unlock.py",
+          "detail": "Character listing gated by native unlocked bitmap."
+        }
+      ]
+    },
+    {
+      "address": "0x0016F9C0",
+      "name": "xml1_guest_danger_room_arena_availability",
+      "module": "ui/menus",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original calling convention and stack behavior",
+      "evidence": [
+        {
+          "path": "scripts/guard-danger-room-unlock.py",
+          "detail": "Arena availability from bit 0 of record+0x28."
+        }
+      ]
+    },
+    {
+      "address": "0x00040DB0",
+      "name": "xml1_guest_talent_rank_get",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Reads XML1_TALENT_CURRENT; missing IDs return zero."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x00048270",
+      "name": "xml1_guest_talent_pending_rank_get",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Reads XML1_TALENT_PENDING; missing IDs return zero."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x000482B0",
+      "name": "xml1_guest_talent_bonus_rank_get",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Reads XML1_TALENT_BONUS; missing IDs return zero."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x000480F0",
+      "name": "xml1_guest_talent_rank_limit_set",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Sets XML1_TALENT_LIMIT and rejects missing IDs."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x000481A0",
+      "name": "xml1_guest_talent_baseline_rank_set",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Sets XML1_TALENT_BASELINE and rejects missing IDs."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x000487F0",
+      "name": "xml1_guest_talent_rank_set",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Sets current rank, clamped to the native maximum."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x00048140",
+      "name": "xml1_guest_talent_rank_limit_get",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Returns the lower nonzero limit/declaration maximum."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x00048860",
+      "name": "xml1_guest_talent_pending_rank_set",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Sets pending rank only when current+pending+bonus fits declaration."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x000482F0",
+      "name": "xml1_guest_talent_bonus_rank_set",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Sets bonus rank only when current+pending+bonus fits declaration."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x000476A0",
+      "name": "xml1_guest_talent_record_copy",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Native cdecl four-byte record copy; preserves adjacent storage."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x00048510",
+      "name": "xml1_guest_talent_pending_refund",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Refunds pending ranks and points while retaining current/baseline rank."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x00048950",
+      "name": "xml1_guest_talent_pending_commit",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; retain fixture-verified stack balance and native convention",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_native_test.c",
+          "detail": "Commits pending ranks within declaration/override limit and clears pending."
+        },
+        {
+          "path": "scripts/guard-talent-ranks.py",
+          "detail": "Audited producer/consumer migration includes this function."
+        }
+      ]
+    },
+    {
+      "address": "0x00199DB0",
+      "name": "xml1_guest_parser_text_destroy",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "placement": "retain_unit",
+      "placement_reason": "Parser lifetime and literal routines share static arena/index state in parser_text_arena_guest.h; retain their existing translation-unit ownership.",
+      "evidence": [
+        {
+          "path": "tests/parser_text_arena_native_test.c",
+          "detail": "Releases the parser arena and overflow chunks; native fixture verifies all allocations freed and base cleared."
+        },
+        {
+          "path": "scripts/guard-parser-text-arena.py",
+          "detail": "Address-owned extraction of four native parser functions; literal publication and lifetime boundaries are explicitly checked."
+        },
+        {
+          "path": "src/engine/resources/parser_text_arena_guest.h",
+          "detail": "File-local overflow arena and literal index state shared by reset, destruction and publication hooks."
+        }
+      ]
+    },
+    {
+      "address": "0x00199DD0",
+      "name": "xml1_guest_parser_text_ensure_initialized",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "placement": "retain_unit",
+      "placement_reason": "Parser lifetime and literal routines share static arena/index state in parser_text_arena_guest.h; retain their existing translation-unit ownership.",
+      "evidence": [
+        {
+          "path": "tests/parser_text_arena_native_test.c",
+          "detail": "Allocates the base 0x1E000-byte arena only when absent, publishes its cursors and registers the destruction callback."
+        },
+        {
+          "path": "scripts/guard-parser-text-arena.py",
+          "detail": "Address-owned extraction of four native parser functions; literal publication and lifetime boundaries are explicitly checked."
+        },
+        {
+          "path": "src/engine/resources/parser_text_arena_guest.h",
+          "detail": "File-local overflow arena and literal index state shared by reset, destruction and publication hooks."
+        }
+      ]
+    },
+    {
+      "address": "0x00199E40",
+      "name": "xml1_guest_parser_text_reset",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "placement": "retain_unit",
+      "placement_reason": "Parser lifetime and literal routines share static arena/index state in parser_text_arena_guest.h; retain their existing translation-unit ownership.",
+      "evidence": [
+        {
+          "path": "tests/parser_text_arena_native_test.c",
+          "detail": "Resets parser literal storage; fixture verifies repeated resets release overflow while retaining one base allocation."
+        },
+        {
+          "path": "scripts/guard-parser-text-arena.py",
+          "detail": "Address-owned extraction of four native parser functions; literal publication and lifetime boundaries are explicitly checked."
+        },
+        {
+          "path": "src/engine/resources/parser_text_arena_guest.h",
+          "detail": "File-local overflow arena and literal index state shared by reset, destruction and publication hooks."
+        }
+      ]
+    },
+    {
+      "address": "0x0019A060",
+      "name": "xml1_guest_parser_text_literal_store",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "placement": "retain_unit",
+      "placement_reason": "Parser lifetime and literal routines share static arena/index state in parser_text_arena_guest.h; retain their existing translation-unit ownership.",
+      "evidence": [
+        {
+          "path": "tests/parser_text_arena_native_test.c",
+          "detail": "Stores a literal and publishes its pointer; native fixture exercises duplicate reuse, oversized strings and retained pointer validity."
+        },
+        {
+          "path": "scripts/guard-parser-text-arena.py",
+          "detail": "Address-owned extraction of four native parser functions; literal publication and lifetime boundaries are explicitly checked."
+        },
+        {
+          "path": "src/engine/resources/parser_text_arena_guest.h",
+          "detail": "File-local overflow arena and literal index state shared by reset, destruction and publication hooks."
+        }
+      ]
+    },
+    {
+      "address": "0x00056D30",
+      "name": "xml1_guest_character_manager_skin_name",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/BETA-ISSUE-REPAIR.md",
+          "detail": "Verified CharacterManager::SkinName at vtable +0x6C; resolves metadata skin strings."
+        },
+        {
+          "path": "scripts/guard-character-limits.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ]
+    },
+    {
+      "address": "0x00054D40",
+      "name": "xml1_guest_character_manager_save",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/ROSTER-COSTUME-EXPANSION.md",
+          "detail": "Identified native CharacterManager state writer; verified versioned section header and snapshot loop."
+        },
+        {
+          "path": "scripts/guard-character-limits.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ]
+    },
+    {
+      "address": "0x00056F10",
+      "name": "xml1_guest_character_manager_load",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/ROSTER-COSTUME-EXPANSION.md",
+          "detail": "Identified native CharacterManager state reader; verified header admission, definitions and snapshots."
+        },
+        {
+          "path": "scripts/guard-character-limits.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ]
+    },
+    {
+      "address": "0x0035FDE0",
+      "name": "xml1_guest_dx8_block_on_time",
+      "module": "graphics/dx8",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/COMBAT-FREEZE.md",
+          "detail": "Identified BlockOnTime native fence wait and Xbox interrupt wait path."
+        },
+        {
+          "path": "scripts/guard-generated.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ],
+      "placement": "retain_unit",
+      "placement_reason": "Fence helpers have translation-unit declarations outside their guest function bodies; retain declaration ownership while naming these entries."
+    },
+    {
+      "address": "0x0035FC00",
+      "name": "xml1_guest_dx8_kickoff",
+      "module": "graphics/dx8",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/PROGRESS.md",
+          "detail": "Identified native GPU kickoff/flush and completion-tag publication."
+        },
+        {
+          "path": "scripts/guard-generated.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ],
+      "placement": "retain_unit",
+      "placement_reason": "Fence helpers have translation-unit declarations outside their guest function bodies; retain declaration ownership while naming these entries."
+    },
+    {
+      "address": "0x0011C680",
+      "name": "xml1_guest_command_manager_execute",
+      "module": "engine/scripting",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/MAIN-MENU-QUIT.md",
+          "detail": "Command-manager vtable +0x14 executes a const-char command chain through the native token parser."
+        },
+        {
+          "path": "scripts/guard-pc-menu.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ]
+    },
+    {
+      "address": "0x0017D750",
+      "name": "xml1_guest_menu_text_item_update",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/PC-OPTIONS-CONTROLS.md",
+          "detail": "Native text-item Update method owns refresh, resolved text and control prompts."
+        },
+        {
+          "path": "scripts/guard-pc-menu.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ]
+    },
+    {
+      "address": "0x00174860",
+      "name": "xml1_guest_menu_binary_item_update",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/PC-OPTIONS-CONTROLS.md",
+          "detail": "Binary control separate Update method established from native vtable; original Use/Focus ABI retained."
+        },
+        {
+          "path": "scripts/guard-pc-menu.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ]
+    },
+    {
+      "address": "0x00177940",
+      "name": "xml1_guest_menu_list_cycle_item_update",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/PC-OPTIONS-CONTROLS.md",
+          "detail": "List-cycle control separate Update method established from native vtable; original Use/Focus ABI retained."
+        },
+        {
+          "path": "scripts/guard-pc-menu.py",
+          "detail": "Verified address-owned integration boundary; name preserves the established native function role."
+        }
+      ]
+    },
+    {
+      "address": "0x00056E90",
+      "name": "xml1_guest_character_manager_get_or_create",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/ROSTER-COSTUME-EXPANSION.md",
+          "detail": "Factory at 56E90 checks singleton 48D59C, allocates the audited manager size and calls constructor 56B70 only when absent."
+        }
+      ]
+    },
+    {
+      "address": "0x00056B70",
+      "name": "xml1_guest_character_manager_construct",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/ROSTER-COSTUME-EXPANSION.md",
+          "detail": "Established manager constructor installs vtable 3CB824 and initializes its embedded pool and snapshots."
+        }
+      ]
+    },
+    {
+      "address": "0x000AFD70",
+      "name": "xml1_guest_character_definition_parse",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/ROSTER-COSTUME-EXPANSION.md",
+          "detail": "Established herostat CharacterDef parser; costume-name lookup returns to AFEFE and imported property guards preserve native parsing."
+        }
+      ]
+    },
+    {
+      "address": "0x000B0D30",
+      "name": "xml1_guest_character_definition_cycle_skin",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/ROSTER-COSTUME-EXPANSION.md",
+          "detail": "Established manual skin cycling; native unlock predicates precede cycling distinct physical skin IDs stored at definition+1E."
+        }
+      ]
+    },
+    {
+      "address": "0x0035FD20",
+      "name": "xml1_guest_dx8_insert_fence",
+      "module": "graphics/dx8",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve original stack cleanup and native convention",
+      "evidence": [
+        {
+          "path": "docs/COMBAT-FREEZE.md",
+          "detail": "Established InsertFence routine issues the graphics fence, advances its counter by two and kicks the native command stream."
+        }
+      ],
+      "placement": "retain_unit",
+      "placement_reason": "Retain the graphics translation unit and its existing helper declarations, as for the related Kickoff and BlockOnTime functions."
+    },
+    {
+      "address": "0x00026E60",
+      "name": "xml1_guest_entity_team",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/engine/combat/raven_bishop_guest.c",
+          "detail": "character_team wrapper uses the return as the actor team."
+        }
+      ]
+    },
+    {
+      "address": "0x00028FF0",
+      "name": "xml1_guest_powerup_end_time",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "end_time wrapper consumes the native floating-point result."
+        }
+      ]
+    },
+    {
+      "address": "0x0003A3E0",
+      "name": "xml1_guest_actor_animation_fraction",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/engine/combat/raven_bishop_guest.c",
+          "detail": "Existing comment explicitly identifies animation progress API and absence of output-delta argument."
+        }
+      ]
+    },
+    {
+      "address": "0x000760D0",
+      "name": "xml1_guest_entity_set_velocity",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "docs/XML2-INTEGRATION.md",
+          "detail": "Existing lunge integration identifies the native velocity setter."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C980",
+      "name": "xml1_guest_progress_manager_get",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "progress_require_owner verifies exact singleton identity and guest ABI."
+        }
+      ]
+    },
+    {
+      "address": "0x00123330",
+      "name": "xml1_guest_random_float",
+      "module": "engine/core",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "Existing comment establishes seed ownership, recurrence and floating result."
+        }
+      ]
+    },
+    {
+      "address": "0x001233C0",
+      "name": "xml1_guest_random_integer_range",
+      "module": "engine/core",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/engine/actors/raven_leader_actor.c",
+          "detail": "native_random passes minimum and maximum and returns the native integer."
+        }
+      ]
+    },
+    {
+      "address": "0x00150360",
+      "name": "xml1_guest_sound_stop",
+      "module": "audio",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/audio/raven_loop_sound_guest.c",
+          "detail": "raven_loop_guest_stop converts the normalized handle and invokes native stop."
+        }
+      ]
+    },
+    {
+      "address": "0x00151880",
+      "name": "xml1_guest_sound_play_positional",
+      "module": "audio",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/audio/raven_loop_sound_guest.c",
+          "detail": "Existing argument documentation lists sound ID, initial position, volume and near/far ranges."
+        }
+      ]
+    },
+    {
+      "address": "0x00151EF0",
+      "name": "xml1_guest_sound_manager_get",
+      "module": "audio",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native stack cleanup and floating-point return conventions",
+      "evidence": [
+        {
+          "path": "src/audio/raven_loop_sound_guest.c",
+          "detail": "Shared native manager used by playback and stop wrappers."
+        }
+      ]
+    },
+    {
+      "address": "0x000B41B0",
+      "name": "xml1_guest_talent_source_intern",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Registers or resolves the source filename to its byte-sized source ID; caller preserves 255 failure sentinel."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4250",
+      "name": "xml1_guest_talent_definition_parse",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Populates a reserved talent definition from its document/node; caller checks parsed rank count and success."
+        }
+      ]
+    },
+    {
+      "address": "0x000B5620",
+      "name": "xml1_guest_talent_definition_register_node",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Registers the resolved declaration node using its native selector and source handling, returning the definition."
+        }
+      ]
+    },
+    {
+      "address": "0x000B5080",
+      "name": "xml1_guest_talent_definition_release",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Releases the temporary definition reference acquired across CharacterManager load."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4B30",
+      "name": "xml1_guest_talent_source_cache_release",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_identity_guest.c",
+          "detail": "Paired twice with the document acquisitions at B53A0 and B59D0 by register_identity."
+        }
+      ]
+    },
+    {
+      "address": "0x000B3E90",
+      "name": "xml1_guest_talent_definition_resolve_handle",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_power_bindings_guest.c",
+          "detail": "Existing comment establishes occupancy/generation validation without acquiring a reference."
+        }
+      ]
+    },
+    {
+      "address": "0x00048D50",
+      "name": "xml1_guest_character_talent_insert_declaration",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/progression/talent_package_guest.c",
+          "detail": "Native character-stat talent insertion from document/node, preserving earned ranks on package reload."
+        }
+      ]
+    },
+    {
+      "address": "0x00074990",
+      "name": "xml1_guest_entity_fade_in",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "entity_fade selects this entry for the established native fade-in path, passing duration and zero delay."
+        }
+      ]
+    },
+    {
+      "address": "0x000749E0",
+      "name": "xml1_guest_entity_fade_out",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "entity_fade selects this entry for the established native fade-out path, passing duration and zero delay."
+        }
+      ]
+    },
+    {
+      "address": "0x00076B40",
+      "name": "xml1_guest_entity_set_alpha",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "entity_alpha documents native clamping and render-object notification."
+        }
+      ]
+    },
+    {
+      "address": "0x00066AB0",
+      "name": "xml1_guest_simulation_time",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/audio/raven_loop_sound_guest.c",
+          "detail": "simulation_time consumes the native float result and checks the floating stack is balanced."
+        }
+      ]
+    },
+    {
+      "address": "0x000CACD0",
+      "name": "xml1_guest_script_game_variable_lookup",
+      "module": "engine/scripting",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "game_variable_object obtains the native variable object by name through this manager method."
+        }
+      ]
+    },
+    {
+      "address": "0x000CB850",
+      "name": "xml1_guest_script_game_variable_set",
+      "module": "engine/scripting",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "put_game_variable uses native allocation, lookup and persistent storage for the name/value pair."
+        }
+      ]
+    },
+    {
+      "address": "0x00185C30",
+      "name": "xml1_guest_popup_add_choice",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_campaign_menu_guest.c",
+          "detail": "difficulty_rows/statistics_rows pass native label, action, alternate action, autohide and hide-HUD arguments."
+        }
+      ]
+    },
+    {
+      "address": "0x00185DF0",
+      "name": "xml1_guest_popup_set_selection",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_campaign_menu_guest.c",
+          "detail": "Native row selection used by both difficulty and saved-statistics dialogs."
+        }
+      ]
+    },
+    {
+      "address": "0x00185E40",
+      "name": "xml1_guest_popup_select_page",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_campaign_menu_guest.c",
+          "detail": "choose_popup selects the additional startup dialog page before populating its owned strings."
+        }
+      ]
+    },
+    {
+      "address": "0x00186BC0",
+      "name": "xml1_guest_popup_set_title",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_campaign_menu_guest.c",
+          "detail": "choose_popup passes the owned native title text before adding rows."
+        }
+      ]
+    },
+    {
+      "address": "0x00186CB0",
+      "name": "xml1_guest_popup_set_cancel_script",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_campaign_menu_guest.c",
+          "detail": "Existing inline trace identifies copying cancel script into page+11CD for native dispatch."
+        }
+      ]
+    },
+    {
+      "address": "0x001872E0",
+      "name": "xml1_guest_popup_show",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_campaign_menu_guest.c",
+          "detail": "choose_popup invokes this entry after selecting the page, assigning title and populating choices."
+        }
+      ]
+    },
+    {
+      "address": "0x00187AF0",
+      "name": "xml1_guest_popup_manager_get",
+      "module": "ui",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_campaign_menu_guest.c",
+          "detail": "Both startup dialogs obtain their shared native popup manager through this entry."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C030",
+      "name": "xml1_guest_progress_save",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Native fixture writes the current progress bytes and section through this entry and validates exact stream cursor."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C050",
+      "name": "xml1_guest_progress_load",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Native fixture restores progress through this entry and validates cursor and state."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C300",
+      "name": "xml1_guest_progress_set_campaign_complete",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Native completion setter fixture checks both set and clear values and their completion hook."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C820",
+      "name": "xml1_guest_progress_snapshot",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Fixture verifies current-to-snapshot transfer for each group mask."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C930",
+      "name": "xml1_guest_progress_restore_snapshot",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Fixture verifies snapshot-to-current restore for each group mask."
+        }
+      ]
+    },
+    {
+      "address": "0x0008C5F0",
+      "name": "xml1_guest_progress_merge_snapshot",
+      "module": "engine/world",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Existing merge hook and fixture validate masked snapshot merge without changing completion bits."
+        }
+      ]
+    },
+    {
+      "address": "0x0011FE10",
+      "name": "xml1_guest_options_storage_write",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Native options I/O wrapper passes owner, device, payload and exact byte length on write."
+        }
+      ]
+    },
+    {
+      "address": "0x00120090",
+      "name": "xml1_guest_options_storage_read",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_progress_guest.c",
+          "detail": "Native options I/O wrapper passes owner, device, payload and length output on read."
+        }
+      ]
+    },
+    {
+      "address": "0x000CA9B0",
+      "name": "xml1_guest_script_integer_result",
+      "module": "engine/scripting",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "return_integer allocates the normal interpreter result, retaining expression ownership and ABI."
+        }
+      ]
+    },
+    {
+      "address": "0x000CCCF0",
+      "name": "xml1_guest_script_string_result",
+      "module": "engine/scripting",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "return_string documents native copying and ownership of temporary guest string bytes."
+        }
+      ]
+    },
+    {
+      "address": "0x000CC120",
+      "name": "xml1_guest_script_manager_get",
+      "module": "engine/scripting",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "Shared native interpreter manager used for typed result allocation and game-variable storage."
+        }
+      ]
+    },
+    {
+      "address": "0x00125890",
+      "name": "xml1_guest_xml_symbol_release",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/actors/raven_character_race_guest.c",
+          "detail": "release_symbol pairs with construction of the Race and name lookup symbols."
+        }
+      ]
+    },
+    {
+      "address": "0x00125DA0",
+      "name": "xml1_guest_xml_symbol_construct",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/actors/raven_character_race_guest.c",
+          "detail": "symbol initializes temporary native XML name objects from guest strings and mode 2."
+        }
+      ]
+    },
+    {
+      "address": "0x001260E0",
+      "name": "xml1_guest_xml_node_find_attribute",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/actors/raven_character_race_guest.c",
+          "detail": "Native Race parser wrapper finds an attribute by its owned symbol, preserving missing-result behavior."
+        }
+      ]
+    },
+    {
+      "address": "0x00126C30",
+      "name": "xml1_guest_xml_node_next_named_child",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/actors/raven_character_race_guest.c",
+          "detail": "Race parser passes parent, child-name symbol and prior child for native iteration."
+        }
+      ]
+    },
+    {
+      "address": "0x00199EE0",
+      "name": "xml1_guest_xml_attribute_text",
+      "module": "engine/resources",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/actors/raven_character_race_guest.c",
+          "detail": "Race parser consumes the native string pointer from the found attribute and preserves null handling."
+        }
+      ],
+      "placement": "retain_unit",
+      "placement_reason": "Preserve the parser translation unit containing the shared text arena and its established lifecycle routines."
+    },
+    {
+      "address": "0x00025EE0",
+      "name": "xml1_guest_effect_resource_interval",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "Existing interval wrapper consumes the native floating result for a resource."
+        }
+      ]
+    },
+    {
+      "address": "0x00016650",
+      "name": "xml1_guest_effect_group_release",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "Existing effect group release wrapper delegates ownership to the native manager."
+        }
+      ]
+    },
+    {
+      "address": "0x00072CF0",
+      "name": "xml1_guest_effect_manager_get",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "Shared effect_manager wrapper obtains the native owner before group operations."
+        }
+      ]
+    },
+    {
+      "address": "0x0002AF30",
+      "name": "xml1_guest_actor_remove_powerup",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "Existing inline notes establish callbacks, list unlink, group cleanup and pool retirement, matching native 2B1C0."
+        }
+      ]
+    },
+    {
+      "address": "0x0002E5B0",
+      "name": "xml1_guest_actor_set_health",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "Existing damage-absorption integration documents native maximum-health clamp and float store."
+        }
+      ]
+    },
+    {
+      "address": "0x0002E6C0",
+      "name": "xml1_guest_actor_character_name",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/scripting/raven_script_extensions.c",
+          "detail": "Existing native caller trace documents charactername/override selection rather than internal entity name."
+        }
+      ]
+    },
+    {
+      "address": "0x00138870",
+      "name": "xml1_guest_bone_name_lookup",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/powers/raven_powerup_guest.c",
+          "detail": "Existing bone attachment wrapper documents name-to-enumeration conversion with separate success output."
+        }
+      ]
+    },
+    {
+      "address": "0x00123550",
+      "name": "xml1_guest_save_buffer_release",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/saves/raven_saved_stats_guest.c",
+          "detail": "Existing release_stream explicitly pairs this release with native save allocation 123530."
+        }
+      ]
+    },
+    {
+      "address": "0x0011CD90",
+      "name": "xml1_guest_command_manager_get",
+      "module": "engine/scripting",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/saves/raven_saved_stats_guest.c",
+          "detail": "Existing startup dispatch obtains manager then uses its native execute vtable slot +14."
+        }
+      ]
+    },
+    {
+      "address": "0x000B8550",
+      "name": "xml1_guest_values_manager_get",
+      "module": "engine/core",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_extraction_guest.c",
+          "detail": "Existing act_number wrapper obtains XML1 CValues before authored symbolic/numeric evaluation."
+        }
+      ]
+    },
+    {
+      "address": "0x000B7E60",
+      "name": "xml1_guest_values_evaluate",
+      "module": "engine/core",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "src/engine/world/raven_extraction_guest.c",
+          "detail": "Existing act_number wrapper preserves authored symbolic lookup and floating evaluation before caller-side integer conversion."
+        }
+      ]
+    },
+    {
+      "address": "0x000B0EA0",
+      "name": "xml1_guest_character_format_skin",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Actual native formatter is checked against physical skin name 0301 for bios/conversation HUD use."
+        }
+      ]
+    },
+    {
+      "address": "0x000541E0",
+      "name": "xml1_guest_character_manager_xp_threshold",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Existing threshold helper and CharacterManager::XPThreshold comment; monotonic levels 1-45 and next-level sentinel tested."
+        }
+      ]
+    },
+    {
+      "address": "0x00056C80",
+      "name": "xml1_guest_character_manager_level_cap",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Native getter is asserted to return the preserved level cap of 45."
+        }
+      ]
+    },
+    {
+      "address": "0x000AF950",
+      "name": "xml1_guest_character_reconcile_level",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Existing level reconciliation test exercises each XP boundary and verifies resulting level."
+        }
+      ]
+    },
+    {
+      "address": "0x000549A0",
+      "name": "xml1_guest_character_snapshot_construct",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "snapshot_boundaries poisons storage then invokes the documented retail constructor across all state slots."
+        }
+      ]
+    },
+    {
+      "address": "0x00054AA0",
+      "name": "xml1_guest_character_snapshot_destroy",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "snapshot_boundaries invokes the documented retail destructor and checks the adjacent canary."
+        }
+      ]
+    },
+    {
+      "address": "0x00047F80",
+      "name": "xml1_guest_character_stats_save",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Actual variable-length native state serializer is tested with 48 state records, XP, level and skin IDs."
+        }
+      ]
+    },
+    {
+      "address": "0x00049280",
+      "name": "xml1_guest_character_stats_load",
+      "module": "engine/saves",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Native state loader round-trips the serialized state records and validates stream consumption."
+        }
+      ]
+    },
+    {
+      "address": "0x00055E30",
+      "name": "xml1_guest_character_pool_construct",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "pool_boundaries verifies initialized masks, counts and both constructed/allocation bitmaps on poisoned storage."
+        }
+      ]
+    },
+    {
+      "address": "0x00054AC0",
+      "name": "xml1_guest_character_pool_allocate",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "pool_boundaries allocates each slot and checks the returned index and generated handle."
+        }
+      ]
+    },
+    {
+      "address": "0x00055F70",
+      "name": "xml1_guest_character_pool_reset",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Existing reset test verifies all handles retired, allocation bitmap cleared and free count restored."
+        }
+      ]
+    },
+    {
+      "address": "0x000B58A0",
+      "name": "xml1_guest_talent_registry_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "save_section_boundaries explicitly invokes the real registry constructor before native serialization."
+        }
+      ]
+    },
+    {
+      "address": "0x000B1640",
+      "name": "xml1_guest_character_definition_construct",
+      "module": "engine/actors",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "character_filter_boundaries invokes the real definition constructor on poisoned storage before definition parsing."
+        }
+      ]
+    },
+    {
+      "address": "0x00048F90",
+      "name": "xml1_guest_character_stats_destroy",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/progression_test.c",
+          "detail": "Existing fixture retires the constructors owned stats/map through this native destructor."
+        }
+      ]
+    },
+    {
+      "address": "0x000E6040",
+      "name": "xml1_guest_combat_event_create",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/combat/raven_filter_guest_test.c",
+          "detail": "create invokes the native factory by type name; tests check missing types and pool capacity."
+        }
+      ]
+    },
+    {
+      "address": "0x000E4DA0",
+      "name": "xml1_guest_combat_event_resolve",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/combat/raven_filter_guest_test.c",
+          "detail": "resolve converts native handles into event pointers and rejects retired handles."
+        }
+      ]
+    },
+    {
+      "address": "0x000E33F0",
+      "name": "xml1_guest_combat_event_pool_construct",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/combat/raven_filter_guest_test.c",
+          "detail": "Native pool initialization precedes factory calls on zeroed fixture storage."
+        }
+      ]
+    },
+    {
+      "address": "0x000E6CC0",
+      "name": "xml1_guest_combat_event_release",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/combat/raven_filter_guest_test.c",
+          "detail": "Native retirement reduces pool count and invalidates the released handle."
+        }
+      ]
+    },
+    {
+      "address": "0x00048C00",
+      "name": "xml1_guest_character_talent_map_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "owned_copy tests construction and initialized tree sentinels with independent map ownership."
+        }
+      ]
+    },
+    {
+      "address": "0x00049040",
+      "name": "xml1_guest_character_talent_map_copy",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "owned_copy validates native deep copy, independent values and reuse of existing storage."
+        }
+      ]
+    },
+    {
+      "address": "0x00048EE0",
+      "name": "xml1_guest_character_talent_map_destroy",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "owned_copy checks owner removal and constructed-record bitmap retirement."
+        }
+      ]
+    },
+    {
+      "address": "0x000490F0",
+      "name": "xml1_guest_character_stats_assign",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "stats_copy checks repeated assignment, self-assignment and reference counts."
+        }
+      ]
+    },
+    {
+      "address": "0x00048C60",
+      "name": "xml1_guest_character_stats_reset",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "stats_copy checks reset preserves map ownership and releases records; guard-character-talent-map explicitly distinguishes reset from destruction."
+        }
+      ]
+    },
+    {
+      "address": "0x0002AA90",
+      "name": "xml1_guest_actor_attach_powerup",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "shared_definition_fixture checks native allocation, receiver attachment and definition ownership transfer."
+        }
+      ]
+    },
+    {
+      "address": "0x0002B270",
+      "name": "xml1_guest_active_powerup_share",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Fixture explicitly identifies the native sharing function and tests its disabled early exit."
+        }
+      ]
+    },
+    {
+      "address": "0x00028FA0",
+      "name": "xml1_guest_active_powerup_retire",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Fixture checks single definition retirement and repeated-release safety."
+        }
+      ]
+    },
+    {
+      "address": "0x00096220",
+      "name": "xml1_guest_powerup_definition_construct",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native definition construction precedes XML tree parsing in the scope fixture."
+        }
+      ]
+    },
+    {
+      "address": "0x00096370",
+      "name": "xml1_guest_powerup_definition_parse",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Real XML scope nodes are parsed into definition fields and checked against native attack-type mapping."
+        }
+      ]
+    },
+    {
+      "address": "0x000953A0",
+      "name": "xml1_guest_powerup_definition_copy",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native copy is checked before evaluating preserved attack-scope masks."
+        }
+      ]
+    },
+    {
+      "address": "0x000955C0",
+      "name": "xml1_guest_powerup_definition_parse_attribute",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native key/value parser is exercised with authored definition attributes and balanced stack."
+        }
+      ]
+    },
+    {
+      "address": "0x00096740",
+      "name": "xml1_guest_powerup_definition_allocate",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Two native allocations must be nonzero and distinct before definition fixture checks."
+        }
+      ]
+    },
+    {
+      "address": "0x000967B0",
+      "name": "xml1_guest_powerup_definition_release",
+      "module": "engine/powers",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Fixture explicitly tests non-final reference decrement and final destruction."
+        }
+      ]
+    },
+    {
+      "address": "0x00059740",
+      "name": "xml1_guest_attack_type_from_name",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Fixture resolves punch/kick names with native parser, then checks definition scope masks."
+        }
+      ]
+    },
+    {
+      "address": "0x00049480",
+      "name": "xml1_guest_damage_type_from_name",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Fixture explicitly obtains dmg_fire through the native title parser, rather than assuming an enum."
+        }
+      ]
+    },
+    {
+      "address": "0x000CEEE0",
+      "name": "xml1_guest_attack_definition_construct",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Victim event fixture tests native attack construction on poisoned memory."
+        }
+      ]
+    },
+    {
+      "address": "0x000CF6B0",
+      "name": "xml1_guest_attack_event_parse_attribute",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native event parser populates VictimEventTag2 without changing the first tag."
+        }
+      ]
+    },
+    {
+      "address": "0x000CFD00",
+      "name": "xml1_guest_attack_definition_copy",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native attack copy preserves both victim event tags."
+        }
+      ]
+    },
+    {
+      "address": "0x0002B720",
+      "name": "xml1_guest_damage_record_copy",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native damage record copy preserves both victim tags."
+        }
+      ]
+    },
+    {
+      "address": "0x00096810",
+      "name": "xml1_guest_projectile_set_damage_record",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native projectile seeding stores damage and victim provenance from input record."
+        }
+      ]
+    },
+    {
+      "address": "0x00096870",
+      "name": "xml1_guest_projectile_get_damage_record",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native projectile query reconstructs damage/source/victim fields into output record."
+        }
+      ]
+    },
+    {
+      "address": "0x00096910",
+      "name": "xml1_guest_projectile_set_explosion_record",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native explosion seeding preserves the separately tested explosion damage and provenance."
+        }
+      ]
+    },
+    {
+      "address": "0x00096960",
+      "name": "xml1_guest_projectile_get_explosion_record",
+      "module": "engine/combat",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/powers/raven_powerup_guest_test.c",
+          "detail": "Native explosion query reconstructs separately stored damage and provenance."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4770",
+      "name": "xml1_guest_talent_metadata_pool_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B55D0",
+      "name": "xml1_guest_talent_metadata_pool_allocate",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B39E0",
+      "name": "xml1_guest_talent_metadata_handle_valid",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4F60",
+      "name": "xml1_guest_talent_metadata_pool_release",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000EA9E0",
+      "name": "xml1_guest_talent_id_pool_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B36B0",
+      "name": "xml1_guest_talent_id_pool_allocate",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B5040",
+      "name": "xml1_guest_talent_id_pool_release",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4090",
+      "name": "xml1_guest_talent_name_pool_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B3640",
+      "name": "xml1_guest_talent_name_pool_allocate",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B4FF0",
+      "name": "xml1_guest_talent_name_pool_release",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_registry_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B47E0",
+      "name": "xml1_guest_talent_source_cache_pool_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_source_cache_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B3E20",
+      "name": "xml1_guest_talent_source_cache_pool_allocate",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_source_cache_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000B5360",
+      "name": "xml1_guest_talent_source_cache_pool_release",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/talent_source_cache_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x0013C900",
+      "name": "xml1_guest_character_talent_node_pool_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000C9B50",
+      "name": "xml1_guest_character_talent_node_pool_allocate",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x00048090",
+      "name": "xml1_guest_character_talent_node_pool_copy",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000CB2B0",
+      "name": "xml1_guest_character_talent_node_pool_release",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000478B0",
+      "name": "xml1_guest_character_talent_records_copy",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x000476E0",
+      "name": "xml1_guest_character_talent_records_clear",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    },
+    {
+      "address": "0x00048EF0",
+      "name": "xml1_guest_character_stats_construct",
+      "module": "engine/progression",
+      "kind": "generated",
+      "confidence": "confirmed_behavior",
+      "abi": "guest_register_state; preserve native arguments, return and stack cleanup",
+      "evidence": [
+        {
+          "path": "tests/engine/progression/character_talent_map_native_test.c",
+          "detail": "Existing native fixture verifies this operation through construction, occupancy, copy, generation validity or release assertions at this address; covers expanded and retail layouts where applicable."
+        }
+      ]
+    }
+  ]
+}

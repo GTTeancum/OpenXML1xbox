@@ -1,7 +1,9 @@
 """Optional diagnostics for live handler fixture selection; no state changes."""
 from pathlib import Path
+from recomp_source import RecompSources
 root=Path(__file__).resolve().parents[1]
-p=root/'src/recomp/gen/recomp_0012.c'
+index=RecompSources(root/'src/recomp/gen')
+p=index.label_path(0x9DE6A)
 s=p.read_text()
 hooks={
  '0009DE6A':'if(getenv("XML1_TRACE_HANDLER_PROBES"))fprintf(stderr,"[HANDLER PROBE] selector=%s node=%s\\n",(const char*)XBOX_PTR(edi),(const char*)XBOX_PTR(eax));',

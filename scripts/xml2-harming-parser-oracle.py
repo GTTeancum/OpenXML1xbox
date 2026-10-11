@@ -53,7 +53,7 @@ for key in ('attacks_per_second','ATTACKS_PER_SECOND','use_tint','USE_TINT','use
 a.out.mkdir(parents=True,exist_ok=True)
 root=Path(__file__).resolve().parents[1]
 source=r'''
-#include "raven_harming_settings.h"
+#include "engine/combat/raven_harming_settings.h"
 #include <stdio.h>
 struct row {const char *key,*value;unsigned initial,aps,flags;};
 static const struct row rows[]={ROWS};
@@ -73,7 +73,7 @@ int main(void) {
     ','.join(str(r[k]) for k in ('initial_flags','aps','flags'))+'}' for r in rows))
 (a.out/'parser.c').write_text(source)
 (a.out/'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.20)\nproject(HarmingParser C)\n'
-    f'add_executable(parser parser.c "{root.as_posix()}/src/raven_harming_settings.c")\n'
+    f'add_executable(parser parser.c "{root.as_posix()}/src/engine/combat/raven_harming_settings.c")\n'
     f'target_include_directories(parser PRIVATE "{root.as_posix()}/src")\n')
 subprocess.run(['cmake','-S',str(a.out),'-B',str(a.out/'build')],check=True)
 subprocess.run(['cmake','--build',str(a.out/'build'),'--config','Release'],check=True)

@@ -81,7 +81,7 @@ for _ in range(128):
 for old in handles:assert observe(old)==0
 
 source=r'''
-#include "raven_xml1_powerup_view.h"
+#include "engine/powers/raven_xml1_powerup_view.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -129,7 +129,7 @@ a.out.mkdir(parents=True,exist_ok=True)
 (a.out/'handles.c').write_text(source)
 root=Path(__file__).resolve().parents[1]
 (a.out/'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.20)\nproject(PowerupHandles C)\n'
-    f'add_executable(handles handles.c "{root.as_posix()}/src/raven_xml1_powerup_view.c")\n'
+    f'add_executable(handles handles.c "{root.as_posix()}/src/engine/powers/raven_xml1_powerup_view.c")\n'
     f'target_include_directories(handles PRIVATE "{root.as_posix()}/src")\n')
 subprocess.run(['cmake','-S',str(a.out),'-B',str(a.out/'build')],check=True)
 subprocess.run(['cmake','--build',str(a.out/'build'),'--config','Release'],check=True)

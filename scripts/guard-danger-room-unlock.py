@@ -16,27 +16,34 @@ written to GameState, so saves keep their real progress and turning the
 option off restores the original rules.
 """
 from pathlib import Path
+from recomp_source import RecompSources
 
-path = Path(__file__).resolve().parents[1] / 'src/recomp/gen/recomp_0031.c'
-text = path.read_text(encoding='utf-8')
-
-def replace_once(text, old, new):
-    if new in text:
-        return text
-    if text.count(old) != 1:
-        raise ValueError(f'Expected one Danger Room boundary: {old}')
-    return text.replace(old, new, 1)
-
-if '#include "build_settings.h"' not in text:
-    text = text.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n#include "build_settings.h"', 1)
-text = replace_once(text, 'loc_0017179E: ;\n    MEM32(esi + 0xEDC) = eax;',
-    'loc_0017179E: ;\n    /* dangerRoomUnlockAll: the menu sees the level cap. */\n'
-    '    if (xml1_build_settings.danger_room_unlock_all) eax = 45;\n    MEM32(esi + 0xEDC) = eax;')
-text = replace_once(text, 'loc_00170F6A: ;\n',
-    'loc_00170F6A: ;\n    /* dangerRoomUnlockAll: every listed character counts as unlocked. */\n'
-    '    if (xml1_build_settings.danger_room_unlock_all) SET_LO8(eax, 1);\n')
-text = replace_once(text, 'loc_0016FA1D: ;\n',
-    'loc_0016FA1D: ;\n    /* dangerRoomUnlockAll: every arena counts as unlocked. */\n'
-    '    if (xml1_build_settings.danger_room_unlock_all) goto loc_0016FA31;\n')
-path.write_text(text, encoding='utf-8')
+root = Path(__file__).resolve().parents[1]
+index = RecompSources(root / 'src/recomp/gen')
+hooks = {
+    0x0017179E: ('loc_0017179E: ;\n    MEM32(esi + 0xEDC) = eax;',
+        'loc_0017179E: ;\n    /* dangerRoomUnlockAll: the menu sees the level cap. */\n'
+        '    if (xml1_build_settings.danger_room_unlock_all) eax = 45;\n    MEM32(esi + 0xEDC) = eax;'),
+    0x00170F6A: ('loc_00170F6A: ;\n',
+        'loc_00170F6A: ;\n    /* dangerRoomUnlockAll: every listed character counts as unlocked. */\n'
+        '    if (xml1_build_settings.danger_room_unlock_all) SET_LO8(eax, 1);\n'),
+    0x0016FA1D: ('loc_0016FA1D: ;\n',
+        'loc_0016FA1D: ;\n    /* dangerRoomUnlockAll: every arena counts as unlocked. */\n'
+        '    if (xml1_build_settings.danger_room_unlock_all) goto loc_0016FA31;\n'),
+}
+pending = {}
+for address, (old, new) in hooks.items():
+    path = index.label_path(address)
+    text = pending.get(path, path.read_text(encoding='utf-8'))
+    if new not in text:
+        if text.count(old) != 1:
+            raise ValueError(f'Expected one Danger Room boundary: {old}')
+        text = text.replace(old, new, 1)
+    include = '#include "app/build_settings.h"'
+    if include not in text:
+        text = text.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n' + include, 1)
+    pending[path] = text
+for path, text in pending.items():
+    if path.read_text(encoding='utf-8') != text:
+        path.write_text(text, encoding='utf-8')
 print('Danger Room unlock guard applied')

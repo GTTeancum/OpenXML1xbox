@@ -1,13 +1,17 @@
 """Connect the missing combined effect/sound event to the native event pool."""
 from pathlib import Path
+from recomp_source import RecompSources
 root=Path(__file__).resolve().parents[1]
-p=root/'src/recomp/gen/recomp_0019.c';s=p.read_text()
+index=RecompSources(root/'src/recomp/gen')
+p=index.label_path(0xE6C6D);s=p.read_text()
 marker='loc_000E6C6D: ;\n'
 hook='    if (raven_effect_sound_construct(esi, edi)) { eax = esi; goto loc_000E60DD; }\n'
-if marker+hook not in s:
- if s.count(marker)!=1:raise SystemExit('Effect/sound factory boundary changed')
+if s.count(marker)!=1:raise SystemExit('Effect/sound factory boundary changed')
+start=s.index(marker)+len(marker)
+end=s.find('\nloc_',start)
+if hook not in s[start:end if end!=-1 else len(s)]:
  s=s.replace(marker,marker+hook,1)
-inc='#include "raven_effect_sound_guest.h"\n'
+inc='#include "audio/raven_effect_sound_guest.h"\n'
 if inc not in s:s=inc+s
 if s!=p.read_text():p.write_text(s)
 p=root/'src/recomp/gen/recomp_types.h';s=p.read_text()

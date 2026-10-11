@@ -144,7 +144,7 @@ m.hook_del(hook)
 
 a.out.mkdir(parents=True, exist_ok=True)
 source = r'''
-#include "raven_numeric.h"
+#include "engine/core/raven_numeric.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -183,7 +183,7 @@ for name,values in [('DUE_ROWS',due_rows),('DELIVERY_ROWS',delivery_rows),('FLAG
 (a.out/'harming.c').write_text(source)
 (a.out/'CMakeLists.txt').write_text(
     'cmake_minimum_required(VERSION 3.20)\nproject(HarmingOracle C)\n'
-    f'add_executable(harming harming.c "{root.as_posix()}/src/raven_numeric.c")\n'
+    f'add_executable(harming harming.c "{root.as_posix()}/src/engine/core/raven_numeric.c")\n'
     f'target_include_directories(harming PRIVATE "{root.as_posix()}/src")\n')
 subprocess.run(['cmake', '-S', str(a.out), '-B', str(a.out/'build')], check=True)
 subprocess.run(['cmake', '--build', str(a.out/'build'), '--config', 'Release'], check=True)

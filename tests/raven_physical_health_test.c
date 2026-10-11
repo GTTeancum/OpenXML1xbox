@@ -1,6 +1,6 @@
 #define RECOMP_GENERATED_CODE
 #include "recomp_funcs.h"
-#include "raven_native_damage.h"
+#include "engine/combat/raven_native_damage.h"
 #include <stdio.h>
 #include <string.h>
 #define fp_push(v) do {double value=(v);g_fp_top=(g_fp_top+7)&7;g_fp_stack[g_fp_top]=value;}while(0)

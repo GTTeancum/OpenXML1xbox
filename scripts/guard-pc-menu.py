@@ -1,49 +1,82 @@
 """Install the PC application-exit command at its verified dispatch boundary."""
 from pathlib import Path
 root = Path(__file__).resolve().parents[1]
+from recomp_source import RecompSources, find_function, FUNCTION, address_of
+import re
+
+index=RecompSources(root/'src/recomp/gen')
+
+def read(*owners):
+    # Logical hook groups are independent of physical translation units.
+    bodies=[find_function(index.canonical_read(index.path(owner)),owner)[0]
+            for owner in owners]
+    return owners,'\n\n'.join(bodies)+'\n'
+
+def write(owners, source):
+    matches=list(FUNCTION.finditer(source))
+    bodies={address_of(match):match[0] for match in matches}
+    if len(matches)!=len(owners) or set(bodies)!=set(owners):
+        raise SystemExit('PC menu guard changed function coverage')
+    remainder=source
+    for match in reversed(matches):
+        remainder=remainder[:match.start()]+remainder[match.end():]
+    includes=re.findall(r'^#include "[^"\n]+"\n',remainder,re.M)
+    for include in includes:remainder=remainder.replace(include,'')
+    if remainder.strip():raise SystemExit('PC menu guard emitted text outside function ownership')
+    # Legacy blocks relied on other hooks in their chunk for this declaration.
+    # Every independently movable owner now declares it.
+    includes.append('#include "ui/pc_menu.h"\n')
+    for path,addresses in index.grouped(owners).items():
+        original=path.read_text();text=index.canonical_read(path)
+        for address in addresses:
+            match=find_function(text,address)
+            text=text[:match.start()]+bodies[address]+text[match.end():]
+        for include in includes:
+            if include not in text:text=include+text
+        text=index.restore_names(text)
+        if text!=original:path.write_text(text)
+
 hooks = {
-    'recomp_0023.c': ('loc_0011C680: ;', '''loc_0011C680: ;
+    0x11C680: ('loc_0011C680: ;', '''loc_0011C680: ;
     /* Command-manager vtable 003DA650 + 14: execute const char*. */
     if (MEM32(esp+4)) xml1_pc_menu_command((const char *)((uintptr_t)g_xbox_mem_offset+MEM32(esp+4)));'''),
 }
 for name, (marker, hook) in hooks.items():
-    p = root / 'src/recomp/gen' / name
-    s = p.read_text(encoding='utf-8')
-    if hook in s:
-        continue
+    state,s=read(name)
+    body = hook[len(marker):]
+    s = s.replace(body, "")
     if s.count(marker) != 1:
         raise SystemExit('Verified PC menu boundary missing: '+marker)
-    s = '#include "pc_menu.h"\n' + s.replace(marker, hook, 1)
-    p.write_text(s, encoding='utf-8')
+    s = s.replace(marker, hook, 1)
+    if '#include "ui/pc_menu.h"' not in s:
+        s = '#include "ui/pc_menu.h"\n' + s
+    write(state,s)
 print('Installed PC menu and application-exit command hooks')
 
 # Four-player PC binding tables and capture prompts exceed the Xbox menu's
 # 3840-vertex font budget. Increase the allocation through the original
 # initializer; its bounds checks, double buffers and font rendering stay intact.
-p = root / 'src/recomp/gen/recomp_0028.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x00145770)
 font_original = 'loc_001457BE: ;\n    PUSH32(esp, 0xF00);'
 font_pc = 'loc_001457BE: ;\n    PUSH32(esp, 0x1E00); /* PC menu font capacity: 7680 vertices */'
 if font_pc not in s:
     if s.count(font_original) != 1:
         raise SystemExit('Verified native menu font allocation boundary missing')
-    p.write_text(s.replace(font_original, font_pc, 1), encoding='utf-8')
+    write(state,s.replace(font_original,font_pc,1))
 
 # Remove exploratory bulk-copy hooks. The verified native font upload below
 # is the only copy boundary needed for menu vertex ownership.
-for filename, marker, call in (
-    ('recomp_0096.c', 'loc_003677B0: ;', 'xml1_pc_native_vertex_copy(MEM32(esp+4),MEM32(esp+8),MEM32(esp+12)*4u);'),
-    ('recomp_0082.c', 'loc_00340E00: ;', 'xml1_pc_native_vertex_copy(MEM32(esp+4),MEM32(esp+8),MEM32(esp+12));'),
-    ('recomp_0083.c', 'loc_00344D90: ;', 'xml1_pc_native_vertex_copy(MEM32(esp+4),MEM32(esp+8),MEM32(esp+12));'),
+for address, marker, call in (
+    (0x3677B0, 'loc_003677B0: ;', 'xml1_pc_native_vertex_copy(MEM32(esp+4),MEM32(esp+8),MEM32(esp+12)*4u);'),
+    (0x340E00, 'loc_00340E00: ;', 'xml1_pc_native_vertex_copy(MEM32(esp+4),MEM32(esp+8),MEM32(esp+12));'),
+    (0x344D90, 'loc_00344D90: ;', 'xml1_pc_native_vertex_copy(MEM32(esp+4),MEM32(esp+8),MEM32(esp+12));'),
 ):
-    p = root / 'src/recomp/gen' / filename
-    s = p.read_text(encoding='utf-8')
+    state,s=read(address)
     revised = s.replace(marker + '\n    ' + call, marker)
     if revised != s:
-        p.write_text(revised, encoding='utf-8')
+        write(state,revised)
 
-p = root / 'src/recomp/gen/recomp_0028.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x00144910,0x00144A00)
 unlock_marker='loc_00144A00: ;'
 unlock_hook=unlock_marker+'''\n    { unsigned pc_array=MEM32(ecx+MEM32(ecx+0x14)*4+4);
       xml1_graphics_menu_writer(pc_array,MEM32(MEM32(pc_array)+0x68),(const unsigned *)((uintptr_t)g_xbox_mem_offset+pc_array)); }'''
@@ -57,13 +90,11 @@ if hook not in s:
     if s.count(marker) != 1:
         raise SystemExit('Verified font vertex writer boundary missing')
     s = s.replace(marker, hook, 1)
-if '#include "pc_menu.h"' not in s:
-    s = '#include "pc_menu.h"\n' + s
-if s != p.read_text(encoding='utf-8'):
-    p.write_text(s, encoding='utf-8')
+if '#include "ui/pc_menu.h"' not in s:
+    s = '#include "ui/pc_menu.h"\n' + s
+write(state,s)
 
-p = root / 'src/recomp/gen/recomp_0040.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x001B68B0)
 marker = 'loc_001B68DB: ;'
 hook = marker + '''
     /* Native array upload uses inline rep movs, bypassing CRT/D3D helpers. */
@@ -72,13 +103,11 @@ if hook not in s:
     if s.count(marker) != 1:
         raise SystemExit('Verified native array upload boundary missing')
     s = s.replace(marker, hook, 1)
-if '#include "pc_menu.h"' not in s:
-    s = '#include "pc_menu.h"\n' + s
-if s != p.read_text(encoding='utf-8'):
-    p.write_text(s, encoding='utf-8')
+if '#include "ui/pc_menu.h"' not in s:
+    s = '#include "ui/pc_menu.h"\n' + s
+write(state,s)
 
-p = root / 'src/recomp/gen/recomp_0023.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x0011C680)
 marker = 'loc_0011C6A2: ;\n    esi = eax;'
 hook = marker + '''
     /* Native parser has consumed one token; keep its existing command chain. */
@@ -86,10 +115,9 @@ hook = marker + '''
 if hook not in s:
     if s.count(marker) != 1:
         raise SystemExit('Verified native per-token boundary missing')
-    p.write_text(s.replace(marker, hook, 1), encoding='utf-8')
+    write(state,s.replace(marker,hook,1))
 
-p = root / 'src/recomp/gen/recomp_0032.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x00173340,0x00173890,0x00174860,0x00177940,0x0017CDE0,0x0017CEB0,0x0017D4F0,0x0017D750)
 # Replace this diagnostic as a whole when its traversal changes. Its verified
 # original instruction is the boundary; repeated generation must not stack it.
 trace_start=s.index('loc_0017CF91: ;')
@@ -259,15 +287,13 @@ for marker, hook in native_hooks.items():
     if s.count(marker) != 1:
         raise SystemExit('Verified native item boundary missing: '+marker)
     s = s.replace(marker, hook, 1)
-if '#include "pc_menu.h"' not in s:
-    s = '#include "pc_menu.h"\n' + s
-if s != p.read_text(encoding='utf-8'):
-    p.write_text(s, encoding='utf-8')
+if '#include "ui/pc_menu.h"' not in s:
+    s = '#include "ui/pc_menu.h"\n' + s
+write(state,s)
 
 # Reuse CMenuItem's own focus-model assignment ABI (00173380/001733AB).
 # This fills the declared model at its IGB anchor; it does not draw an overlay.
-p = root / 'src/recomp/gen/recomp_0032.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x0017D750)
 marker = 'loc_0017D78E: ;'
 hook = marker + '''
     if (MEM32(esi + 0x58)) {
@@ -293,10 +319,9 @@ hook = marker + '''
     }'''
 if hook[len(marker):] not in s:
     if s.count(marker)!=1:raise SystemExit('Native text update boundary missing')
-    p.write_text(s.replace(marker,hook,1),encoding='utf-8')
+    write(state,s.replace(marker,hook,1))
 
-p = root / 'src/recomp/gen/recomp_0034.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x0018A7A0,0x0018AB00,0x0018AF60)
 for marker, hook in {
     'loc_0018A7E2: ;': 'loc_0018A7E2: ;\n    xml1_graphics_menu_writer(MEM32(esi),MEM32(MEM32(MEM32(esi))+8),(const unsigned *)((uintptr_t)g_xbox_mem_offset+MEM32(esi)));',
     'loc_0018A7A0: ;': 'loc_0018A7A0: ;\n    xml1_graphics_menu_quad(MEMF(esp+4),MEMF(esp+8),MEMF(esp+12),MEMF(esp+16));',
@@ -304,65 +329,58 @@ for marker, hook in {
     'loc_0018B0DB: ;': 'loc_0018B0DB: ;\n    xml1_graphics_menu_replay(ebp);',
     'loc_0018B409: ;': 'loc_0018B409: ;\n    xml1_graphics_menu_end();',
 }.items():
-    if hook in s:
-        continue
+    body = hook[len(marker):]
+    s = s.replace(body, "")
     if s.count(marker) != 1:
         raise SystemExit('Verified deferred-font boundary missing: '+marker)
     s = s.replace(marker, hook, 1)
-if '#include "pc_menu.h"' not in s:
-    s = '#include "pc_menu.h"\n' + s
-if s != p.read_text(encoding='utf-8'):
-    p.write_text(s, encoding='utf-8')
+if '#include "ui/pc_menu.h"' not in s:
+    s = '#include "ui/pc_menu.h"\n' + s
+write(state,s)
 
-p = root / 'src/recomp/gen/recomp_0033.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x00184FD0)
 marker = 'loc_00184FD0: ;'
 hook = marker + '\n    xml1_pc_native_closed(MEM32(ecx + 0xC08));'
 if hook not in s:
     if s.count(marker) != 1:
         raise SystemExit('Verified native close boundary missing')
     s = s.replace(marker, hook, 1)
-if '#include "pc_menu.h"' not in s:
-    s = '#include "pc_menu.h"\n' + s
-if s != p.read_text(encoding='utf-8'):
-    p.write_text(s, encoding='utf-8')
+if '#include "ui/pc_menu.h"' not in s:
+    s = '#include "ui/pc_menu.h"\n' + s
+write(state,s)
 
 # Camera update has finished both effect slots at this boundary. Filtering the
 # final additive vector leaves its original calculations, RNG and expiry checks
 # intact for every shake mode, for direct and indirect calls alike.
-p = root / 'src/recomp/gen/recomp_0004.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x0004BEF0)
 marker = 'loc_0004BF70: ;'
 hook = marker + '\n    xml1_pc_filter_camera_shake((float *)((uintptr_t)g_xbox_mem_offset + ebx + 0x2D8u));'
 if hook not in s:
     if s.count(marker) != 1 or 'void sub_0004BEF0(void)' not in s:
         raise SystemExit('Verified camera shake completion boundary missing')
     s = s.replace(marker, hook, 1)
-if '#include "pc_menu.h"' not in s:
-    s = '#include "pc_menu.h"\n' + s
-if s != p.read_text(encoding='utf-8'):
-    p.write_text(s, encoding='utf-8')
+if '#include "ui/pc_menu.h"' not in s:
+    s = '#include "ui/pc_menu.h"\n' + s
+write(state,s)
 
 # PC volume preview: notify the original stream updater when the native music
 # setter changes its gain. The XBE setter only stores B9E4; the stream updater
 # checks B9EC before invoking 0014FAE0 and clears it after updating its streams.
 # Keep native clamping, attenuation, streaming, and Accept/Back setters intact.
-p = root / 'src/recomp/gen/recomp_0029.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x0014F730,0x0014FBE0)
 marker = 'loc_0014F730: ;'
 hook = marker + '\n    MEM8(ecx + 0xB9EC) = 1; /* PC music-volume preview: native stream refresh */'
 if hook not in s:
     if s.count(marker) != 1 or 'loc_0014FC87: ;' not in s:
         raise SystemExit('Verified native music setter/stream-refresh boundary missing')
     s = s.replace(marker, hook, 1)
-    p.write_text(s, encoding='utf-8')
+    write(state,s)
 
 # The common font parser returns either one glyph (kind 0) or a localized
 # string id (kind 1). Add kind 2 for an immediate guest-addressable key label.
 # Native consumers expand it in normalization, width, wrapping and drawing.
 # This preserves original asset text, controller glyphs and unknown mod tokens.
-p=root/'src/recomp/gen/recomp_0030.c'
-s=p.read_text(encoding='utf-8')
+state,s=read(0x00152970,0x00153080,0x001533B0,0x001535E0)
 prompt_hooks={
  'loc_00153482: ;': '''loc_00153482: ;
     {
@@ -389,23 +407,22 @@ for marker,hook in prompt_hooks.items():
  if hook in s:continue
  if s.count(marker)!=1:raise SystemExit('Missing shared prompt boundary: '+marker)
  s=s.replace(marker,hook,1)
-if '#include "pc_prompts.h"' not in s:s='#include "pc_prompts.h"\n'+s
-p.write_text(s,encoding='utf-8')
+if '#include "ui/pc_prompts.h"' not in s:s='#include "ui/pc_prompts.h"\n'+s
+write(state,s)
 print('Installed shared keyboard prompt expansion in text normalization, width and wrapping')
 # The live renderer has its own expansion loop, in addition to font metrics.
-p=root/'src/recomp/gen/recomp_0034.c';s=p.read_text(encoding='utf-8')
+state,s=read(0x0018AF60)
 marker='loc_0018B264: ;'
 hook=marker+'\n    if(MEM32(esp+0x3C)==2)goto loc_0018B28A;'
 if hook not in s:
  if s.count(marker)!=1:raise SystemExit('Missing native prompt draw boundary')
- p.write_text(s.replace(marker,hook,1),encoding='utf-8')
+ write(state,s.replace(marker,hook,1))
 
 # Single-line CMenuItem labels and modal footer columns use fixed anchors.
 # Modal footer renderer 001865A0 draws its columns at 00186B80. Measure the original
 # controller representation to retain the authored footprint when keyboard
 # bindings expand. Textboxes keep their ordinary wrapping and font size.
-p=root/'src/recomp/gen/recomp_0034.c'
-s=p.read_text(encoding='utf-8')
+state,s=read(0x0018AB00)
 for marker,extra in {
     'loc_0018ABEA: ;': '    xml1_pc_prompt_begin_measure();',
     'loc_0018AC02: ;': r'''    if(getenv("XML1_TRACE_PROMPTS") && xml1_pc_prompt_was_expanded()) {
@@ -451,12 +468,12 @@ for marker,extra in {
     if hook not in s:
         if s.count(marker)!=1:raise SystemExit('Native prompt fit boundary missing: '+marker)
         s=s.replace(marker,hook,1)
-if '#include "pc_prompts.h"' not in s:s='#include "pc_prompts.h"\n'+s
-p.write_text(s,encoding='utf-8')
+if '#include "ui/pc_prompts.h"' not in s:s='#include "ui/pc_prompts.h"\n'+s
+write(state,s)
 
 # At end-of-source, a final expansion can still contain unread characters.
 # The draw loop already drains this pending string; metrics must do so too.
-p=root/'src/recomp/gen/recomp_0030.c';s=p.read_text(encoding='utf-8')
+state,s=read(0x00153080,0x001535E0)
 for marker,extra in {
  'loc_001531E1: ;':'    if(esi && MEM8(esi))goto loc_001530D0; /* finish trailing expansion */',
  'loc_00153704: ;':'    if(!LO8(eax) && !LO8(edx) && edi && MEM8(edi))goto loc_001536B9; /* finish trailing expansion */',
@@ -465,4 +482,4 @@ for marker,extra in {
  if hook not in s:
   if s.count(marker)!=1:raise SystemExit('Prompt expansion end boundary missing: '+marker)
   s=s.replace(marker,hook,1)
-p.write_text(s,encoding='utf-8')
+write(state,s)

@@ -1,5 +1,5 @@
 #include "kernel.h"
-#include "asset_routes.h"
+#include "engine/resources/asset_routes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

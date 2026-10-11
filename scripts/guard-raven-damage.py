@@ -1,15 +1,50 @@
 """Install opt-in synchronous damage transport auditing at native boundaries."""
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
+from recomp_source import RecompSources, find_function, FUNCTION, address_of
+import re
+
+index=RecompSources(root/'src/recomp/gen')
+
+def read(*owners):
+    # Logical hook groups are independent of physical translation units.
+    bodies=[find_function(index.canonical_read(index.path(owner)),owner)[0]
+            for owner in owners]
+    return owners,'\n\n'.join(bodies)+'\n'
+
+def write(owners, source):
+    matches=list(FUNCTION.finditer(source))
+    bodies={address_of(match):match[0] for match in matches}
+    if len(matches)!=len(owners) or set(bodies)!=set(owners):
+        raise SystemExit('Damage guard changed function coverage')
+    remainder=source
+    for match in reversed(matches):
+        remainder=remainder[:match.start()]+remainder[match.end():]
+    includes=re.findall(r'^#include "[^"\n]+"\n',remainder,re.M)
+    for include in includes:remainder=remainder.replace(include,'')
+    if remainder.strip():raise SystemExit('Damage guard emitted text outside function ownership')
+    # Legacy blocks relied on other hooks in their chunk for this declaration.
+    # Every independently movable owner now declares it.
+    includes.append('#include "engine/combat/raven_native_damage.h"\n')
+    for path,addresses in index.grouped(owners).items():
+        original=path.read_text();text=index.canonical_read(path)
+        for address in addresses:
+            match=find_function(text,address)
+            text=text[:match.start()]+bodies[address]+text[match.end():]
+        for include in includes:
+            if include not in text:text=include+text
+        text=index.restore_names(text)
+        if text!=original:path.write_text(text)
+
 hooks={
-    'recomp_0017.c':{
+    'event':{
         '000CFDC0':'raven_native_damage_enter(0xCFDC0, esp);',
         # 78 bytes of locals plus three saved registers are still live.
         '000CFE3F':'raven_native_damage_leave(0xCFDC0, esp + 0x84);',
         '000CF3DF':'raven_native_damage_seed(edi, ebp, esi, SMEM16(esi + 8));',
         '000CFE33':'raven_native_damage_observe(0xCFE33, MEM32(esp + 0x10), SMEM16(MEM32(esp + 0x10) + 8));',
     },
-    'recomp_0006.c':{
+    'attack':{
         # The attack manager adds the native callback's integer bonus.
         '0005AAAC':'raven_native_damage_add(0x5AAAC, esi, (int32_t)eax, SMEM16(esi + 8));',
         '0005C590':'raven_native_damage_enter(0x5C590, esp);',
@@ -34,7 +69,7 @@ hooks={
         '0005CDE3':'raven_native_damage_bonus(0x5CDE3, ebp, SMEM32(esp + 0x38), MEMF(esp + 0x14), SMEM32(esp + 0x18), ZX8(LO8(eax)));',
         '0005CE19':'raven_native_damage_observe(0x5CE19, ebp, (int32_t)eax);',
     },
-    'recomp_0002.c':{
+    'record':{
         '0002CE70':'raven_native_damage_enter(0x2CE70, esp);',
         # After constructor RET44 the 100-byte stack record begins at +C.
         # This is the definition's integer bleed amount, not XML2 damage.
@@ -44,7 +79,7 @@ hooks={
         '0002B720':'raven_native_damage_copy(MEM32(esp + 4), ecx);',
         '0002C8C0':'raven_native_damage_clear(ecx);',
     },
-    'recomp_0004.c':{
+    'context':{
         # Explicit sentinel assignment and late context multiplier, verified
         # against the original454AF/45B61 instructions. Neither is a ratio
         # inferred from the rounded damage word.
@@ -69,7 +104,7 @@ hooks={
         '0004632A':'raven_native_damage_observe(0x4632A, esp + 0x18, SMEM16(esp + 0x20));',
         '0004636A':'raven_native_damage_observe(0x4636A, esp + 0x18, SMEM16(esp + 0x20));',
     },
-    'recomp_0011.c':{
+    'physical':{
         # 92220's local record begins at ESP+20. These are explicit native
         # mutations after 2B720 copies the record; none are inferred ratios.
         '00092301':'raven_native_damage_set(0x92301, esp + 0x20, 0, SMEM16(esp + 0x28));',
@@ -84,12 +119,16 @@ hooks={
 }
 updates=[]
 for name,entries in hooks.items():
-    path=root/'src/recomp/gen'/name
-    source=path.read_text()
+    owners=set()
+    for address in entries:
+        label=int(address,16)
+        index.label_path(label)
+        owners.add(index.labels[label][0][1])
+    state,source=read(*sorted(owners))
     # Upgrade the previous audit hook; do not leave both operations installed.
-    if name=='recomp_0011.c':
+    if name=='physical':
         source=source.replace('    raven_native_damage_copy(esp + 0x20, MEM32(esp + 0xA0));\n','')
-    if name=='recomp_0004.c':
+    if name=='context':
         source=source.replace('    raven_native_damage_context(0x45B61, esi + 0xC, SMEM16(esi + 0x14), SMEM16(esi + 0x14), fp_top(), 0);\n','')
     for address,call in entries.items():
         marker=f'loc_{address}: ;\n'
@@ -99,8 +138,8 @@ for name,entries in hooks.items():
         end=source.find('\nloc_',start)
         if '    '+call+'\n' in source[start:end if end!=-1 else len(source)]:continue
         source=source.replace(marker,marker+'    '+call+'\n',1)
-    include='#include "raven_native_damage.h"\n'
-    if name=='recomp_0004.c':
+    include='#include "engine/combat/raven_native_damage.h"\n'
+    if name=='context':
         start=source.index('loc_00045B7C: ;\n');end=source.index('\nloc_',start+1)
         block=source[start:end]
         old='if (CMP_LE(_fas, _fbs))'
@@ -108,7 +147,7 @@ for name,entries in hooks.items():
         if new not in block:
             if block.count(old)!=1:raise SystemExit('Context damage consumer changed: 45B7C')
             source=source[:start]+block.replace(old,new,1)+source[end:]
-    if name=='recomp_0006.c':
+    if name=='attack':
         replacements={
             '0005C4B7':('MEM8(esp + 0x28) = (CMP_NE(_fa, _fb)) ? 1 : 0;',
                 'MEM8(esp + 0x28) = raven_native_damage_amount(edi, SMEM16(edi + 8)) != 0.0;'),
@@ -125,7 +164,7 @@ for name,entries in hooks.items():
             if new in block:continue
             if block.count(old)!=1:raise SystemExit('Attack damage consumer changed: '+site)
             source=source[:start]+block.replace(old,new,1)+source[end:]
-    if name=='recomp_0011.c':
+    if name=='physical':
         # Change only the traced consumers. Integer comparisons remain exact
         # when no explicitly imported value is associated with the record.
         replacements={
@@ -147,40 +186,38 @@ for name,entries in hooks.items():
             if block.count(old)!=1:raise SystemExit('Physical damage consumer changed: '+site)
             source=source[:start]+block.replace(old,new,1)+source[end:]
     if include not in source:source=include+source
-    updates.append((path,source))
-for path,source in updates:
-    if path.read_text()!=source:path.write_text(source)
+    updates.append((name,state,source))
+for name,state,source in updates:write(state,source)
 # Reuse the actual generated subtraction block in a process-local fixture.
 # No hand-maintained replacement of its argument layout or native setter.
-physical=next(source for path,source in updates if path.name=='recomp_0011.c')
+physical=next(source for name,state,source in updates if name=='physical')
 start=physical.index('loc_0009264A: ;\n')+len('loc_0009264A: ;\n')
 end=physical.index('\nloc_0009266F:',start)
 fragment=root/'src/recomp/gen/raven_physical_health_block.inc'
 fragment.write_text('/* Generated by guard-raven-damage.py; do not edit. */\n'+physical[start:end])
-attack=next(source for path,source in updates if path.name=='recomp_0006.c')
+attack=next(source for name,state,source in updates if name=='attack')
 start=attack.index('loc_0005C4B7: ;\n')+len('loc_0005C4B7: ;\n')
 end=attack.index('    #undef fp_push',start)
 (root/'src/recomp/gen/raven_attack_minimum_block.inc').write_text(
     '/* Generated by guard-raven-damage.py; do not edit. */\n'+attack[start:end])
 print('Installed opt-in native damage transport audit')
-context=next(source for path,source in updates if path.name=='recomp_0004.c')
+context=next(source for name,state,source in updates if name=='context')
 start=context.index('loc_00045B61: ;\n')+len('loc_00045B61: ;\n')
 end=context.index('\nloc_00045B86:',start)
 (root/'src/recomp/gen/raven_context_scale_block.inc').write_text(
     '/* Generated by guard-raven-damage.py; do not edit. */\n'+context[start:end])
 
 # After XML1 5C370 stores defense, before its original conditional branch.
-p=root/'src/recomp/gen/recomp_0006.c'
-s=p.read_text()
+state,s=read(0x5C240)
 marker='    MEMF(esp + 0x2C) = (float)fp_top(); fp_pop(); /* fstp */\n    if (TEST_Z(_fa, _fb)) goto loc_0005C380;'
 call='    raven_xml1_combat_rating(ebx, edi, esp+0x28, 0);\n    raven_xml1_combat_rating(ebp, edi, esp+0x2c, 1);\n'
 replacement=marker.replace('    if (TEST_Z',call+'    if (TEST_Z')
 if replacement not in s:
     if s.count(marker)!=1:raise SystemExit('Native rating boundary changed')
     s=s.replace(marker,replacement,1)
-include='#include "raven_powerup_guest.h"\n'
+include='#include "engine/powers/raven_powerup_guest.h"\n'
 if include not in s:s=include+s
-if s!=p.read_text():p.write_text(s)
+write(state,s)
 
 # XML2's area iterator (original XBE 5E6D5..5E73A) constructs a fresh hit
 # record at stack+74 for each candidate before invoking its recipient method.
@@ -188,8 +225,7 @@ if s!=p.read_text():p.write_text(s)
 # zeroing at 5C66F can suppress later enemies. Preserve XML1's per-recipient
 # method and damage rules, but isolate mutations of imported XML2 hit records
 # across recipients. The original XML1 record is 0x64 bytes (2B720 copy).
-p=root/'src/recomp/gen/recomp_0006.c'
-s=p.read_text()
+state,s=read(0x5BA90)
 old_probe=(
     '    raven_imported_area_amount = 0.0f;\n'
     '    raven_imported_area_saved = raven_native_damage_import_value(esi, &raven_imported_area_amount);\n'
@@ -224,13 +260,12 @@ if s.count(end)!=1:raise SystemExit('Area iterator return boundary changed')
 start=s.index(end)+len(end)
 stop=s.index('\nloc_',start)
 if end_call not in s[start:stop]:s=s[:start]+end_call+s[start:]
-if s!=p.read_text():p.write_text(s)
+write(state,s)
 
 # XML2 45CFE..45DBE consumes additive def_absorb_damage on the recipient's
 # completed hit before health delivery. XML1 46373 is after ordinary hit
 # modifiers/contact callbacks and before its native 92220 health method.
-p=root/'src/recomp/gen/recomp_0004.c'
-s=p.read_text()
+state,s=read(0x46270,0x45260,0x45E20)
 marker='loc_00046373: ;\n'
 call='    raven_xml1_combat_absorb_damage(esi, esp + 0x18);\n'
 if s.count(marker)!=1:raise SystemExit('Incoming absorption boundary changed')
@@ -245,6 +280,47 @@ if resistance not in s[start:end]:
     anchor=start+len(call)
     if s[start:anchor]!=call:raise SystemExit('Absorption/resistance order changed')
     s=s[:anchor]+resistance+s[anchor:]
-include='#include "raven_powerup_guest.h"\n'
+# Retire the early integration at final health delivery. Reserve and energy
+# shield must run before native reaction calculations, in that order.
+s=s.replace('    raven_xml1_combat_damage_reserve(esi, esp + 0x18);\n','')
+defenses='loc_000455DA: ;\n'
+call_defenses='    raven_xml1_combat_defense_extensions(esi);\n'
+if defenses+call_defenses not in s:
+    if s.count(defenses)!=1:raise SystemExit('Defensive hit context boundary changed')
+    s=s.replace(defenses,defenses+call_defenses,1)
+include='#include "engine/powers/raven_powerup_guest.h"\n'
 if include not in s:s=include+s
-if s!=p.read_text():p.write_text(s)
+death='    MEM8(ecx + 0x2B8) = LO8(eax);\n    edi = MEM32(ebp);\n'
+reward='    raven_xml1_combat_kill_rewards(ebp);\n'
+if death in s:
+    if s.count(death)!=1:raise SystemExit('First-death boundary ambiguous')
+    s=s.replace(death,death.replace('    edi =',reward+'    edi ='),1)
+elif s.count(reward)!=1:
+    raise SystemExit('First-death boundary changed')
+write(state,s)
+
+# Missing XML2 party bonus drops enter after XML1's original mission exclusions
+# and before its ordinary loot roll. The native source handle is argument3.
+state,s=read(0x70FB0)
+marker='loc_000710C3: ;\n'
+call='    raven_xml1_bonus_drops(edi, (int32_t)MEM32(esp + 0x70), MEM32(esp + 0x78));\n'
+if s.count(marker)!=1:raise SystemExit('Native bonus drop boundary changed')
+start=s.index(marker)+len(marker)
+end=s.index('\nloc_',start)
+if call not in s[start:end]:s=s[:start]+call+s[start:]
+include='#include "engine/powers/raven_powerup_guest.h"\n'
+if include not in s:s=include+s
+write(state,s)
+
+# XML2 456D8 copies the hit record to context+C; 45958/45960 tests its
+# modifier byte at context+20 against BL=2 and returns false at459CC.
+# XML1 stores that same record's modifiers at +18, hence context+24.
+# Gate only the actor preprocessor, leaving physical objects and tiles alone.
+state,s=read(0x45260)
+marker='loc_00045260: ;\n'
+call='    if (MEM32(ecx + 0x24) & 2u) { SET_LO8(eax, 0); esp += 4; return; }\n'
+if s.count(marker)!=1:raise SystemExit('Actor hit preprocessing boundary changed')
+start=s.index(marker)+len(marker)
+end=s.index('\nloc_',start)
+if call not in s[start:end]:s=s[:start]+call+s[start:]
+write(state,s)

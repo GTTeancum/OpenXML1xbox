@@ -27,7 +27,9 @@ def main():
         # Eight rows occupy the original seven-row region; footer and logo stay put.
         z=202.18460083007812-(row-1)*(195.35492134094238/7)
         m[14]=z if match[2] else z-8.200653076171875
-        if match[2]:m[10]*=6/7
+        # Absolute retail Z scale makes authoring repeatable on an already
+        # staged NG+ menu, rather than shrinking its art on every staging run.
+        if match[2]:m[10]=6/7
         put(w,i,8,tuple(m));changed.add(name)
     if len(changed)!=24:raise ValueError('Unexpected pause model; retrace anchors')
     target=a.output/resource;target.parent.mkdir(parents=True);target.write_bytes(encoded(w))

@@ -8,6 +8,7 @@ other template instantiations keep their original layouts.
 """
 from pathlib import Path
 import re
+from recomp_source import RecompSources, find_function, FUNCTION, address_of
 
 ROOT = Path(__file__).resolve().parents[1]
 MARK = '/* XML1 CHARACTER LAYOUT v2 */'
@@ -81,26 +82,48 @@ def change(fn, body):
             'MEM32(edi) = 0;\n    MEM32(edi + 4) = 0; /* reset both construction words */')
     return body.replace('{', '{\n    ' + MARK, 1)
 
-changed = 0
-for p in (ROOT/'src/recomp/gen').glob('recomp_*.c'):
-    old = p.read_text(encoding='utf-8')
-    if '/* XML1 CHARACTER LAYOUT v1 */' in old:
+index=RecompSources(ROOT/'src/recomp/gen')
+
+def read(*owners):
+    bodies=[find_function(index.canonical_read(index.path(owner)),owner)[0] for owner in owners]
+    # These headers establish the ordering required by the access helpers.
+    return owners,'#include "recomp_funcs.h"\n#include "game/xml1/character_limits.h"\n'+'\n\n'.join(bodies)+'\n'
+
+def write(owners, source):
+    matches=list(FUNCTION.finditer(source))
+    bodies={address_of(match):match[0] for match in matches}
+    if len(matches)!=len(owners) or set(bodies)!=set(owners):
+        raise SystemExit('Character guard changed function coverage')
+    rest=source
+    for match in reversed(matches):rest=rest[:match.start()]+rest[match.end():]
+    includes=re.findall(r'^#include "[^"\n]+"\n',rest,re.M)
+    for include in includes:rest=rest.replace(include,'')
+    if rest.strip():raise SystemExit('Character guard emitted unowned text')
+    for path,addresses in index.grouped(owners).items():
+        original=path.read_text();text=index.canonical_read(path)
+        for address in addresses:
+            match=find_function(text,address)
+            text=text[:match.start()]+bodies[address]+text[match.end():]
+        missing=''.join(include for include in dict.fromkeys(includes) if include not in text)
+        if missing:
+            # Add after existing includes: helpers depend on MEM8 and types.
+            headers=list(re.finditer(r'^#include[^\n]*\n',text,re.M))
+            at=headers[-1].end() if headers else 0
+            text=text[:at]+missing+text[at:]
+        text=index.restore_names(text)
+        if text!=original:path.write_text(text,encoding='utf-8')
+
+changed=0
+for fn in sorted(index.functions):
+    if not 0x54150<=fn<=0x57090:continue
+    state,source=read(fn)
+    match=find_function(source,fn)
+    if '/* XML1 CHARACTER LAYOUT v1 */' in match[0]:
         raise SystemExit('Layout changed: regenerate code before applying v2')
-    # Split at declarations so changes never escape an audited method.
-    chunks = re.split(r'(?=void sub_[0-9A-F]{8}\(void\))', old)
-    for i, chunk in enumerate(chunks):
-        m = re.match(r'void sub_([0-9A-F]{8})\(void\)', chunk)
-        if not m:
-            continue
-        fn = int(m[1], 16)
-        if 0x54150 <= fn <= 0x57090 and MARK not in chunk:
-            chunks[i] = change(fn, chunk)
-            changed += 1
-    new = ''.join(chunks)
-    if new != old:
-        if '#include "character_limits.h"' not in new:
-            new = new.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n#include "character_limits.h"', 1)
-        p.write_text(new, encoding='utf-8')
+    body=change(fn,match[0])
+    if body!=match[0]:
+        write(state,source[:match.start()]+body+source[match.end():])
+        changed+=1
 print(f'Character layout: updated {changed} method bodies')
 
 # Keep the extension idempotent and fail if a generated instruction changes.
@@ -111,13 +134,14 @@ def replace_once(text, old, new):
         raise ValueError(f'Expected one verified costume boundary: {old}')
     return text.replace(old, new, 1)
 
-for name in ('recomp_0005.c', 'recomp_0010.c', 'recomp_0014.c'):
-    p = ROOT/'src/recomp/gen'/name
-    original = s = p.read_text(encoding='utf-8')
+for section,owners in (('manager',(0x56D30,0x56F10,0x56220)),
+                       ('costumes',(0xAFD70,0xB1640,0xB0D30))):
+    state,s=read(*owners)
+    original=s
     # The access helpers need MEM8 from recomp_funcs.h, so include afterward.
-    s = s.replace('#include "character_limits.h"\n', '')
-    s = s.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n#include "character_limits.h"', 1)
-    if name == 'recomp_0005.c':
+    s = s.replace('#include "game/xml1/character_limits.h"\n', '')
+    s = s.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n#include "game/xml1/character_limits.h"', 1)
+    if section == 'manager':
         # CharacterManager::SkinName (vtable +6C) folds its old +6D50
         # displacement into (id+48E)*24. Literal-offset relocation cannot see
         # this form. Bios and NPC dialogue use metadata, not a live CharacterDef.
@@ -147,7 +171,7 @@ for name in ('recomp_0005.c', 'recomp_0010.c', 'recomp_0014.c'):
                 fprintf(stderr, "\n");
             }
         }''')
-    if name == 'recomp_0014.c':
+    if section == 'costumes':
         s = replace_once(s,
             'PUSH32(esp, 0x000AFEFEu); RECOMP_ABI_CALL(0x00084390u, sub_00084390); /* call 0x00084390 */',
             '''/* Extended names belong to CharacterDef's herostat skin_ table.
@@ -181,30 +205,27 @@ for name in ('recomp_0005.c', 'recomp_0010.c', 'recomp_0014.c'):
 '''
         s = s[:cycle_start] + cycle_hook + s[cycle_end:]
     if s != original:
-        p.write_text(s, encoding='utf-8')
+        write(state,s)
 
 # Trace actual list insertions instead of inferring roster availability from
 # successful herostat parsing or the number of frames rendered.
-p = ROOT/'src/recomp/gen/recomp_0032.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x178770)
 n = replace_once(s, 'loc_00178770: ;', r'''loc_00178770: ;
     if (getenv("XML1_CHARACTER_TRACE") && MEM32(esp+4))
         fprintf(stderr, "[ROSTER LIST] owner=%08X caller=%08X name=%s\n", ecx, MEM32(esp),
             (const char *)((uintptr_t)g_xbox_mem_offset + MEM32(esp+4)));''')
 if n != s:
-    p.write_text(n, encoding='utf-8')
+    write(state,n)
 
 # Upgrade a v2 generated allocation without requiring another full generation.
-p = ROOT/'src/recomp/gen/recomp_0005.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x56E90)
 n = replace_once(s, 'PUSH32(esp, 0x1C0F0);', 'PUSH32(esp, XML1_MANAGER_BYTES);')
-if n != s: p.write_text(n, encoding='utf-8')
+if n != s: write(state,n)
 
 # Version only the character-manager section. A retail save has sixteen
 # herostat records and seventeen snapshots regardless of the expanded live
 # roster. Preserve its cursor and skip new definitions when reading it.
-p = ROOT/'src/recomp/gen/recomp_0005.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x54D40,0x56F10)
 chunks = re.split(r'(?=void sub_[0-9A-F]{8}\(void\))', s)
 for i, body in enumerate(chunks):
     m = re.match(r'void sub_([0-9A-F]{8})\(void\)', body)
@@ -225,14 +246,16 @@ for i, body in enumerate(chunks):
         body = replace_once(body, 'edi = 0x11;', 'edi = pc_save_layout.snapshot_count;')
     chunks[i] = body
 n = ''.join(chunks)
-if '#include "character_save.h"' not in n:
-    n = n.replace('#include "character_limits.h"', '#include "character_limits.h"\n#include "character_save.h"', 1)
+if '#include "engine/progression/character_save.h"' not in n:
+    n = n.replace('#include "game/xml1/character_limits.h"', '#include "game/xml1/character_limits.h"\n#include "engine/progression/character_save.h"', 1)
 n = replace_once(n, 'loc_00056F97: ;',
     'loc_00056F97: ;\n    xml1_character_save_trace(esi, "loaded");')
-if n != s: p.write_text(n, encoding='utf-8')
+if 'xml1_character_load_finished();' not in n:
+    n = replace_once(n, 'loc_00057041: ;',
+        'loc_00057041: ;\n    xml1_character_load_finished();')
+if n != s: write(state,n)
 
-p = ROOT/'src/recomp/gen/recomp_0031.c'
-s = p.read_text(encoding='utf-8')
+state,s=read(0x164140,0x164240,0x16B970)
 chunks = re.split(r'(?=void sub_[0-9A-F]{8}\(void\))', s)
 for i, body in enumerate(chunks):
     m = re.match(r'void sub_([0-9A-F]{8})\(void\)', body)
@@ -252,36 +275,39 @@ for i, body in enumerate(chunks):
     body = body.replace('(uint32_t)(0x140) &', '(uint32_t)(XML1_MENU_ROSTER_BYTES) &')
     chunks[i] = body.replace('{', '{\n    '+marker, 1)
 n = ''.join(chunks)
-if '#include "character_limits.h"' not in n:
-    n = n.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n#include "character_limits.h"', 1)
-if n != s: p.write_text(n, encoding='utf-8')
+if '#include "game/xml1/character_limits.h"' not in n:
+    n = n.replace('#include "recomp_funcs.h"', '#include "recomp_funcs.h"\n#include "game/xml1/character_limits.h"', 1)
+if n != s: write(state,n)
 
 # Modder mode uses the native unlock state at load/menu/save boundaries. It is
 # independent of process-local input fixtures and survives ordinary save loads.
-for filename, hooks in {
-    'recomp_0005.c': [('loc_00056A33: ;','esi'),('loc_00057041: ;','MEM32(0x48D59C)'),('loc_00054D40: ;','ecx')],
-    'recomp_0031.c': [('loc_00164140: ;','MEM32(0x48D59C)')],
-}.items():
-    p=ROOT/'src/recomp/gen'/filename
-    s=p.read_text(encoding='utf-8')
-    if '#include "modder_mode.h"' not in s:
-        s=s.replace('#include "character_limits.h"','#include "character_limits.h"\n#include "modder_mode.h"',1)
-    for anchor,manager in hooks:
-        s=replace_once(s,anchor,anchor+'\n    xml1_modder_unlock('+manager+');')
-    p.write_text(s,encoding='utf-8')
-p=ROOT/'src/recomp/gen/recomp_0011.c'
-s=p.read_text(encoding='utf-8')
-if '#include "build_settings.h"' not in s:
-    s=s.replace('#include "recomp_funcs.h"','#include "recomp_funcs.h"\n#include "build_settings.h"',1)
+for label,manager in ((0x56A33,'esi'),(0x57041,'MEM32(0x48D59C)'),
+                      (0x54D40,'ecx'),(0x164140,'MEM32(0x48D59C)')):
+    index.label_path(label)
+    state,s=read(index.labels[label][0][1])
+    s=s.replace('#include "game/xml1/character_limits.h"',
+                '#include "game/xml1/character_limits.h"\n#include "game/xml1/modder_mode.h"',1)
+    anchor=f'loc_{label:08X}: ;'
+    if label==0x57041:
+        # Finish the loaded talent/vitality state before applying modder unlocks,
+        # matching the established runtime order on both fresh and repeated runs.
+        finish='\n    xml1_character_load_finished();'
+        unlock='\n    xml1_modder_unlock('+manager+');'
+        s=s.replace(anchor+unlock+finish,anchor+finish,1)
+        anchor+=finish
+    s=replace_once(s,anchor,anchor+'\n    xml1_modder_unlock('+manager+');')
+    write(state,s)
+state,s=read(0x8C2F0)
+if '#include "app/build_settings.h"' not in s:
+    s=s.replace('#include "recomp_funcs.h"','#include "recomp_funcs.h"\n#include "app/build_settings.h"',1)
 s=replace_once(s,'loc_0008C2F0: ;','loc_0008C2F0: ;\n    /* Modder mode remains effective even if a loaded save resets GameState. */\n    if (xml1_build_settings.modder_mode) { SET_LO8(eax,1); esp+=4; return; }')
-p.write_text(s,encoding='utf-8')
+write(state,s)
 
 # Optional resource diagnostics retain the native formatter and filename paths.
-p=ROOT/'src/recomp/gen/recomp_0014.c'
-s=p.read_text(encoding='utf-8')
+state,s=read(0xB0EA0)
 for anchor,trace in {
  'loc_000B0EA0: ;': 'if(getenv("XML1_RESOURCE_TRACE")) fprintf(stderr,"[SKIN INPUT] caller=%08X def=%08X family=%u variant=%u requested=%u\\n",MEM32(esp),ecx,MEM8(ecx+0x370),MEM8(ecx+0x1E),MEM32(esp+4));',
  'loc_000B0EFA: ;': 'if(getenv("XML1_RESOURCE_TRACE")) fprintf(stderr,"[SKIN OUTPUT] value=%s\\n",(char*)XBOX_PTR(0x4D4040));',
 }.items():
  s=replace_once(s,anchor,anchor+'\n    '+trace)
-p.write_text(s,encoding='utf-8')
+write(state,s)

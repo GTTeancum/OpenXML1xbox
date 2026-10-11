@@ -14,6 +14,15 @@ class NativePcTestChannel:
         self.process = process
         # The runtime parses unsigned 32-bit IDs. Leave ample increment room.
         self.sequence = int(time.time()) & 0x7fffffff
+        # A resumed driver can send more than one command per second. Start
+        # past its last file ID as well as the clock, or the renderer will
+        # discard a fresh command as an already-consumed sequence number.
+        try:
+            previous = int(self.command_file.read_text().split(maxsplit=1)[0])
+            if 0 <= previous <= 0xffffffff:
+                self.sequence = max(self.sequence, previous)
+        except (FileNotFoundError, ValueError, IndexError):
+            pass
 
     def send(self, command, timeout=8):
         if not command or '\n' in command or '\r' in command:

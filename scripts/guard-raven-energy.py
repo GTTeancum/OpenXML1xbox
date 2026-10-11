@@ -4,11 +4,42 @@ The adapter is explicitly opt-in until title/profile loading is integrated.
 Never write the per-actor resolved cost back into a shared event descriptor.
 """
 from pathlib import Path
+from recomp_source import RecompSources, find_function
 root=Path(__file__).resolve().parents[1]
-p=root/'src/recomp/gen/recomp_0017.c'
-s=p.read_text()
-s=s.replace('xml1_raven_energy_observe(ecx, MEM32(esp), esi, edi, ebp);',
-            'xml1_raven_energy_observe(ecx, MEM32(esp), esi, edi, g_ebp);')
+index=RecompSources(root/'src/recomp/gen')
+
+def read(label, owner=None):
+    if owner is None:
+        index.label_path(label)  # Unique instruction ownership required.
+        owner=index.labels[label][0][1]
+    p=index.path(owner)
+    source=index.canonical_read(p)
+    match=find_function(source,owner)
+    return p,source,match,match[0]
+
+def write(state, body):
+    p,source,match,_=state
+    source=source[:match.start()]+body+source[match.end():]
+    for name in ('raven_native_energy.h','raven_native_energy_guest.h'):
+        include=f'#include "engine/combat/{name}"\n'
+        if include not in source:source=include+source
+    source=index.restore_names(source)
+    if source!=p.read_text():p.write_text(source)
+
+def hook(address, call):
+    state=read(int(address,16))
+    s=state[3]
+    # Compatibility with the earlier diagnostic argument; preserve its fix.
+    s=s.replace('xml1_raven_energy_observe(ecx, MEM32(esp), esi, edi, ebp);',
+                'xml1_raven_energy_observe(ecx, MEM32(esp), esi, edi, g_ebp);')
+    marker=f'loc_{address}: ;\n'
+    if s.count(marker)!=1:raise SystemExit('Energy boundary changed: '+address)
+    start=s.index(marker)+len(marker)
+    end=s.find('\nloc_',start)
+    if call not in s[start:end if end!=-1 else len(s)]:
+        s=s.replace(marker,marker+call,1)
+    write(state,s)
+
 hooks={
     '000D2190': '''    if(xml1_raven_explosion_parse(ecx, MEM32(esp + 4), MEM32(esp + 8))) {
         SET_LO8(eax, 1); esp += 12; return;
@@ -58,47 +89,45 @@ hooks={
     '000CF689':'    raven_native_energy_copy(esi, eax);\n',
     '000CF640':'    xml1_raven_energy_observe(ecx, MEM32(esp), esi, edi, g_ebp);\n',
 }
-for address,call in hooks.items():
-    marker=f'loc_{address}: ;\n'
-    if s.count(marker)!=1:raise SystemExit('Energy boundary changed: '+address)
-    start=s.index(marker)+len(marker)
-    end=s.find('\nloc_',start)
-    if call in s[start:end if end!=-1 else len(s)]:continue
-    s=s.replace(marker,marker+call,1)
+for address,call in hooks.items():hook(address,call)
+state=read(0xCDEE1);s=state[3]
 old='loc_000CDEE1: ;\n    edx = (uint32_t)(int32_t)SMEM16(edi + 0x10);'
 new=old+'\n    edx = (uint32_t)xml1_raven_energy_cost(edi, esi, (int32_t)edx);'
 if new not in s:
     if s.count(old)!=1:raise SystemExit('Native energy charging boundary changed')
     s=s.replace(old,new,1)
+write(state,s)
 # Resolve dispatch-local values, never the shared attack descriptor. The beam
 # tail is emitted both in merged D0460 and standalone D0640; cover both copies.
-for address,load,event,actor,count in (
-    ('000CF356','edx = (uint32_t)(int32_t)SMEM16(eax + 6);','edi','ebp',1),
-    ('000D0556','edx = (uint32_t)(int32_t)SMEM16(edx + 6);','ebp','MEM32(edi)',1),
-    ('000D06DE','edx = (uint32_t)(int32_t)SMEM16(ecx + 6);','ebp','MEM32(edi)',2),
-    ('000D0840','edx = (uint32_t)(int32_t)SMEM16(ecx + 6);','ebp','MEM32(edi)',2),
+for address,load,event,actor,owners in (
+    ('000CF356','edx = (uint32_t)(int32_t)SMEM16(eax + 6);','edi','ebp',(0xCF250,)),
+    ('000D0556','edx = (uint32_t)(int32_t)SMEM16(edx + 6);','ebp','MEM32(edi)',(0xD0460,)),
+    ('000D06DE','edx = (uint32_t)(int32_t)SMEM16(ecx + 6);','ebp','MEM32(edi)',(0xD0460,0xD0640)),
+    ('000D0840','edx = (uint32_t)(int32_t)SMEM16(ecx + 6);','ebp','MEM32(edi)',(0xD0460,0xD0640)),
 ):
-    marker=f'loc_{address}: ;\n'
-    if s.count(marker)!=count:raise SystemExit('Attack range boundary changed: '+address)
-    chunks=s.split(marker)
-    call=f'\n    edx = (uint32_t)xml1_raven_attack_maxrange({event}, {actor}, (int32_t)edx);'
-    for i in range(1,len(chunks)):
-        end=chunks[i].find('\nloc_')
-        block=chunks[i][:end]
-        if load+call in block:continue
-        if block.count(load)!=1:raise SystemExit('Attack range load changed: '+address)
-        chunks[i]=chunks[i].replace(load,load+call,1)
-    s=marker.join(chunks)
+    actual={owner for _,owner in index.labels.get(int(address,16),[])}
+    if actual!=set(owners):raise SystemExit('Attack range ownership changed: '+address)
+    for owner in owners:
+        state=read(int(address,16),owner);s=state[3]
+        marker=f'loc_{address}: ;\n'
+        if s.count(marker)!=1:raise SystemExit('Attack range boundary changed: '+address)
+        chunks=s.split(marker)
+        call=f'\n    edx = (uint32_t)xml1_raven_attack_maxrange({event}, {actor}, (int32_t)edx);'
+        for i in range(1,len(chunks)):
+            end=chunks[i].find('\nloc_')
+            block=chunks[i][:end]
+            if load+call in block:continue
+            if block.count(load)!=1:raise SystemExit('Attack range load changed: '+address)
+            chunks[i]=chunks[i].replace(load,load+call,1)
+        s=marker.join(chunks)
+        write(state,s)
+state=read(0xD2920);s=state[3]
 old_spawn='{ uint32_t _icall_target = MEM32(edx + 0x24); PUSH32(esp, 0x000D2920u); RECOMP_ICALL_SAFE(_icall_target, _icall_esp); }'
 new_spawn='{ uint32_t _icall_target = MEM32(edx + 0x24); if(!xml1_raven_projectile_spawn(esi, _icall_target)) { PUSH32(esp, 0x000D2920u); RECOMP_ICALL_SAFE(_icall_target, _icall_esp); } }'
 if new_spawn not in s:
     if s.count(old_spawn)!=1:raise SystemExit('Projectile spawn boundary changed')
     s=s.replace(old_spawn,new_spawn,1)
-for name in ('raven_native_energy.h','raven_native_energy_guest.h'):
-    include=f'#include "{name}"\n'
-    if include not in s:s=include+s
-gate_path=root/'src/recomp/gen/recomp_0018.c'
-gate=gate_path.read_text()
+write(state,s)
 for address,call in {
     '000E1A6D':'''    MEMF(esp + 0x14) = xml1_raven_held_requirement(edi, ebx);
     /* A held node may have no charged events. Still run the native energy
@@ -108,33 +137,11 @@ for address,call in {
     '000E1DDC':'    xml1_raven_held_trigger_observe(edi, esi);\n',
     '000E1A8F':'    fp_top() = xml1_raven_energy_query(esi, ebx, fp_top());\n',
     '000E1AC6':'    xml1_raven_energy_gate(ebx, fp_top(), MEMF(esp + 0x14));\n',
-}.items():
-    marker=f'loc_{address}: ;\n'
-    if marker+call in gate:continue
-    if gate.count(marker)!=1:raise SystemExit('Energy eligibility boundary changed: '+address)
-    gate=gate.replace(marker,marker+call,1)
-include='#include "raven_native_energy_guest.h"\n'
-if include not in gate:gate=include+gate
-if p.read_text()!=s:p.write_text(s)
-if gate_path.read_text()!=gate:gate_path.write_text(gate)
-# CCEAtkBeam inlines the base action/attack copy instead of calling CFC80.
-# E41F9 is reached only after the original action RTTI check succeeds, with
-# ESI=destination and EAX=source, before AL is reused for copied flags.
-beam_path=root/'src/recomp/gen/recomp_0019.c'
-beam=beam_path.read_text()
-marker='loc_000E41F9: ;\n'
-call='    raven_native_energy_copy(esi, eax);\n'
-if marker+call not in beam:
-    if beam.count(marker)!=1:raise SystemExit('Beam clone boundary changed')
-    beam=beam.replace(marker,marker+call,1)
-include='#include "raven_native_energy.h"\n'
-if include not in beam:beam=include+beam
-if beam_path.read_text()!=beam:beam_path.write_text(beam)
-print('Installed XML1 imported-energy boundaries')
-for filename,hooks in {
-    # Actor update immediately after its current node's virtual+44 callback.
-    'recomp_0004.c':{'00043B83':'    xml1_raven_held_update(MEM32(esi + 0x2F4), esi);\n'},
-    'recomp_0019.c':{
+}.items():hook(address,call)
+# Beam clone inlines its base copy after the native RTTI check.
+hook('000E41F9','    raven_native_energy_copy(esi, eax);\n')
+for address,call in {'00043B83':'    xml1_raven_held_update(MEM32(esi + 0x2F4), esi);\n'}.items():hook(address,call)
+for address,call in {
         '000E77C9':'''    /* Preserve XML1's pending-move/transition path; replace its idle
        fallback only while the declared current power is still held. */
     { uint32_t held = xml1_raven_held_destination(esi, ebp);
@@ -145,20 +152,9 @@ for filename,hooks in {
         SET_LO8(eax, 1); esp += 12; return; /* native attribute parser ret8 */
     }
 ''',
-    },
-    'recomp_0020.c':{
+    }.items():hook(address,call)
+for address,call in {
         '000EAF10':'    raven_native_held_retire(ecx);\n',
         '000ECEA4':'    xml1_raven_held_chain_parse(MEM32(esp + 0x3C), edi, esi);\n',
-    },
-}.items():
-    node_path=root/'src/recomp/gen'/filename
-    node=node_path.read_text()
-    for address,call in hooks.items():
-        marker=f'loc_{address}: ;\n'
-        if marker+call in node:continue
-        if node.count(marker)!=1:raise SystemExit('Held node boundary changed: '+address)
-        node=node.replace(marker,marker+call,1)
-    for header in ('raven_native_energy.h','raven_native_energy_guest.h'):
-        include=f'#include "{header}"\n'
-        if include not in node:node=include+node
-    if node_path.read_text()!=node:node_path.write_text(node)
+    }.items():hook(address,call)
+print('Installed XML1 imported-energy boundaries by guest address')

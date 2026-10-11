@@ -1,4 +1,4 @@
-#include "xml2_test_replay.h"
+#include "diagnostics/xml2_test_replay.h"
 int main(int argc,char **argv) {
     char output[128]="unchanged";
     if(argc!=3)return 2;

@@ -47,8 +47,8 @@ string(REPLACE "start.cb=sizeof(start);"
     "start.cb=sizeof(start); start.dwFlags |= STARTF_USESTDHANDLES; start.hStdOutput=GetStdHandle(STD_OUTPUT_HANDLE); start.hStdError=GetStdHandle(STD_ERROR_HANDLE); start.hStdInput=GetStdHandle(STD_INPUT_HANDLE); SetHandleInformation(start.hStdOutput,HANDLE_FLAG_INHERIT,HANDLE_FLAG_INHERIT); SetHandleInformation(start.hStdError,HANDLE_FLAG_INHERIT,HANDLE_FLAG_INHERIT);"
     _xml2_graphics "${_xml2_graphics}")
 string(REPLACE "command,NULL,NULL,FALSE,CREATE_NO_WINDOW" "command,NULL,NULL,TRUE,CREATE_NO_WINDOW" _xml2_graphics "${_xml2_graphics}")
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/xml2_vertex_trace.inc" _xml2_vertex_trace)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/xml2_vertex_trace.inc")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/diagnostics/xml2_vertex_trace.inc" _xml2_vertex_trace)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/diagnostics/xml2_vertex_trace.inc")
 set(_xml2_vertex_anchor "const int track_menu_vertices=xml1_pc_native_tracking();")
 string(FIND "${_xml2_graphics}" "${_xml2_vertex_anchor}" _xml2_vertex_position)
 if(_xml2_vertex_position EQUAL -1)
@@ -58,7 +58,7 @@ string(REPLACE "${_xml2_vertex_anchor}" "${_xml2_vertex_trace}\n${_xml2_vertex_a
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/xml2-guest-graphics-base.c" "${_xml2_graphics}")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-xml2-shaders.py"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/guest_graphics_live.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/graphics/dx8/guest_graphics_live.c"
     "${_xml2_src}/recomp/gen/recomp_0104.c")
 execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts/python.exe"
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-xml2-shaders.py"

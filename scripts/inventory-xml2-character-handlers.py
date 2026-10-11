@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--recovery', type=Path, required=True)
     parser.add_argument('--xml1-xbe', type=Path, required=True)
     parser.add_argument('--xml2-xbe', type=Path, required=True)
-    parser.add_argument('--source', type=Path, default=Path(__file__).resolve().parents[1] / 'src/raven_bishop_guest.c')
+    parser.add_argument('--source', type=Path, default=Path(__file__).resolve().parents[1] / 'src/engine/combat/raven_bishop_guest.c')
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
     sys.path.insert(0, str(args.recovery.resolve()))

@@ -1,0 +1,824 @@
+{
+  "schema_version": 1,
+  "scope": "Supplemental review of the 90 test references unregistered before the final test-evidence consolidation; not an exhaustive executable symbol list.",
+  "entries": [
+    {
+      "address": "0x00360090",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/graphics_fence_wait_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0035C330",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/graphics_fence_wait_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0035F9D0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/graphics_fence_wait_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0035FB50",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/graphics_fence_wait_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0035F860",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/graphics_fence_wait_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0035FBD0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/graphics_fence_wait_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x00123490",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/parser_text_arena_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x001234F0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/parser_text_arena_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x000119F0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/parser_text_arena_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x00199FD0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/parser_text_arena_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x002B59F0",
+      "status": "excluded",
+      "name": null,
+      "evidence_paths": [
+        "tests/xml2_skinning_test.c"
+      ],
+      "review_reason": "XML2-specific fixture; its address is not evidence for an XML1 identity."
+    },
+    {
+      "address": "0x0015E8C0",
+      "status": "excluded",
+      "name": null,
+      "evidence_paths": [
+        "tests/diagnostics/raven_xml2_query_guest_test.c"
+      ],
+      "review_reason": "XML2-specific fixture; its address is not evidence for an XML1 identity."
+    },
+    {
+      "address": "0x000E6040",
+      "status": "registered",
+      "name": "xml1_guest_combat_event_create",
+      "evidence_paths": [
+        "tests/engine/combat/raven_filter_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000E4DA0",
+      "status": "registered",
+      "name": "xml1_guest_combat_event_resolve",
+      "evidence_paths": [
+        "tests/engine/combat/raven_filter_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000E33F0",
+      "status": "registered",
+      "name": "xml1_guest_combat_event_pool_construct",
+      "evidence_paths": [
+        "tests/engine/combat/raven_filter_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000E6CC0",
+      "status": "registered",
+      "name": "xml1_guest_combat_event_release",
+      "evidence_paths": [
+        "tests/engine/combat/raven_filter_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000299B0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x0002AA90",
+      "status": "registered",
+      "name": "xml1_guest_actor_attach_powerup",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x0002B270",
+      "status": "registered",
+      "name": "xml1_guest_active_powerup_share",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00028FA0",
+      "status": "registered",
+      "name": "xml1_guest_active_powerup_retire",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00096220",
+      "status": "registered",
+      "name": "xml1_guest_powerup_definition_construct",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00096370",
+      "status": "registered",
+      "name": "xml1_guest_powerup_definition_parse",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00059740",
+      "status": "registered",
+      "name": "xml1_guest_attack_type_from_name",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000953A0",
+      "status": "registered",
+      "name": "xml1_guest_powerup_definition_copy",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00094F00",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x000CEEE0",
+      "status": "registered",
+      "name": "xml1_guest_attack_definition_construct",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000CF6B0",
+      "status": "registered",
+      "name": "xml1_guest_attack_event_parse_attribute",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000CFD00",
+      "status": "registered",
+      "name": "xml1_guest_attack_definition_copy",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x0002B720",
+      "status": "registered",
+      "name": "xml1_guest_damage_record_copy",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00096810",
+      "status": "registered",
+      "name": "xml1_guest_projectile_set_damage_record",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00096910",
+      "status": "registered",
+      "name": "xml1_guest_projectile_set_explosion_record",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00096960",
+      "status": "registered",
+      "name": "xml1_guest_projectile_get_explosion_record",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00096870",
+      "status": "registered",
+      "name": "xml1_guest_projectile_get_damage_record",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00043F20",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00095210",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00096690",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00096740",
+      "status": "registered",
+      "name": "xml1_guest_powerup_definition_allocate",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000955C0",
+      "status": "registered",
+      "name": "xml1_guest_powerup_definition_parse_attribute",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000E41D0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x000E2610",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x000E1A20",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00027EF0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x0002A7B0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x000967B0",
+      "status": "registered",
+      "name": "xml1_guest_powerup_definition_release",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x0002CE70",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00029DC0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x0002A400",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00045E20",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00049480",
+      "status": "registered",
+      "name": "xml1_guest_damage_type_from_name",
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x001561D0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/powers/raven_powerup_guest_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x000479D0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0006E7E0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0006E830",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x001994F0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x0013C900",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_node_pool_construct",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000C9B50",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_node_pool_allocate",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00048090",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_node_pool_copy",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000CB2B0",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_node_pool_release",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000478B0",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_records_copy",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000476E0",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_records_clear",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00048C00",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_map_construct",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00049040",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_map_copy",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c",
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00048EE0",
+      "status": "registered",
+      "name": "xml1_guest_character_talent_map_destroy",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000490F0",
+      "status": "registered",
+      "name": "xml1_guest_character_stats_assign",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00048C60",
+      "status": "registered",
+      "name": "xml1_guest_character_stats_reset",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00048EF0",
+      "status": "registered",
+      "name": "xml1_guest_character_stats_construct",
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_map_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B3BE0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x00171BB0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x000EA8E0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x00048B40",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00048480",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/character_talent_native_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x0007E2F0",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/progression_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00054A10",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/progression_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x000C0700",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/progression_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x00054F10",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/progression_test.c"
+      ],
+      "review_reason": "Fixture establishes a limited call/field/branch contract, not a sufficiently documented complete native identity. Preserve address and existing comments; further identification is deferred."
+    },
+    {
+      "address": "0x000B4770",
+      "status": "registered",
+      "name": "xml1_guest_talent_metadata_pool_construct",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B55D0",
+      "status": "registered",
+      "name": "xml1_guest_talent_metadata_pool_allocate",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B39E0",
+      "status": "registered",
+      "name": "xml1_guest_talent_metadata_handle_valid",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B4F60",
+      "status": "registered",
+      "name": "xml1_guest_talent_metadata_pool_release",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000EA9E0",
+      "status": "registered",
+      "name": "xml1_guest_talent_id_pool_construct",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B36B0",
+      "status": "registered",
+      "name": "xml1_guest_talent_id_pool_allocate",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B5040",
+      "status": "registered",
+      "name": "xml1_guest_talent_id_pool_release",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B4090",
+      "status": "registered",
+      "name": "xml1_guest_talent_name_pool_construct",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B3640",
+      "status": "registered",
+      "name": "xml1_guest_talent_name_pool_allocate",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B4FF0",
+      "status": "registered",
+      "name": "xml1_guest_talent_name_pool_release",
+      "evidence_paths": [
+        "tests/engine/progression/talent_registry_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B47E0",
+      "status": "registered",
+      "name": "xml1_guest_talent_source_cache_pool_construct",
+      "evidence_paths": [
+        "tests/engine/progression/talent_source_cache_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B3E20",
+      "status": "registered",
+      "name": "xml1_guest_talent_source_cache_pool_allocate",
+      "evidence_paths": [
+        "tests/engine/progression/talent_source_cache_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x000B5360",
+      "status": "registered",
+      "name": "xml1_guest_talent_source_cache_pool_release",
+      "evidence_paths": [
+        "tests/engine/progression/talent_source_cache_native_test.c"
+      ],
+      "review_reason": "Established contract consolidated into the authoritative symbol registry."
+    },
+    {
+      "address": "0x00343612",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/talent_source_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    },
+    {
+      "address": "0x00340E00",
+      "status": "deferred",
+      "name": null,
+      "evidence_paths": [
+        "tests/engine/progression/talent_source_native_test.c"
+      ],
+      "review_reason": "Only a substituted test body/declaration appears here. The stub contract does not establish the full native function identity."
+    }
+  ]
+}

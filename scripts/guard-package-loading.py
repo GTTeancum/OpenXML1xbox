@@ -1,9 +1,9 @@
 """Install verified XML1 package selection hooks after recompilation."""
 from pathlib import Path
+from recomp_source import RecompSources, find_function
 root=Path(__file__).resolve().parents[1]
-p=root/'src/recomp/gen/recomp_0024.c'
-s=p.read_text(encoding='utf-8')
-if '#include "build_settings.h"' not in s:s='#include "build_settings.h"\n'+s
+index=RecompSources(root/'src/recomp/gen')
+pending={}
 hooks={
 'loc_00121A60: ;':'''loc_00121A60: ;
     /* Loose mode enters the native packagedef branch, never an FB shortcut. */
@@ -16,20 +16,23 @@ hooks={
         goto loc_00123BA6;
     }'''}
 for marker,hook in hooks.items():
-    if hook in s:continue
-    if s.count(marker)!=1:raise SystemExit('Verified package boundary missing: '+marker)
-    s=s.replace(marker,hook,1)
-p.write_text(s,encoding='utf-8')
+    p=index.label_path(int(marker[4:12],16))
+    s=pending.get(p,index.canonical_read(p))
+    if '#include "app/build_settings.h"' not in s:s='#include "app/build_settings.h"\n'+s
+    if hook not in s:
+        if s.count(marker)!=1:raise SystemExit('Verified package boundary missing: '+marker)
+        s=s.replace(marker,hook,1)
+    pending[p]=s
+for p,s in pending.items():p.write_text(index.restore_names(s),encoding='utf-8')
 print('Installed strict loose package selection hooks')
 
 # World motionpath packagedef callback copies its input to a 128-byte stack
 # buffer, then historically strips the last directory component if .igb is
 # absent. Resolve the conventional extension before the native manager call.
 # Old extension-bearing manifests continue to identify the same file.
-p=root/'src/recomp/gen/recomp_0023.c'
-s=p.read_text(encoding='utf-8')
-start=s.index('void sub_001210E0(void)')
-end=s.index('\nvoid sub_',start+1)
+p=index.path(0x1210E0)
+s=index.canonical_read(p)
+start,end=find_function(s,0x1210E0).span()
 body=s[start:end]
 marker='    POP32(esp, esi);\n    if (TEST_NZ(_fa, _fb)) goto loc_00121132;'
 hook='''    POP32(esp, esi);
@@ -44,26 +47,25 @@ hook='''    POP32(esp, esi);
 if hook not in body:
     if body.count(marker)!=1:raise SystemExit('Verified motionpath boundary missing')
     s=s[:start]+body.replace(marker,hook,1)+s[end:]
-for header in ('motionpath_name.h','build_settings.h'):
+s=s.replace('#include "engine/resources/motionpath_name.h"\n','')
+for header in ('engine/core/motionpath_name.h','app/build_settings.h'):
     if f'#include "{header}"' not in s:s=f'#include "{header}"\n'+s
-p.write_text(s,encoding='utf-8')
+p.write_text(index.restore_names(s),encoding='utf-8')
 
 # The native text-language getter returns this constructor's 16-byte field.
-for p in (root/'src/recomp/gen').glob('recomp_*.c'):
-    s=p.read_text(encoding='utf-8')
-    marker='loc_00149B19: ;'
-    if marker not in s:continue
-    hook=marker+"\n    /* build.ini selects the native text resource language. */\n    for(unsigned _lang=0;_lang<4;++_lang) MEM8(edi+0xC64+_lang)=xml1_build_settings.text_language[_lang];"
-    if hook not in s:
-        if s.count(marker)!=1:raise SystemExit('Ambiguous language constructor boundary')
-        if '#include "build_settings.h"' not in s:s='#include "build_settings.h"\n'+s
-        s=s.replace(marker,hook,1);p.write_text(s,encoding='utf-8')
-    break
-else:raise SystemExit('Verified native text-language boundary missing')
+p=index.label_path(0x149B19)
+s=index.canonical_read(p)
+marker='loc_00149B19: ;'
+hook=marker+"\n    /* build.ini selects the native text resource language. */\n    for(unsigned _lang=0;_lang<4;++_lang) MEM8(edi+0xC64+_lang)=xml1_build_settings.text_language[_lang];"
+if hook not in s:
+    if s.count(marker)!=1:raise SystemExit('Ambiguous language constructor boundary')
+    s=s.replace(marker,hook,1)
+if '#include "app/build_settings.h"' not in s:s='#include "app/build_settings.h"\n'+s
+p.write_text(index.restore_names(s),encoding='utf-8')
 
 # Decode genuine XML2 PKGB bytes for the retained XML1 text XML parser.
-p=root/'src/recomp/gen/recomp_0024.c'
-s=p.read_text(encoding='utf-8')
+p=index.label_path(0x1277B5)
+s=index.canonical_read(p)
 marker='loc_001277B5: ;\n    MEM8(esi + ebp) = LO8(ebx);'
 hook=marker+'''
     if (esi>=4 && MEM32(ebp)==0x000011B1u) {
@@ -86,20 +88,22 @@ hook=marker+'''
     }'''
 if hook not in s:
     if s.count(marker)!=1:raise SystemExit('Verified XML read buffer boundary missing')
-    if '#include "pkgb_decode.h"' not in s:s='#include "pkgb_decode.h"\n'+s
-    s=s.replace(marker,hook,1);p.write_text(s,encoding='utf-8')
+    if '#include "engine/resources/pkgb_decode.h"' not in s:s='#include "engine/resources/pkgb_decode.h"\n'+s
+    s=s.replace(marker,hook,1);p.write_text(index.restore_names(s),encoding='utf-8')
 
 # Save enumeration/load must parse the stored name's language, not today's prefix length.
-p=root/'src/recomp/gen/recomp_0023.c'
-s=p.read_text(encoding='utf-8')
-if '#include "save_name.h"' not in s:s='#include "save_name.h"\n'+s
+pending={}
 for marker,body in {
     'loc_0011F504: ;':'unsigned _slot=xml1_save_slot_offset((const unsigned char*)((uintptr_t)g_xbox_mem_offset+esp+0x14),128); if(_slot)esi=esp+0x14+_slot;',
     'loc_0011F6D4: ;':'unsigned _slot=xml1_save_slot_offset((const unsigned char*)((uintptr_t)g_xbox_mem_offset+esp+0x28),128); if(_slot)MEM32(esp+0x1C)=_slot-1;',
     'loc_00120504: ;':'unsigned _slot=xml1_save_slot_offset((const unsigned char*)((uintptr_t)g_xbox_mem_offset+esp+0x1C),128); if(_slot)ebp=_slot-1;',
 }.items():
+    p=index.label_path(int(marker[4:12],16))
+    s=pending.get(p,index.canonical_read(p))
+    if '#include "engine/saves/save_name.h"' not in s:s='#include "engine/saves/save_name.h"\n'+s
     hook=marker+'\n    { /* Cross-language save slot. */ '+body+' }'
-    if hook in s:continue
-    if s.count(marker)!=1:raise SystemExit('Verified save-name boundary missing: '+marker)
-    s=s.replace(marker,hook,1)
-p.write_text(s,encoding='utf-8')
+    if hook not in s:
+        if s.count(marker)!=1:raise SystemExit('Verified save-name boundary missing: '+marker)
+        s=s.replace(marker,hook,1)
+    pending[p]=s
+for p,s in pending.items():p.write_text(index.restore_names(s),encoding='utf-8')

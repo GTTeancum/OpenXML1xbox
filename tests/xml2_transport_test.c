@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "fair_gate.h"
+#include "platform/windows/fair_gate.h"
 #define RECOMP_TLS __declspec(thread)
 static unsigned frames;
 static void fatal(const char *message) { fprintf(stderr,"%s\n",message); exit(1); }

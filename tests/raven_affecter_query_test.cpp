@@ -1,5 +1,5 @@
-#include "raven_talent_binding.h"
-#include "raven_xml2_query_probe.h"
+#include "engine/progression/raven_talent_binding.h"
+#include "diagnostics/raven_xml2_query_probe.h"
 #include <fstream>
 #include <iostream>
 #include <iterator>
