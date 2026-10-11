@@ -27,28 +27,17 @@ performance across different PCs, and audio fidelity are still being assessed.
 ## Install the beta
 
 Requires 64-bit Windows 10/11 and your own **X-Men Legends (World)** Xbox ISO.
-The release does not include the ISO or the complete original game assets.
 
-1. Extract the Xbox filesystem from your ISO into a writable folder using an
-   Xbox ISO extraction tool. The folder must contain `default.xbe`, `media`,
-   `movies`, `sounds`, and `z/assetsfb.zip` with their original paths.
+1. Extract the files from your ISO into a writable folder using an Xbox ISO extraction tool.
 2. Extract `OpenXML1xbox-0.9b-win64.zip` into that same folder, replacing the
    supplied files. Keep `runtime` and the hidden `.xml1-player-layout` file.
 3. Launch **X-Men Legends.exe**. First-run setup extracts the archive into loose
-   assets and generates PKGB manifests. It preserves the supplied modified menus.
-
-The game executable prepares `assetsfb.zip`; it does **not** extract a raw ISO.
-No Python, compiler, developer checkout, or separate launcher is needed to play.
-The executable statically links the Visual C++ runtimes and embeds the
-32-bit renderer in **X-Men Legends.exe**. The renderer is unpacked automatically
-to `%LOCALAPPDATA%/OpenXML1` and uses Windows' system `d3d8.dll`. No adjacent
-runtime DLLs or renderer executable are required.
+   assets and generates PKGB manifests
 
 The game also compiles Raven XML data during first-run setup to the
-later games' XMLB format (`.xmlb`, `.engb` and other language variants, `.chrb`,
+later games' XMLB format (`.xmlb`, `.engb` and other  variants, `.chrb`,
 `.navb`). Existing loose installations upgrade once on launch. Original text files
-and saves are retained; loose-mode gameplay reads the compiled counterparts.
-Existing binary mods are validated and preserved. See [XMLB setup](docs/XMLB-SETUP.md).
+and saves are retained; loose-mode gameplay reads the compiled versions.
 
 The tested World ISO SHA-256 is:
 `0a1ef03e57458144609906bbc2d44d2c26028cf704f4698ce0f1e61c34030b44`.
@@ -75,22 +64,6 @@ PC menus were validated in English; localized PC menu adaptation is not complete
 and costumes for testing, including after loading a save. Use `0` or `false`
 to disable it, then restart. Unlocks written to a save remain unlocked. If the
 key is absent, modder mode is off.
-
-## Validation and remaining work
-
-The underlying 0.8 beta flow was tested against a fresh World ISO extraction:
-first-run preparation, startup/story movies, the 3D menu, level-one gameplay,
-movement, pause/resume, restart, Options/Advanced and Quit. Its native captures
-were inspected individually at 1920x1080. The 0.9 engine and imported-character
-work adds focused automated contracts plus private Bishop and Sunfire gameplay
-runs that verify roster selection, models, HUD, effects, attacks, damage, power
-lifetimes and cleanup for the exercised cases.
-
-Most character checks ran headless and muted. They do not establish listening
-quality, every imported power at every rank, complete level/game coverage, or
-performance on the tester's hardware. Multi-machine performance, multi-level
-multiplayer testing, and sustained audio assessment remain open.
-See [TODO.MD](TODO.MD) and [HD evidence](docs/HD-OUTPUT.md).
 
 ## Building from source
 
