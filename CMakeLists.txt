@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 project(OpenXML1xbox LANGUAGES C CXX RC)
+add_executable(raven-flight-ceiling-test tests/engine/actors/raven_flight_ceiling_test.c)
+target_include_directories(raven-flight-ceiling-test PRIVATE src)
 find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)
 include(cmake/Generated.cmake)
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-parser-text-methods.inc"

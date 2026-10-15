@@ -9,6 +9,7 @@
 #include "diagnostics/raven_operand_trace.h"
 #include "engine/combat/raven_bishop_guest.h"
 #include "engine/actors/raven_ai_modes.h"
+#include "engine/actors/raven_flight_ceiling.h"
 #include "ui/pc_menu.h"
 /**
  * X-Men Legends - Recompiled code chunk 4
@@ -5326,6 +5327,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -8180,6 +8189,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -9955,6 +9972,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -11729,6 +11754,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -13483,6 +13516,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -15231,6 +15272,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -16976,6 +17025,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -18714,6 +18771,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -20450,6 +20515,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -22185,6 +22258,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -23908,6 +23989,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -25628,6 +25717,14 @@ loc_00042F11: ;
     MEM8(esi + 0x337) = MEM8(esi + 0x337) & 0xF7;
 
 loc_00042F18: ;
+    /* Clamp the resolved flight position as well as ascent velocity: the
+     * native sweep adds a small Z epsilon even when vertical speed is zero.
+     * Retain this in every translated tail entry of 40E60. */
+    if ((MEM8(esi + 0x334) & 8) && MEM32(0x48E480) == 0x3CCBE4 &&
+        MEM32(0x48E4C0) && MEM32(0x48E4C4))
+        MEMF(esp + 0x40) = raven_flight_ceiling_position(
+            MEMF(esi + 0x28), MEMF(esp + 0x40), MEMF(esi + 0x140),
+            MEMF(esi + 0x14C), MEMF(0x48E48C), MEMF(0x48E498));
     SET_LO8(eax, MEM8(esp + 0x46));
     _fa = (uint32_t)(LO8(eax)) & 0xFFu; _fb = (uint32_t)(LO8(eax)) & 0xFFu;
     _fas = (int32_t)(int8_t)(_fa); _fbs = (int32_t)(int8_t)(_fb); /* test LO8(eax), LO8(eax) (8-bit) */
@@ -26449,6 +26546,15 @@ loc_000434C7: ;
     esp += 8; return; /* ret 4 */
 
 loc_000434D1: ;
+    /* 6BB20 loads current extent_min/extent_max or geometry-derived defaults.
+     * Match the local box centre used by the native AI ceiling check. Keep
+     * the original velocity setter, collision sweep and movement below. */
+    if (MEM32(0x48E480) == 0x3CCBE4 && MEM32(0x48E4C0) && MEM32(0x48E4C4)) {
+        MEMF(esp + 0x20) = raven_flight_ceiling_velocity(
+            MEMF(esi + 0x28), MEMF(esp + 0x20), MEMF(ebp + 0x20),
+            MEMF(esi + 0x140), MEMF(esi + 0x14C),
+            MEMF(0x48E48C), MEMF(0x48E498));
+    }
     ecx = esp + 0x18;
     PUSH32(esp, ecx);
     ecx = esi;
@@ -26512,6 +26618,15 @@ loc_00043548: ;
     PUSH32(esp, 0x00043552u); RECOMP_ABI_CALL(0x00040E60u, sub_00040E60); /* call 0x00040E60 */
 
 loc_00043552: ;
+    {
+        static int flight_trace = -1;
+        static unsigned flight_samples;
+        if (flight_trace < 0) flight_trace = getenv("XML1_TRACE_FLIGHT") != NULL;
+        if (flight_trace && (++flight_samples % 30u) == 0)
+            fprintf(stderr, "[FLIGHT] actor=%08X z=%.6f vz=%.6f bounds=%.3f,%.3f box=%.3f,%.3f dt=%.6f input=%08X hp=%.3f\n",
+                esi, MEMF(esi+0x28), MEMF(esi+0x108), MEMF(0x48E48C), MEMF(0x48E498),
+                MEMF(esi+0x140), MEMF(esi+0x14C), MEMF(ebp+0x20), MEM32(ebp), MEMF(esi+0x240));
+    }
     POP32(esp, edi);
     POP32(esp, esi);
     POP32(esp, ebp);
